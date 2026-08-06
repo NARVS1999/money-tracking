@@ -17,7 +17,7 @@
 
 ### Categories (CATS)
 
-- [ ] **CATS-01**: Categories tab shows Expense Categories and Income Categories as two separate groups
+- [x] **CATS-01**: Categories tab shows Expense Categories and Income Categories as two separate groups
 - [x] **CATS-02**: User can add a category to either group (inline input)
 - [x] **CATS-03**: Each category row shows its usage count (number of entries using it)
 - [x] **CATS-04**: A category in use cannot be deleted — deletion is blocked with a message; an empty category can be deleted after confirmation
@@ -98,7 +98,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUTH-05 | Phase 6: Account Lifecycle | Pending |
 | AUTH-06 | Phase 6: Account Lifecycle | Pending |
 | AUTH-07 | Phase 6: Account Lifecycle | Pending |
-| CATS-01 | Phase 2: Categories | Pending |
+| CATS-01 | Phase 2: Categories | Complete |
 | CATS-02 | Phase 2: Categories | Complete |
 | CATS-03 | Phase 2: Categories | Complete |
 | CATS-04 | Phase 2: Categories | Complete |
