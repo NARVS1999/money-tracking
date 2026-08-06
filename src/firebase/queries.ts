@@ -20,8 +20,9 @@ export const userDoc = (uid: string) => doc(db, "users", uid);
 export const entriesBase = (uid: string) =>
   query(collection(db, "entries"), where("uid", "==", uid));
 
-// Requires the composite index `entries: type ASC, date DESC` (deploy/composite-index.md).
-// If the index is missing, this query errors with a console link to create it.
+// Requires the composite index `entries: uid ASC, type ASC, date DESC`
+// (deploy/composite-index.md). If the index is missing, this query errors
+// with a console link to create it.
 export const entriesByType = (uid: string, type: "expense" | "income") =>
   query(entriesBase(uid), where("type", "==", type), orderBy("date", "desc"));
 
