@@ -21,7 +21,9 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  query,
   Timestamp,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase/app";
 import { categoriesOf, entriesBase, categoryInUse } from "../firebase/queries";
@@ -124,6 +126,13 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   const deleteCategory = useCallback(
     async (kind: CategoryKind, categoryId: string) => {
       if (!user) return;
+      // Defense-in-depth: verify the category document belongs to this user
+      const categorySnap = await getDocs(
+        query(collection(db, kind), where("uid", "==", user.uid)),
+      );
+      if (!categorySnap.docs.some((d) => d.id === categoryId)) {
+        throw new Error("Category not found");
+      }
       const inUseSnap = await getDocs(categoryInUse(user.uid, categoryId));
       if (!inUseSnap.empty) throw new Error("Category is in use");
       await deleteDoc(doc(db, kind, categoryId));
