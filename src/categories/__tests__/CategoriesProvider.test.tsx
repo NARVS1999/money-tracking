@@ -22,7 +22,11 @@ const mockUnsubscribe = jest.fn();
 const mockAddDoc = jest.fn().mockResolvedValue({ id: "new-cat-1" });
 const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
 const mockGetDocs = jest.fn();
-const mockTimestampNow = jest.fn(() => ({ seconds: 0, nanoseconds: 0 }));
+const mockTimestampNow = jest.fn(() => {
+  // Lazy-require the real Timestamp so instanceof works in onSnapshot callbacks
+  const realTs = (jest.requireActual("firebase/firestore") as any).Timestamp;
+  return new realTs(0, 0);
+});
 
 const mockOnSnapshot = jest.fn((_query: any, observerOrNext: any) => {
   const callback =
@@ -34,17 +38,24 @@ const mockOnSnapshot = jest.fn((_query: any, observerOrNext: any) => {
   return mockUnsubscribe;
 });
 
-jest.mock("firebase/firestore", () => ({
-  // @ts-expect-error – spread of any[] is intentional for mock forwarding
-  onSnapshot: (...args: any[]) => mockOnSnapshot(...args),
-  addDoc: (...args: any[]) => mockAddDoc(...args),
-  deleteDoc: (...args: any[]) => mockDeleteDoc(...args),
-  getDocs: (...args: any[]) => mockGetDocs(...args),
-  Timestamp: { now: () => mockTimestampNow() },
-  collection: (_db: any, path: string) => ({ _tag: path }),
-  doc: function (_db: any, ...segments: string[]) { return { _tag: segments.join("/") }; },
-  initializeFirestore: jest.fn(() => ({ _tag: "db" })),
-}));
+jest.mock("firebase/firestore", () => {
+  const actual = jest.requireActual("firebase/firestore") as any;
+  const TimestampMock = actual.Timestamp;
+  TimestampMock.now = () => mockTimestampNow();
+  return {
+    // @ts-expect-error – spread of any[] is intentional for mock forwarding
+    onSnapshot: (...args: any[]) => mockOnSnapshot(...args),
+    addDoc: (...args: any[]) => mockAddDoc(...args),
+    deleteDoc: (...args: any[]) => mockDeleteDoc(...args),
+    getDocs: (...args: any[]) => mockGetDocs(...args),
+    Timestamp: TimestampMock,
+    collection: (_db: any, path: string) => ({ _tag: path }),
+    doc: function (_db: any, ...segments: string[]) { return { _tag: segments.join("/") }; },
+    query: (...args: any[]) => ((args[0] as any)?._tag ? { _tag: `query(${(args[0] as any)._tag})` } : { _tag: "query" }),
+    where: (_field: string, _op: string, _value: any) => ({ _op: "where" }),
+    initializeFirestore: jest.fn(() => ({ _tag: "db" })),
+  };
+});
 
 jest.mock("../../firebase/config", () => ({ firebaseConfig: {} }));
 
@@ -191,12 +202,14 @@ describe("addCategory", () => {
     expect(mockAddDoc).not.toHaveBeenCalled();
   });
 
-  it("silently no-ops when user is null (not signed in)", async () => {
+  it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
     mountProvider();
 
     await act(async () => {
-      await ctx().addCategory("expenseCategories", "Food");
+      await expect(
+        ctx().addCategory("expenseCategories", "Food"),
+      ).rejects.toThrow("Not authenticated");
     });
 
     expect(mockAddDoc).not.toHaveBeenCalled();
@@ -204,22 +217,26 @@ describe("addCategory", () => {
 });
 
 describe("deleteCategory", () => {
-  it("deletes unused category (getDocs returns empty)", async () => {
-    mockGetDocs.mockResolvedValue({ empty: true });
+  it("deletes unused category (getDocs for uid check returns doc, inUse returns empty)", async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({ empty: false, docs: [{ id: "cat-to-delete" }] }) // uid ownership check
+      .mockResolvedValueOnce({ empty: true }); // inUse check
     mountProvider();
 
     await act(async () => {
       await ctx().deleteCategory("expenseCategories", "cat-to-delete");
     });
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(1);
+    expect(mockGetDocs).toHaveBeenCalledTimes(2);
     expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
     const [ref] = mockDeleteDoc.mock.calls[0];
     expect(ref._tag).toBe("expenseCategories/cat-to-delete");
   });
 
-  it("throws 'Category is in use' and does NOT delete", async () => {
-    mockGetDocs.mockResolvedValue({ empty: false });
+  it("throws 'Category is in use' and does NOT delete (uid check passes, inUse not empty)", async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({ empty: false, docs: [{ id: "in-use-cat" }] }) // uid ownership check
+      .mockResolvedValueOnce({ empty: false }); // inUse check
     mountProvider();
 
     await act(async () => {
@@ -228,16 +245,18 @@ describe("deleteCategory", () => {
       ).rejects.toThrow("Category is in use");
     });
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(1);
+    expect(mockGetDocs).toHaveBeenCalledTimes(2);
     expect(mockDeleteDoc).not.toHaveBeenCalled();
   });
 
-  it("silently no-ops when user is null", async () => {
+  it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
     mountProvider();
 
     await act(async () => {
-      await ctx().deleteCategory("expenseCategories", "any-cat");
+      await expect(
+        ctx().deleteCategory("expenseCategories", "any-cat"),
+      ).rejects.toThrow("Not authenticated");
     });
 
     expect(mockGetDocs).not.toHaveBeenCalled();
