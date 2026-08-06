@@ -67,7 +67,9 @@ All rules key on the auth `uid`. In-app creation of a default account is impossi
 
 ```
 match /users/{uid} {
-  allow read, delete: if resource.data.uid == request.auth.uid;
+  allow read: if resource.data.uid == request.auth.uid;
+  allow delete: if resource.data.uid == request.auth.uid
+                 && !resource.data.isDefault;
   allow create: if request.auth != null
                  && request.resource.data.uid == request.auth.uid
                  && request.resource.data.isDefault == false;
@@ -96,7 +98,7 @@ match /incomeCategories/{id} {
 
 Note: the `incomeCategories` block is written in full (not as the "identical to expenseCategories" shorthand) — a comment-only match block **denies all access**, so the shorthand is not deploy-safe.
 
-Note: the `users` delete rule is the cascade's Firestore side — an account's own doc is removable, and deletion of the **default** account's doc is blocked only by app logic (its auth account would still exist; a console admin can always delete anything — this protection is in-app by design).
+Note: the `users` delete rule is the cascade's Firestore side — an account's own doc is removable, but deletion of the **default** account's doc is blocked by rule (`!resource.data.isDefault`); the Account tab also blocks the cascade in-app before step 1. A console admin can always delete anything.
 
 ## Account deletion (cascade)
 
