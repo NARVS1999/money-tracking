@@ -102,7 +102,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const addCategory = useCallback(
     async (kind: CategoryKind, name: string) => {
-      if (!user) return;
+      if (!user) throw new Error("Not authenticated");
       const trimmed = name.trim();
       if (!trimmed) return;
       const existing =
@@ -125,7 +125,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const deleteCategory = useCallback(
     async (kind: CategoryKind, categoryId: string) => {
-      if (!user) return;
+      if (!user) throw new Error("Not authenticated");
       // Defense-in-depth: verify the category document belongs to this user
       const categorySnap = await getDocs(
         query(collection(db, kind), where("uid", "==", user.uid)),
