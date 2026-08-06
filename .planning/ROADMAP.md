@@ -66,12 +66,12 @@ Plans:
   3. Each category row shows its usage count (number of entries using it), updating as entries are added
   4. A category in use cannot be deleted — deletion is blocked with a message; an unused category deletes only after confirmation
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — TDD: CategoriesProvider — addCategory (dup check), deleteCategory (in-use guard), usageMap from entries onSnapshot
+- [x] 02-01-PLAN.md — TDD: CategoriesProvider — addCategory (dup check), deleteCategory (in-use guard), usageMap from entries onSnapshot
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -171,7 +171,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-08-07 |
-| 2. Categories | 0/2 | Not started | - |
+| 2. Categories | 1/2 | In Progress|  |
 | 3. Entries | 0/3 | Not started | - |
 | 4. Summary | 0/2 | Not started | - |
 | 5. Export | 0/3 | Not started | - |

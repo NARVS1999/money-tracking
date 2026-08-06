@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: Categories
 status: executing
-stopped_at: Roadmap created — Phase 1 ready to plan (`/gsd-plan-phase 1`)
-last_updated: "2026-08-06T19:29:12.119Z"
+stopped_at: "Completed 02-categories-01-PLAN.md (CategoriesProvider TDD: RED→GREEN)"
+last_updated: "2026-08-06T19:51:17.858Z"
 last_activity: 2026-08-07
 last_activity_desc: Phase 01 complete, transitioned to Phase 2
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -32,7 +32,7 @@ Plan: Not started
 Status: Ready to execute
 Last activity: 2026-08-07 — Phase 01 complete, transitioned to Phase 2
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -60,6 +60,11 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 02-categories P01 | 17 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -72,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 1]: AsyncStorage 2.2.0 (pinned) backs AUTH persistence only, via `initializeAuth`; every Firestore query carries an explicit `uid` filter (rules are not filters).
 - [Phase 5]: CSV export included alongside Excel (near-free, same pipeline); SheetJS 0.20.3 from CDN tarball; `expo-file-system/legacy` for SAF/base64 writes.
 - [Phase 6]: Cascade deletes chunked ≤500 ops/batch, auth user deleted LAST (reauth first).
+- [Phase ?]: React 19 react-test-renderer requires wrapping renderer.create in act(); child components do not execute without it
+- [Phase ?]: CategoriesProvider follows AuthProvider pattern: module-level createContext(null), custom hook with null guard, useEffect subscriptions with cleanup
+- [Phase ?]: Firestore mock strategy: capture onSnapshot callbacks in Record<tag, fn>, fire from test helpers for controlled testing
 
 ### Pending Todos
 
@@ -98,6 +106,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-06
-Stopped at: Roadmap created — Phase 1 ready to plan (`/gsd-plan-phase 1`)
+Last session: 2026-08-06T19:51:04.769Z
+Stopped at: Completed 02-categories-01-PLAN.md (CategoriesProvider TDD: RED→GREEN)
 Resume file: None
