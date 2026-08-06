@@ -70,8 +70,8 @@ Plans:
 
 Plans:
 
-- [ ] 02-01: CategoriesProvider (two uid-scoped `onSnapshot` listeners) + Categories screen with two groups and inline add
-- [ ] 02-02: Usage-count display (`entries where categoryId == X, limit 1` guard query) + in-use delete block and confirmed delete
+- [ ] 02-01-PLAN.md — TDD: CategoriesProvider — addCategory (dup check), deleteCategory (in-use guard), usageMap from entries onSnapshot
+- [ ] 02-02-PLAN.md — Tracer: CategoriesScreen — SectionList 2 groups + sticky headers + per-group inline add + Swipeable rows (in-use/delete) + live usage counts + App.tsx wiring
 
 ### Phase 3: Entries
 
