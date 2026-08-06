@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: foundation
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-08-06
+reviewed_at: 2026-08-06
 ---
 
 # Phase 1 — UI Design Contract
@@ -189,11 +190,12 @@ Rules: no "Create account" UI this phase (deferred to Phase 6); no password visi
 
 ## UI Considerations
 
-Applicable state considerations resolved: **12 covered, 1 backstop, 0 unresolved**
+Applicable state considerations resolved: **13 covered, 1 backstop, 0 unresolved**
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
 | empty | sign-in-form | ✅ covered | "Submit is disabled until both Email and Password are non-empty — no empty-submit path exists (Interaction §2)" |
+| populated | sign-in-form | ✅ covered | "Happy path: both fields filled → enabled black button; submit → auth gate swaps to MainTabs; no success toast (State Contract)" |
 | partial | sign-in-form | ✅ covered | "One empty field keeps the button disabled — same rule as empty; no partial-submit state" |
 | loading | sign-in-form | ✅ covered | "Submitting renders 'Signing in…' on a disabled button with inputs locked; gate swaps to MainTabs on success (AUTH-01)" |
 | error | sign-in-form | ✅ covered | "Wrong credentials render inline 'Email or password is wrong' in danger below Password; user stays on Sign In (AUTH-03)" |
