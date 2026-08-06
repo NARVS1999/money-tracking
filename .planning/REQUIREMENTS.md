@@ -91,44 +91,44 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| AUTH-04 | — | Pending |
-| AUTH-05 | — | Pending |
-| AUTH-06 | — | Pending |
-| AUTH-07 | — | Pending |
-| CATS-01 | — | Pending |
-| CATS-02 | — | Pending |
-| CATS-03 | — | Pending |
-| CATS-04 | — | Pending |
-| ENTR-01 | — | Pending |
-| ENTR-02 | — | Pending |
-| ENTR-03 | — | Pending |
-| ENTR-04 | — | Pending |
-| ENTR-05 | — | Pending |
-| ENTR-06 | — | Pending |
-| ENTR-07 | — | Pending |
-| ENTR-08 | — | Pending |
-| SUMM-01 | — | Pending |
-| SUMM-02 | — | Pending |
-| SUMM-03 | — | Pending |
-| EXPT-01 | — | Pending |
-| EXPT-02 | — | Pending |
-| EXPT-03 | — | Pending |
-| EXPT-04 | — | Pending |
-| EXPT-05 | — | Pending |
-| NFR-01 | — | Pending |
-| NFR-02 | — | Pending |
-| NFR-03 | — | Pending |
-| NFR-04 | — | Pending |
-| NFR-05 | — | Pending |
-| NFR-06 | — | Pending |
+| AUTH-01 | Phase 1: Foundation | Pending |
+| AUTH-02 | Phase 1: Foundation | Pending |
+| AUTH-03 | Phase 1: Foundation | Pending |
+| AUTH-04 | Phase 6: Account Lifecycle | Pending |
+| AUTH-05 | Phase 6: Account Lifecycle | Pending |
+| AUTH-06 | Phase 6: Account Lifecycle | Pending |
+| AUTH-07 | Phase 6: Account Lifecycle | Pending |
+| CATS-01 | Phase 2: Categories | Pending |
+| CATS-02 | Phase 2: Categories | Pending |
+| CATS-03 | Phase 2: Categories | Pending |
+| CATS-04 | Phase 2: Categories | Pending |
+| ENTR-01 | Phase 3: Entries | Pending |
+| ENTR-02 | Phase 3: Entries | Pending |
+| ENTR-03 | Phase 3: Entries | Pending |
+| ENTR-04 | Phase 3: Entries | Pending |
+| ENTR-05 | Phase 3: Entries | Pending |
+| ENTR-06 | Phase 3: Entries | Pending |
+| ENTR-07 | Phase 3: Entries | Pending |
+| ENTR-08 | Phase 3: Entries | Pending |
+| SUMM-01 | Phase 4: Summary | Pending |
+| SUMM-02 | Phase 4: Summary | Pending |
+| SUMM-03 | Phase 4: Summary | Pending |
+| EXPT-01 | Phase 5: Export | Pending |
+| EXPT-02 | Phase 5: Export | Pending |
+| EXPT-03 | Phase 5: Export | Pending |
+| EXPT-04 | Phase 5: Export | Pending |
+| EXPT-05 | Phase 5: Export | Pending |
+| NFR-01 | Phase 1: Foundation | Pending |
+| NFR-02 | Phase 3: Entries | Pending |
+| NFR-03 | Phase 1: Foundation | Pending |
+| NFR-04 | Phase 1: Foundation | Pending |
+| NFR-05 | Phase 1: Foundation | Pending |
+| NFR-06 | Phase 1: Foundation | Pending |
 
 **Coverage:**
 - v1 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33 ⚠️
+- Mapped to phases: 33
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-06*
