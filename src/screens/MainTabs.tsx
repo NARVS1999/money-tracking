@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography } from "../theme/tokens";
 import HomeScreen from "./HomeScreen";
 import ExpensesScreen from "./ExpensesScreen";
@@ -8,10 +9,6 @@ import AccountScreen from "./AccountScreen";
 
 const Tab = createBottomTabNavigator();
 
-// 5-tab text-only shell (01-UI-SPEC Implementation Contract line 255):
-// exactly 5 label-only tabs in order, no icons, no headers, no custom
-// transitions — "text is the interface". Standard v7 defaults for lazy
-// loading and state preservation.
 export default function MainTabs() {
   return (
     <Tab.Navigator
@@ -23,13 +20,56 @@ export default function MainTabs() {
           borderTopColor: colors.border,
         },
         tabBarLabelStyle: { fontSize: typography.label.size },
+        tabBarIcon: ({ color, size }) => {
+          return null;
+        },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Expenses" component={ExpensesScreen} />
-      <Tab.Screen name="Income" component={IncomeScreen} />
-      <Tab.Screen name="Categories" component={CategoriesScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Expenses"
+        component={ExpensesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trending-down-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Income"
+        component={IncomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trending-up-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Categories"
+        component={CategoriesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="pricetags-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Account"
+        component={AccountScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }

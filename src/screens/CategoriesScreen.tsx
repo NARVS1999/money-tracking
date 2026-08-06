@@ -234,7 +234,7 @@ export default function CategoriesScreen() {
         const count = usageMap.get(item.id) || 0;
         const countLabel =
           usageMap.size === 0
-            ? "\u2014"
+            ? ""
             : `${count} ${count === 1 ? "entry" : "entries"}`;
 
         return (
@@ -252,9 +252,12 @@ export default function CategoriesScreen() {
               >
                 {item.name}
               </Text>
-              <Text style={styles.usageCount}>
-                {countLabel}
-              </Text>
+              <View style={styles.rowRight}>
+                <Text style={styles.usageCount}>
+                  {countLabel}
+                </Text>
+                <Text style={styles.swipeHint}>←</Text>
+              </View>
             </View>
           </Swipeable>
         );
@@ -350,12 +353,21 @@ const styles = StyleSheet.create({
     lineHeight: typography.body.lineHeight,
     color: colors.textPrimary,
   },
+  rowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   usageCount: {
     fontSize: typography.label.size,
     fontWeight: typography.label.weight as "400",
     lineHeight: typography.label.lineHeight,
     color: colors.textSecondary,
     marginLeft: spacing.sm,
+  },
+  swipeHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginLeft: spacing.xs,
   },
   swipeAction: {
     width: 80,
