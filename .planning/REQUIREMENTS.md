@@ -7,9 +7,9 @@
 
 ### Accounts (AUTH)
 
-- [ ] **AUTH-01**: User can sign in with email/password on first launch (no sign-up screen on first run; the seeded default account signs in like any other)
-- [ ] **AUTH-02**: User session persists across app restarts
-- [ ] **AUTH-03**: Wrong credentials show an inline error on the Sign In screen
+- [x] **AUTH-01**: User can sign in with email/password on first launch (no sign-up screen on first run; the seeded default account signs in like any other)
+- [x] **AUTH-02**: User session persists across app restarts
+- [x] **AUTH-03**: Wrong credentials show an inline error on the Sign In screen
 - [ ] **AUTH-04**: User can create an additional account in-app (display name, email, password min 6 chars) which starts with an empty ledger and signs into the new account immediately
 - [ ] **AUTH-05**: The default account (seeded at setup, `isDefault: true`) shows a "Default" badge and cannot be deleted in-app
 - [ ] **AUTH-06**: User can delete an account: password reauthentication → cascade delete (entries → categories → users doc → auth account, chunked ≤500 docs/batch) → back to Sign In
@@ -49,12 +49,12 @@
 
 ### Non-Functional (NFR)
 
-- [ ] **NFR-01**: Every Firestore query includes a `uid` equality filter (security rules are not filters)
+- [x] **NFR-01**: Every Firestore query includes a `uid` equality filter (security rules are not filters)
 - [ ] **NFR-02**: App is fully usable with no network mid-session; Firestore listeners reconcile on reconnect
-- [ ] **NFR-03**: Money computed and stored as integer cents only; formatting via a single `money.js` utility (no float math, no device-dependent `Intl` output)
-- [ ] **NFR-04**: Dates computed and stored as local `"YYYY-MM-DD"` strings (no UTC-based slicing)
-- [ ] **NFR-05**: All libraries are Expo Go compatible on Expo SDK 57; Firebase JS SDK ^12; AsyncStorage 2.2.0 for auth persistence; SheetJS from CDN tarball
-- [ ] **NFR-06**: Firestore security rules deployed matching backend-schema.md (uid scoping; `isDefault` immutable; in-app default creation impossible)
+- [x] **NFR-03**: Money computed and stored as integer cents only; formatting via a single `money.js` utility (no float math, no device-dependent `Intl` output)
+- [x] **NFR-04**: Dates computed and stored as local `"YYYY-MM-DD"` strings (no UTC-based slicing)
+- [x] **NFR-05**: All libraries are Expo Go compatible on Expo SDK 57; Firebase JS SDK ^12; AsyncStorage 2.2.0 for auth persistence; SheetJS from CDN tarball
+- [x] **NFR-06**: Firestore security rules deployed matching backend-schema.md (uid scoping; `isDefault` immutable; in-app default creation impossible)
 
 ## v2 Requirements
 
@@ -91,9 +91,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1: Foundation | Pending |
-| AUTH-02 | Phase 1: Foundation | Pending |
-| AUTH-03 | Phase 1: Foundation | Pending |
+| AUTH-01 | Phase 1: Foundation | Complete |
+| AUTH-02 | Phase 1: Foundation | Complete |
+| AUTH-03 | Phase 1: Foundation | Complete |
 | AUTH-04 | Phase 6: Account Lifecycle | Pending |
 | AUTH-05 | Phase 6: Account Lifecycle | Pending |
 | AUTH-06 | Phase 6: Account Lifecycle | Pending |
@@ -118,14 +118,15 @@ Deferred to future release. Tracked but not in current roadmap.
 | EXPT-03 | Phase 5: Export | Pending |
 | EXPT-04 | Phase 5: Export | Pending |
 | EXPT-05 | Phase 5: Export | Pending |
-| NFR-01 | Phase 1: Foundation | Pending |
+| NFR-01 | Phase 1: Foundation | Complete |
 | NFR-02 | Phase 3: Entries | Pending |
-| NFR-03 | Phase 1: Foundation | Pending |
-| NFR-04 | Phase 1: Foundation | Pending |
-| NFR-05 | Phase 1: Foundation | Pending |
-| NFR-06 | Phase 1: Foundation | Pending |
+| NFR-03 | Phase 1: Foundation | Complete |
+| NFR-04 | Phase 1: Foundation | Complete |
+| NFR-05 | Phase 1: Foundation | Complete |
+| NFR-06 | Phase 1: Foundation | Complete |
 
 **Coverage:**
+
 - v1 requirements: 33 total
 - Mapped to phases: 33
 - Unmapped: 0 ✓

@@ -13,7 +13,7 @@ A personal expense/income tracker for the phone (Expo Go workflow): sign in with
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Expo SDK 57 + Firebase bootstrap, auth gate with persistent session, money/date utils, uid-scoped query scaffolding, security rules
+- [x] **Phase 1: Foundation** - Expo SDK 57 + Firebase bootstrap, auth gate with persistent session, money/date utils, uid-scoped query scaffolding, security rules (completed 2026-08-07)
 - [ ] **Phase 2: Categories** - Two category groups with inline add, usage counts, and in-use delete guard
 - [ ] **Phase 3: Entries** - Expenses/Income tabs with shared entry form: add/edit/delete/copy, per-type dropdowns, session-scoped offline
 - [ ] **Phase 4: Summary** - Home screen current-month totals and per-category breakdown with empty state
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/3 | In Progress|  |
+| 1. Foundation | 3/3 | Complete    | 2026-08-07 |
 | 2. Categories | 0/2 | Not started | - |
 | 3. Entries | 0/3 | Not started | - |
 | 4. Summary | 0/2 | Not started | - |
