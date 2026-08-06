@@ -62,8 +62,9 @@ export default function CategoriesScreen() {
       setInput("");
       setError(null);
       setErrorKind(null);
-    } catch (e: any) {
-      setError(e.message || "Couldn't add category. Try again.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Couldn't add category. Try again.";
+      setError(message);
       setErrorKind(kind);
     }
   };
