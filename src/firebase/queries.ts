@@ -13,6 +13,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./app"; // never initializeFirestore here — singleton lives in app.ts
+import { compare, isValid } from "../lib/dates";
 
 export const userDoc = (uid: string) => doc(db, "users", uid);
 
@@ -25,8 +26,14 @@ export const entriesByType = (uid: string, type: "expense" | "income") =>
   query(entriesBase(uid), where("type", "==", type), orderBy("date", "desc"));
 
 // Lexicographic range over zero-padded YYYY-MM-DD strings (timezone-proof, NFR-04).
-export const entriesInRange = (uid: string, start: string, end: string) =>
-  query(entriesBase(uid), where("date", ">=", start), where("date", "<=", end));
+// Throws on a malformed or inverted (start > end) range so callers cannot
+// silently get an empty result set (WR-05).
+export const entriesInRange = (uid: string, start: string, end: string) => {
+  if (!isValid(start) || !isValid(end) || compare(start, end) > 0) {
+    throw new Error(`entriesInRange: invalid range ${start}..${end}`);
+  }
+  return query(entriesBase(uid), where("date", ">=", start), where("date", "<=", end));
+};
 
 // "Is this category in use?" — one doc is enough to block deletion (ADR-0004).
 export const categoryInUse = (uid: string, categoryId: string) =>

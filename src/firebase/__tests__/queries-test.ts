@@ -82,7 +82,7 @@ describe("uid scoping (NFR-01)", () => {
 
   it("places the uid filter FIRST in the constraint list", () => {
     expect(filterFields(entriesByType(UID, "expense"))[0]).toBe("uid");
-    expect(filterFields(entriesInRange(UID, "a", "b"))[0]).toBe("uid");
+    expect(filterFields(entriesInRange(UID, "2026-08-01", "2026-08-31"))[0]).toBe("uid");
     expect(filterFields(categoryInUse(UID, "c"))[0]).toBe("uid");
     expect(filterFields(categoriesOf(UID, "incomeCategories"))[0]).toBe("uid");
   });
@@ -118,6 +118,24 @@ describe("per-builder constraints", () => {
       { op: ">=", value: "2026-08-01" },
       { op: "<=", value: "2026-08-31" },
     ]);
+  });
+
+  it("entriesInRange throws on malformed or inverted ranges (no silent empty results)", () => {
+    // Inverted: start after end
+    expect(() => entriesInRange(UID, "2026-08-31", "2026-08-01")).toThrow(
+      /entriesInRange: invalid range/,
+    );
+    // Non-YYYY-MM-DD strings
+    expect(() => entriesInRange(UID, "a", "b")).toThrow(/entriesInRange: invalid range/);
+    expect(() => entriesInRange(UID, "2026-08-01", "not-a-date")).toThrow(
+      /entriesInRange: invalid range/,
+    );
+    // Impossible calendar date (Date rolls 2026-02-30 over to 2026-03-02)
+    expect(() => entriesInRange(UID, "2026-02-30", "2026-08-31")).toThrow(
+      /entriesInRange: invalid range/,
+    );
+    // Boundary case: start == end is a valid single-day range
+    expect(() => entriesInRange(UID, "2026-08-01", "2026-08-01")).not.toThrow();
   });
 
   it("categoryInUse constrains categoryId and applies limit(1)", () => {
