@@ -17,12 +17,8 @@ import {
 import { db } from "../app";
 
 type QueryInternals = {
-  filters?: Array<{
-    field?: { segments?: string[] };
-    op?: string;
-    value?: Record<string, unknown>;
-  }>;
-  explicitOrderBy?: Array<{ field?: { segments?: string[] }; dir?: string }>;
+  filters?: { field?: { segments?: string[] }; op?: string; value?: Record<string, unknown> }[];
+  explicitOrderBy?: { field?: { segments?: string[] }; dir?: string }[];
   limit?: number;
 };
 
@@ -54,7 +50,7 @@ function hasUidFilter(q: Query, uid: string): boolean {
 }
 
 /** All filter field paths in the query, in order. */
-function filterFields(q: Query): string[] {
+function filterFields(q: Query): (string | null)[] {
   return (internals(q).filters ?? []).map(filterField);
 }
 

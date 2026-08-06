@@ -13,8 +13,8 @@
 | uid-scoped Firestore queries | INTEGRATE | Every builder in `src/firebase/queries.ts` starts with `where("uid","==",uid)` (NFR-01, unit-tested via query-constraint inspection) |
 | Firestore writes | OPT-OUT | Phase 3 (ENTR-05) — entries/categories writes land with the entry form |
 | Offline cache | OPT-OUT | N/A — memory cache only: the durable cache is IndexedDB-only and fails in Expo Go; session-scoped offline accepted, durable offline deferred (OFFL-01, v2) |
-| Rules deployment | INTEGRATE | `deploy/firestore.rules` (backend-schema.md verbatim + approved `amountCents is int` hardening) deployed via Firebase console (NFR-06) |
-| Composite index creation | INTEGRATE | `deploy/composite-index.md` — `entries: type ASC, date DESC` console artifact backing `entriesByType` |
+| Rules deployment | INTEGRATE | `deploy/firestore.rules` (backend-schema.md verbatim) — artifact console-ready (NFR-06); **console deployment DEFERRED** by 01-03 Task 3 user decision (option-c) |
+| Composite index creation | INTEGRATE | `deploy/composite-index.md` — `entries: type ASC, date DESC` console artifact backing `entriesByType`; **console creation DEFERRED** by 01-03 Task 3 user decision (option-c) |
 
 ## Not Yet Touched (later phases)
 
