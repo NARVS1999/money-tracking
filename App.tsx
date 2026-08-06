@@ -1,52 +1,49 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from './src/firebase/app';
-import { colors } from './src/theme/tokens';
+// App shell — SafeAreaProvider > AuthProvider > RootNavigator.
+// Root conditional stack (01-RESEARCH.md Pattern 2): restoring ->
+// LoadingScreen (outside NavigationContainer); signedOut -> SignIn;
+// signedIn -> MainTabs. The gate renders purely from AuthProvider context
+// (onAuthStateChanged) — no manual navigation on sign-in success, no back
+// path from MainTabs to SignIn.
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
+import LoadingScreen from "./src/screens/LoadingScreen";
+import SignInScreen from "./src/screens/SignInScreen";
+import MainTabs from "./src/screens/MainTabs";
 
-// Auth gate skeleton (01-01 tracer): proves the Firebase wiring end-to-end.
-// The gate structure and firebase wiring are production code; the two leaf
-// views below are placeholders — 01-02 replaces them with SignInScreen /
-// MainTabs without architectural change.
-export default function App() {
-  const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+const Stack = createNativeStackNavigator();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setInitializing(false);
-    });
-    return unsubscribe;
-  }, []);
+function RootNavigator() {
+  const { user, initializing } = useAuth();
 
   if (initializing) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
+    // Centered ActivityIndicator on the background token — never a branded
+    // splash, never a Sign In flash over a restored session (AUTH-02).
+    return <LoadingScreen />;
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      <Text style={styles.leaf}>{user ? 'Signed in' : 'Signed out'}</Text>
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        ) : (
+          <Stack.Screen name="SignIn" component={SignInScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  leaf: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
+  );
+}
