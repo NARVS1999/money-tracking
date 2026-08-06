@@ -1,10 +1,10 @@
 /**
- * CategoriesProvider unit tests (RED phase — all tests fail before
- * CategoriesProvider.tsx is created).
+ * CategoriesProvider unit tests — mocks firebase/firestore, AuthProvider, and
+ * queries to assert behavior of addCategory, deleteCategory, usageMap, listener
+ * lifecycle, and the useCategories hook guard.
  *
- * Mock strategy: jest.mock firebase/firestore (onSnapshot/addDoc/deleteDoc/getDocs),
- * AuthProvider (useAuth), and queries (query builders). Each test asserts behavior,
- * not Firestore internals.
+ * React 19 + react-test-renderer: initial renderer.create MUST be wrapped in
+ * act() or child components never execute.
  */
 import React from "react";
 import { View, Text } from "react-native";
@@ -14,8 +14,8 @@ import renderer, { act } from "react-test-renderer";
 // Mocks — must be BEFORE any imports of the modules under test
 // ---------------------------------------------------------------------------
 
-// Captured onSnapshot callbacks keyed by a "subscription key" so tests can
-// fire the expense/income/entries snapshots independently.
+// Captured onSnapshot callbacks keyed by query tag so tests can fire the
+// expense/income/entries snapshots independently.
 const onSnapshotMocks: Record<string, (snap: any) => void> = {};
 const mockUnsubscribe = jest.fn();
 
@@ -24,57 +24,75 @@ const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
 const mockGetDocs = jest.fn();
 const mockTimestampNow = jest.fn(() => ({ seconds: 0, nanoseconds: 0 }));
 
-// onSnapshot returns an unsubscribe function and captures the callback.
-// We use unique query id strings to differentiate the three subscriptions.
 const mockOnSnapshot = jest.fn((_query: any, observerOrNext: any) => {
-  // Firestore onSnapshot accepts both (query, observer) and (query, onNext).
   const callback =
     typeof observerOrNext === "function"
       ? observerOrNext
       : observerOrNext?.next ?? (() => {});
-  // Stash the callback against a tag on the query so tests can fire it.
   const tag = (_query as any)?._tag ?? "unknown";
   onSnapshotMocks[tag] = callback;
   return mockUnsubscribe;
 });
 
 jest.mock("firebase/firestore", () => ({
+  // @ts-expect-error – spread of any[] is intentional for mock forwarding
   onSnapshot: (...args: any[]) => mockOnSnapshot(...args),
   addDoc: (...args: any[]) => mockAddDoc(...args),
   deleteDoc: (...args: any[]) => mockDeleteDoc(...args),
   getDocs: (...args: any[]) => mockGetDocs(...args),
   Timestamp: { now: () => mockTimestampNow() },
-  collection: (db: any, path: string) => ({ _tag: path }),
-  doc: (db: any, path: string) => ({ _tag: path }),
+  collection: (_db: any, path: string) => ({ _tag: path }),
+  doc: function (_db: any, ...segments: string[]) { return { _tag: segments.join("/") }; },
+  initializeFirestore: jest.fn(() => ({ _tag: "db" })),
 }));
 
-// Controlled useAuth — tests can change the return value between renders.
+jest.mock("../../firebase/config", () => ({ firebaseConfig: {} }));
+
+jest.mock("firebase/app", () => ({
+  initializeApp: jest.fn(() => ({ name: "mock" })),
+}));
+
+jest.mock("@firebase/auth", () => ({
+  initializeAuth: jest.fn(() => ({ _tag: "auth" })),
+  getReactNativePersistence: jest.fn(() => ({ _tag: "persistence" })),
+}));
+
 let mockUser: any = { uid: "user-1", email: "a@b.com" };
 
 jest.mock("../../auth/AuthProvider", () => ({
   useAuth: () => ({ user: mockUser, initializing: false }),
 }));
 
-// Query builders return tagged objects so addCategory/deleteCategory pass
-// identifiable refs to addDoc / deleteDoc / getDocs.
 jest.mock("../../firebase/queries", () => ({
   categoriesOf: (_uid: string, kind: string) => ({ _tag: kind }),
   entriesBase: (_uid: string) => ({ _tag: "entries" }),
-  categoryInUse: (_uid: string, _categoryId: string) => ({
-    _tag: "categoryInUse",
-  }),
+  categoryInUse: (_uid: string, _categoryId: string) => ({ _tag: "categoryInUse" }),
 }));
 
 // ---------------------------------------------------------------------------
-// Import the module under test (after mocks are in place)
+// Module under test
 // ---------------------------------------------------------------------------
 import { CategoriesProvider, useCategories } from "../CategoriesProvider";
+import type { CategoriesContextValue } from "../CategoriesProvider";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Convenience: fire the expenseCategories onSnapshot with given docs. */
+/** Module-level slot so child components can stash the context value. */
+let latestContext: CategoriesContextValue | null = null;
+
+/** Renders as a child of CategoriesProvider and stashes the context value. */
+function ContextCapture() {
+  latestContext = useCategories();
+  return <Text>ok</Text>;
+}
+
+function ctx(): CategoriesContextValue {
+  if (!latestContext) throw new Error("Context not captured — did the render succeed?");
+  return latestContext;
+}
+
 function fireExpenseSnapshot(docs: Array<{ id: string; name: string }>) {
   const cb = onSnapshotMocks["expenseCategories"];
   if (!cb) throw new Error("expenseCategories onSnapshot not subscribed");
@@ -86,19 +104,6 @@ function fireExpenseSnapshot(docs: Array<{ id: string; name: string }>) {
   });
 }
 
-/** Convenience: fire the incomeCategories onSnapshot with given docs. */
-function fireIncomeSnapshot(docs: Array<{ id: string; name: string }>) {
-  const cb = onSnapshotMocks["incomeCategories"];
-  if (!cb) throw new Error("incomeCategories onSnapshot not subscribed");
-  cb({
-    docs: docs.map((d) => ({
-      id: d.id,
-      data: () => ({ name: d.name, createdAt: mockTimestampNow() }),
-    })),
-  });
-}
-
-/** Convenience: fire the entries onSnapshot with given categoryId maps. */
 function fireEntriesSnapshot(entries: Array<{ categoryId: string }>) {
   const cb = onSnapshotMocks["entries"];
   if (!cb) throw new Error("entries onSnapshot not subscribed");
@@ -111,51 +116,45 @@ function fireEntriesSnapshot(entries: Array<{ categoryId: string }>) {
 }
 
 /**
- * Provider wrapper that exposes the context value via a child render-prop so
- * tests can read state directly instead of spelunking component trees.
+ * Mount CategoriesProvider + ContextCapture inside act().
+ * The onSnapshot side-effect fires synchronously in the mock (callback is
+ * captured but state is not updated until the callback is explicitly fired).
+ * For the "empty map" test, use this directly. For tests that need
+ * snapshot data, fire the callback separately inside act().
  */
-function ProviderWithCapture({
-  onValue,
-}: {
-  onValue: (v: ReturnType<typeof useCategories>) => void;
-}) {
-  return (
-    <CategoriesProvider>
-      <Capture onValue={onValue} />
-    </CategoriesProvider>
-  );
+function mountProvider() {
+  let root: any;
+  act(() => {
+    root = renderer.create(
+      <CategoriesProvider>
+        <ContextCapture />
+      </CategoriesProvider>,
+    );
+  });
+  return root;
 }
 
-function Capture({
-  onValue,
-}: {
-  onValue: (v: ReturnType<typeof useCategories>) => void;
-}) {
-  const value = useCategories();
-  onValue(value);
-  return <Text>child</Text>;
-}
+// ---------------------------------------------------------------------------
+// Setup
+// ---------------------------------------------------------------------------
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  Object.keys(onSnapshotMocks).forEach((k) => delete onSnapshotMocks[k]);
+  mockUser = { uid: "user-1", email: "a@b.com" };
+  latestContext = null;
+});
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-beforeEach(() => {
-  jest.clearAllMocks();
-  // Reset captured callbacks
-  Object.keys(onSnapshotMocks).forEach((k) => delete onSnapshotMocks[k]);
-  mockUser = { uid: "user-1", email: "a@b.com" };
-});
-
-// --- addCategory -----------------------------------------------------------
-
 describe("addCategory", () => {
   it("calls addDoc with uid, trimmed name, createdAt (success)", async () => {
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
-      await ctx.addCategory("expenseCategories", "  Food  ");
+      await ctx().addCategory("expenseCategories", "  Food  ");
     });
 
     expect(mockAddDoc).toHaveBeenCalledTimes(1);
@@ -167,19 +166,17 @@ describe("addCategory", () => {
   });
 
   it("silently no-ops on blank input (whitespace only)", async () => {
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
-      await ctx.addCategory("expenseCategories", "   ");
+      await ctx().addCategory("expenseCategories", "   ");
     });
 
     expect(mockAddDoc).not.toHaveBeenCalled();
   });
 
   it("throws 'Already exists' on case-insensitive trimmed duplicate", async () => {
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     // Seed the expenseCategories state
     await act(async () => {
@@ -187,37 +184,32 @@ describe("addCategory", () => {
     });
 
     await act(async () => {
-      await expect(ctx.addCategory("expenseCategories", "  food  ")).rejects.toThrow(
-        "Already exists",
-      );
+      await expect(
+        ctx().addCategory("expenseCategories", "  food  "),
+      ).rejects.toThrow("Already exists");
     });
     expect(mockAddDoc).not.toHaveBeenCalled();
   });
 
   it("silently no-ops when user is null (not signed in)", async () => {
     mockUser = null;
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
-      // Should not throw — just returns early
-      await ctx.addCategory("expenseCategories", "Food");
+      await ctx().addCategory("expenseCategories", "Food");
     });
 
     expect(mockAddDoc).not.toHaveBeenCalled();
   });
 });
 
-// --- deleteCategory ---------------------------------------------------------
-
 describe("deleteCategory", () => {
   it("deletes unused category (getDocs returns empty)", async () => {
     mockGetDocs.mockResolvedValue({ empty: true });
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
-      await ctx.deleteCategory("expenseCategories", "cat-to-delete");
+      await ctx().deleteCategory("expenseCategories", "cat-to-delete");
     });
 
     expect(mockGetDocs).toHaveBeenCalledTimes(1);
@@ -228,12 +220,11 @@ describe("deleteCategory", () => {
 
   it("throws 'Category is in use' and does NOT delete", async () => {
     mockGetDocs.mockResolvedValue({ empty: false });
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
       await expect(
-        ctx.deleteCategory("incomeCategories", "in-use-cat"),
+        ctx().deleteCategory("incomeCategories", "in-use-cat"),
       ).rejects.toThrow("Category is in use");
     });
 
@@ -243,11 +234,10 @@ describe("deleteCategory", () => {
 
   it("silently no-ops when user is null", async () => {
     mockUser = null;
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
-      await ctx.deleteCategory("expenseCategories", "any-cat");
+      await ctx().deleteCategory("expenseCategories", "any-cat");
     });
 
     expect(mockGetDocs).not.toHaveBeenCalled();
@@ -255,12 +245,9 @@ describe("deleteCategory", () => {
   });
 });
 
-// --- usageMap derivation ----------------------------------------------------
-
 describe("usageMap", () => {
   it("derives correct per-category counts from entries snapshot", async () => {
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+    mountProvider();
 
     await act(async () => {
       fireEntriesSnapshot([
@@ -270,64 +257,67 @@ describe("usageMap", () => {
       ]);
     });
 
-    expect(ctx.usageMap).toBeInstanceOf(Map);
-    expect(ctx.usageMap.get("A")).toBe(2);
-    expect(ctx.usageMap.get("B")).toBe(1);
-    expect(ctx.usageMap.size).toBe(2);
+    expect(ctx().usageMap).toBeInstanceOf(Map);
+    expect(ctx().usageMap.get("A")).toBe(2);
+    expect(ctx().usageMap.get("B")).toBe(1);
+    expect(ctx().usageMap.size).toBe(2);
   });
 
-  it("starts as an empty Map before entries snapshot", async () => {
-    let ctx: any = null;
-    renderer.create(<ProviderWithCapture onValue={(v) => (ctx = v)} />);
+  it("starts as an empty Map before entries snapshot", () => {
+    mountProvider();
 
-    expect(ctx.usageMap).toBeInstanceOf(Map);
-    expect(ctx.usageMap.size).toBe(0);
+    expect(ctx().usageMap).toBeInstanceOf(Map);
+    expect(ctx().usageMap.size).toBe(0);
   });
 });
 
-// --- listener lifecycle -----------------------------------------------------
-
 describe("listener lifecycle", () => {
   it("unsubscribes all three listeners when user changes to null", async () => {
-    // Mount with a user → three subscriptions created
     mockUser = { uid: "user-1" };
-    const wrapper = renderer.create(
-      <ProviderWithCapture onValue={() => {}} />,
-    );
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <CategoriesProvider>
+          <ContextCapture />
+        </CategoriesProvider>,
+      );
+    });
 
-    // Verify subscriptions were created
     expect(mockOnSnapshot).toHaveBeenCalledTimes(3);
 
     // Sign out
     mockUser = null;
     await act(async () => {
-      wrapper.update(
-        <ProviderWithCapture onValue={() => {}} />,
+      root.update(
+        <CategoriesProvider>
+          <ContextCapture />
+        </CategoriesProvider>,
       );
     });
 
-    // All three unsubscribes should have been called
     expect(mockUnsubscribe).toHaveBeenCalledTimes(3);
   });
 });
 
-// --- hook guard -------------------------------------------------------------
-
 describe("useCategories guard", () => {
   it("throws when called outside CategoriesProvider", () => {
+    // React 19: render-phase errors propagate through act(), not
+    // renderer.create directly. Assert on the act() boundary.
     function BrokenComponent() {
       useCategories();
       return <View />;
     }
 
-    // Suppress the expected console.error from React for this test
-    const prevConsoleError = console.error;
+    // Suppress the expected console.error from React error boundary
+    const prev = console.error;
     console.error = jest.fn();
 
     expect(() => {
-      renderer.create(<BrokenComponent />);
+      act(() => {
+        renderer.create(<BrokenComponent />);
+      });
     }).toThrow("useCategories must be used within CategoriesProvider");
 
-    console.error = prevConsoleError;
+    console.error = prev;
   });
 });
