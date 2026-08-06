@@ -80,7 +80,8 @@ match /users/{uid} {
 match /entries/{id} {
   allow read, update, delete: if resource.data.uid == request.auth.uid;
   allow create: if request.auth != null
-                 && request.resource.data.uid == request.auth.uid;
+                 && request.resource.data.uid == request.auth.uid
+                 && request.resource.data.amountCents is int;
 }
 
 match /expenseCategories/{id} {

@@ -1,8 +1,9 @@
 // Firestore security rules — deploy verbatim via Firebase console
 // (Firestore Database -> Rules). Source: backend-schema.md Security rules
 // section (lines 64-93). NFR-06: rules are the server-side enforcement
-// point for uid scoping and isDefault immutability. The match blocks below
-// are byte-faithful to backend-schema.md — do not alter them without
+// point for uid scoping, isDefault immutability, and the integer-cents
+// invariant (NFR-03). The match blocks below are byte-faithful to
+// backend-schema.md — do not alter them without
 // updating the schema in the same change. The incomeCategories block is
 // fully expanded here and in backend-schema.md: the schema's original
 // comment shorthand ("identical to expenseCategories") is NOT deploy-safe —
@@ -24,7 +25,8 @@ match /users/{uid} {
 match /entries/{id} {
   allow read, update, delete: if resource.data.uid == request.auth.uid;
   allow create: if request.auth != null
-                 && request.resource.data.uid == request.auth.uid;
+                 && request.resource.data.uid == request.auth.uid
+                 && request.resource.data.amountCents is int;
 }
 
 match /expenseCategories/{id} {
