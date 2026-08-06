@@ -87,8 +87,14 @@ match /expenseCategories/{id} {
                  && request.resource.data.uid == request.auth.uid;
 }
 
-match /incomeCategories/{id} { /* identical to expenseCategories */ }
+match /incomeCategories/{id} {
+  allow read, update, delete: if resource.data.uid == request.auth.uid;
+  allow create: if request.auth != null
+                 && request.resource.data.uid == request.auth.uid;
+}
 ```
+
+Note: the `incomeCategories` block is written in full (not as the "identical to expenseCategories" shorthand) — a comment-only match block **denies all access**, so the shorthand is not deploy-safe.
 
 Note: the `users` delete rule is the cascade's Firestore side — an account's own doc is removable, and deletion of the **default** account's doc is blocked only by app logic (its auth account would still exist; a console admin can always delete anything — this protection is in-app by design).
 

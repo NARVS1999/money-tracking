@@ -1,17 +1,12 @@
 // Firestore security rules — deploy verbatim via Firebase console
-// (Firestore Database -> Rules). Source: backend-schema.md lines 68-91.
-// NFR-06: rules are the server-side enforcement point for uid scoping and
-// isDefault immutability. The match blocks below are byte-faithful to
-// backend-schema.md — do not alter them. The only approved variation is the
-// amountCents is int hardening line on the entries create rule, which was
-// NOT approved (01-03 Task 3 deferred) — append it only if the human
-// approves it in a later phase.
-//
-// ⚠ DEPLOY-TIME NOTE: `match /incomeCategories/{id}` below is backend-schema.md's
-// shorthand ("identical to expenseCategories"). A comment-only match block DENIES
-// all access. Before pasting into the console, expand it to the full
-// expenseCategories allow-set (read/update/delete on resource.data.uid ==
-// request.auth.uid; create with the same guard) so income categories work.
+// (Firestore Database -> Rules). Source: backend-schema.md Security rules
+// section (lines 64-93). NFR-06: rules are the server-side enforcement
+// point for uid scoping and isDefault immutability. The match blocks below
+// are byte-faithful to backend-schema.md — do not alter them without
+// updating the schema in the same change. The incomeCategories block is
+// fully expanded here and in backend-schema.md: the schema's original
+// comment shorthand ("identical to expenseCategories") is NOT deploy-safe —
+// a comment-only match block DENIES all access to income categories.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -36,6 +31,10 @@ match /expenseCategories/{id} {
                  && request.resource.data.uid == request.auth.uid;
 }
 
-match /incomeCategories/{id} { /* identical to expenseCategories */ }
+match /incomeCategories/{id} {
+  allow read, update, delete: if resource.data.uid == request.auth.uid;
+  allow create: if request.auth != null
+                 && request.resource.data.uid == request.auth.uid;
+}
   }
 }
