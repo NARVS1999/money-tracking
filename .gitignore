@@ -34,7 +34,9 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -42,3 +44,21 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase config (contains real API keys — NEVER commit)
+src/firebase/config.ts
+
+# Firebase CLI config
+.firebaserc
+firebase.json
+firestore.rules
+firestore.indexes.json
+
+# Local agent / editor config
+.agents/
+.claude/
+.opencode/
+skills-lock.json
+
+# Logs
+*.log
