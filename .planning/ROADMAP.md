@@ -36,17 +36,22 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A signed-in user's ledger is uid-scoped: queries carry a `uid` filter and the deployed security rules reject cross-account access (verified with a second test account)
   5. Amounts enter/leave as integer cents formatted via `money.js` only, and dates are local `"YYYY-MM-DD"` strings (no UTC slicing) — spot-checked in the entry form and console
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans executed
 
 Plans:
+
+- [x] 01-01-PLAN.md
+- [x] 01-02-PLAN.md
+- [x] 01-03-PLAN.md
+
 **Wave 1**
 
-- [ ] 01-01: Expo SDK 57 bootstrap + Firebase init — `firebase` ^12 JS SDK, AsyncStorage 2.2.0 auth persistence via `initializeAuth`, memory-cache Firestore (no `persistentLocalCache`), `expo-file-system/legacy` import decision
+- [x] 01-01: Expo SDK 57 bootstrap + Firebase init — `firebase` ^12 JS SDK, AsyncStorage 2.2.0 auth persistence via `initializeAuth`, memory-cache Firestore (no `persistentLocalCache`), `expo-file-system/legacy` import decision
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02: AuthProvider + Sign In screen + auth gate — `onAuthStateChanged` gating, inline credential errors, session persistence across restarts
-- [ ] 01-03: `money.js` + `dates.js` utils, centralized uid-scoped query builders, Firestore security rules + composite index (`type ASC, date DESC`) deployment
+- [x] 01-02: AuthProvider + Sign In screen + auth gate — `onAuthStateChanged` gating, inline credential errors, session persistence across restarts
+- [x] 01-03: `money.js` + `dates.js` utils, centralized uid-scoped query builders, Firestore security rules + composite index (`type ASC, date DESC`) deployment
 
 ### Phase 2: Categories
 
@@ -161,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Not started | - |
+| 1. Foundation | 3/3 | In Progress|  |
 | 2. Categories | 0/2 | Not started | - |
 | 3. Entries | 0/3 | Not started | - |
 | 4. Summary | 0/2 | Not started | - |
