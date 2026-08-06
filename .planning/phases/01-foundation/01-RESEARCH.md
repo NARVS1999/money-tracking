@@ -573,20 +573,23 @@ match /entries/{id} {
 | A6 | The user has a Google account and can create the Firebase project (console steps are manual) | Open Questions | Setup is a hard prerequisite for AUTH-01 device testing; code can proceed with placeholder config until credentials land |
 | A7 | Test-time introspection of Firestore query constraints (`q._query` internals) remains stable across firebase 12.x | Validation Architecture | If internals shift, fall back to Firestore emulator tests or manual 2-account verification — low impact for this phase |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Firebase project credentials** — What are the real `firebaseConfig` values?
    - What we know: the shape (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId) and that constants live in `src/firebase/config.ts` (CONTEXT).
    - What's unclear: actual values; the user must create the project and register a web app in the console.
    - Recommendation: order tasks so all non-config code is built and unit-tested with a placeholder config; deploy rules + seed account + insert real config as a human step before device verification. Flag `checkpoint:human-verify` on config insertion if credentials aren't available at plan time.
+   - **RESOLVED** → 01-01-PLAN Task 2 `checkpoint:decision` gate (Firebase project config) covers insertion as a blocking human decision before device verification.
 
-2. **Rules hardening: `amountCents is int` check** — Add `&& request.resource.data.amountCents is int` to the entries create rule (one line, PITFALLS.md Security Mistakes)? 
+2. **Rules hardening: `amountCents is int` check** — Add `&& request.resource.data.amountCents is int` to the entries create rule (one line, PITFALLS.md Security Mistakes)?
    - What we know: backend-schema.md rules are correct for Phase 1 scope; int-check is cheap hardening for Phase 3.
    - Recommendation: add it now while touching rules — no downside, prevents float drift reaching the DB. Planner should include in the rules file.
+   - **RESOLVED** → 01-03-PLAN Task 3 (rules/index deployment) offers the hardening as the recommended option-b of the checkpoint gate.
 
 3. **Firestore emulator testing** — Use the emulator for queries.ts tests (clean) or Node-runs-against-internals (fast)?
    - What we know: firebase/firestore runs in Node; asserting the uid filter via internal `_query` fields is fast but semi-private; the emulator is the canonical tool but adds setup weight.
    - Recommendation: Phase 1 uses internal-field assertions (fast, sufficient to prove the uid clause exists); revisit emulator-based rule tests if a later phase needs them.
+   - **RESOLVED** → 01-03-PLAN Task 2 uses internal-field assertions (`_query` internals) per this recommendation.
 
 ## Environment Availability
 
