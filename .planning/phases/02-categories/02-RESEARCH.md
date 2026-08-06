@@ -651,22 +651,22 @@ useEffect(() => {
 
 **If this table is empty:** All claims in this research were verified or cited — no user confirmation needed. *(This table has entries — the 3 assumptions above are low-risk and require no pre-execution confirmation, but are documented for traceability.)*
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Swipeable right-action width**
    - What we know: Standard pattern is ~75–80px for single-action swipe reveals on mobile. The CONTEXT decision specifies compact single-line rows at 44px touch target min.
    - What's unclear: Exact pixel width for the action panel needs visual testing on the user's phone at 44px row height. Too narrow → text clipped; too wide → feels aggressive.
-   - Recommendation: Start with 80px; adjust during device verification.
+   - RESOLVED: Start with 80px; adjust during device verification.
 
 2. **Inline input "Already exists" error display duration**
    - What we know: CONTEXT says "reject with inline error 'Already exists'".
    - What's unclear: Does the error auto-dismiss after a timeout, or stay until the user types a different input?
-   - Recommendation: Show error below the input; auto-clear on the next `onChangeText` (standard inline validation pattern). No auto-timeout — user needs to see it until they act.
+   - RESOLVED: Show error below the input; auto-clear on the next `onChangeText` (standard inline validation pattern). No auto-timeout — user needs to see it until they act.
 
 3. **SectionList performance with usage map updates on every entry snapshot**
    - What we know: `usageMap` state change triggers re-render of every rendered row. At 15–20 categories, this is negligible.
    - What's unclear: If entries grow to 1000+, does the `onSnapshot` callback building a `Map` on every change cause a visible pause?
-   - Recommendation: For the current scale (personal tracker, ~10 entries/day), this is a non-issue. Revisit if performance metrics show frame drops during Phase 3 entries testing.
+   - RESOLVED: For the current scale (personal tracker, ~10 entries/day), this is a non-issue. Revisit if performance metrics show frame drops during Phase 3 entries testing.
 
 ## Environment Availability
 

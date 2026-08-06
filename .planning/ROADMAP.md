@@ -69,8 +69,12 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 02-01-PLAN.md — TDD: CategoriesProvider — addCategory (dup check), deleteCategory (in-use guard), usageMap from entries onSnapshot
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — Tracer: CategoriesScreen — SectionList 2 groups + sticky headers + per-group inline add + Swipeable rows (in-use/delete) + live usage counts + App.tsx wiring
 
 ### Phase 3: Entries
