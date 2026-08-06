@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
+import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
 import MainTabs from "./src/screens/MainTabs";
@@ -41,8 +42,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
+        <CategoriesProvider>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </CategoriesProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
