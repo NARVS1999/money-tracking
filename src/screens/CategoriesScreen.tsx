@@ -234,7 +234,7 @@ export default function CategoriesScreen() {
         const count = usageMap.get(item.id) || 0;
         const countLabel =
           usageMap.size === 0
-            ? ""
+            ? 0
             : `${count} ${count === 1 ? "entry" : "entries"}`;
 
         return (
@@ -253,10 +253,10 @@ export default function CategoriesScreen() {
                 {item.name}
               </Text>
               <View style={styles.rowRight}>
+                <Text style={styles.swipeHint}>←</Text>
                 <Text style={styles.usageCount}>
                   {countLabel}
                 </Text>
-                <Text style={styles.swipeHint}>←</Text>
               </View>
             </View>
           </Swipeable>
