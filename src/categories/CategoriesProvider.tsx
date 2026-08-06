@@ -53,12 +53,28 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
     const unsub1 = onSnapshot(categoriesOf(uid, "expenseCategories"), (snap) => {
       setExpenseCategories(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category)),
+        snap.docs.map((d) => {
+          const data = d.data();
+          const name = typeof data.name === "string" ? data.name : "";
+          const createdAt =
+            data.createdAt instanceof Timestamp
+              ? data.createdAt
+              : Timestamp.now();
+          return { id: d.id, name, createdAt };
+        }),
       );
     });
     const unsub2 = onSnapshot(categoriesOf(uid, "incomeCategories"), (snap) => {
       setIncomeCategories(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category)),
+        snap.docs.map((d) => {
+          const data = d.data();
+          const name = typeof data.name === "string" ? data.name : "";
+          const createdAt =
+            data.createdAt instanceof Timestamp
+              ? data.createdAt
+              : Timestamp.now();
+          return { id: d.id, name, createdAt };
+        }),
       );
     });
     const unsub3 = onSnapshot(entriesBase(uid), (snap) => {
