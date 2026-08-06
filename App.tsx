@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
@@ -41,12 +42,14 @@ function RootNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <CategoriesProvider>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </CategoriesProvider>
-      </AuthProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthProvider>
+          <CategoriesProvider>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </CategoriesProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }
