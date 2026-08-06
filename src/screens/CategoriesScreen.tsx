@@ -92,62 +92,66 @@ export default function CategoriesScreen() {
 
   // ── Swipe right actions ────────────────────────────────────────
   const renderRightActions =
-    (kind: CategoryKind, item: Category, count: number) => () => {
+    (kind: CategoryKind, item: Category, count: number) => {
       if (count > 0) {
-        // In-use: visual guard only, no touch handler
-        return (
-          <View
-            style={[
-              styles.swipeAction,
-              { backgroundColor: "#E5E7EB" },
-            ]}
-          >
-            <Text
+        return function SwipeInUseAction() {
+          return (
+            <View
               style={[
-                styles.swipeActionText,
-                { color: "#6B7280" },
+                styles.swipeAction,
+                { backgroundColor: "#E5E7EB" },
               ]}
             >
-              In use
-            </Text>
-          </View>
-        );
+              <Text
+                style={[
+                  styles.swipeActionText,
+                  { color: "#6B7280" },
+                ]}
+              >
+                In use
+              </Text>
+            </View>
+          );
+        };
       }
 
-      // Unused: delete action
-      return (
-        <TouchableOpacity
-          style={[
-            styles.swipeAction,
-            { backgroundColor: colors.danger },
-          ]}
-          onPress={() => {
-            Alert.alert(
-              `Delete ${item.name}?`,
-              "This cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => {
-                    deleteCategory(kind, item.id).catch(() =>
-                      Alert.alert(
-                        "Error",
-                        "Couldn't delete category. Try again.",
-                      ),
-                    );
+      return function SwipeDeleteAction() {
+        return (
+          <TouchableOpacity
+            style={[
+              styles.swipeAction,
+              { backgroundColor: colors.danger },
+            ]}
+            onPress={() => {
+              Alert.alert(
+                `Delete ${item.name}?`,
+                "This cannot be undone.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                      deleteCategory(kind, item.id).catch(() =>
+                        Alert.alert(
+                          "Error",
+                          "Couldn't delete category. Try again.",
+                        ),
+                      );
+                    },
                   },
-                },
-              ],
-            );
-          }}
-        >
-          <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>
-            Delete
-          </Text>
-        </TouchableOpacity>
-      );
+                ],
+              );
+            }}
+          >
+            <Text
+              style={[styles.swipeActionText, { color: "#FFFFFF" }]}
+            >
+              Delete
+            </Text>
+          </TouchableOpacity>
+        );
+      };
     };
 
   // ── Render ─────────────────────────────────────────────────────
