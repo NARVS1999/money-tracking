@@ -4,6 +4,16 @@
 // permission-denied once a second account exists). Asserted via query
 // constraint internals (RESEARCH OQ3: q._query.filters), never serialized
 // strings. userDoc is a DocumentReference, not a query — exempt.
+//
+// SEMVER RISK (accepted, code review WR-06): q._query.* is an undocumented
+// private shape of @firebase/firestore. firebase is pinned to ^12.17.1
+// (package.json), so a future 12.x release that renames/reshapes these
+// internals breaks this suite with no product change — and the internals()
+// helper degrades to {} (every assertion fails) rather than failing loudly
+// as a contract change. Kept by design: OQ3 chose fast internal assertions
+// over a Firestore emulator for these builders. If a firebase 12.x bump
+// breaks the suite, migrate the query assertions to a Firestore emulator
+// (firebase emulators:exec + @firebase/rules-unit-testing) in CI.
 import type { Query } from "firebase/firestore";
 import { collection, doc } from "firebase/firestore";
 import {
