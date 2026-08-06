@@ -48,7 +48,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   const [usageMap, setUsageMap] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setExpenseCategories([]);
+      setIncomeCategories([]);
+      setUsageMap(new Map());
+      return;
+    }
     const uid = user.uid;
 
     const unsub1 = onSnapshot(categoriesOf(uid, "expenseCategories"), (snap) => {
