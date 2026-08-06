@@ -39,7 +39,7 @@ One document per logged expense or income entry.
 
 **Query patterns:**
 - Tab lists: `where type == "expense"` order by `date` desc → needs composite index `type ASC, date DESC`
-- Range export / summary: `where date >= start` and `date <= end` (any type) → single-field index on `date` (automatic)
+- Range export / summary: `where uid == X` + `where date >= start` and `date <= end` → composite index `uid ASC, date ASC` (the automatic single-field `date` index does not cover a uid-equality + date-range query)
 - Category-in-use check (blocked delete): `where categoryId == X` limit 1
 
 ### `expenseCategories` and `incomeCategories`
@@ -116,7 +116,7 @@ The default account is exempt: the Account tab blocks the flow before step 1.
 | Collection | Fields | Purpose |
 |-----------|--------|---------|
 | `entries` | `type ASC, date DESC` | Tab lists |
-| `entries` | `date ASC` | Range export/summary (automatic single-field index) |
+| `entries` | `uid ASC, date ASC` | Range export/summary (`entriesInRange`) |
 
 ## Free-tier fit
 
