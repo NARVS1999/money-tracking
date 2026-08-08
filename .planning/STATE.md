@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 5
-current_phase_name: export
-status: complete
+current_phase: 06
+current_phase_name: account-lifecycle
+status: executing
 stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-08-08T18:42:00Z"
-last_activity: 2026-08-08
-last_activity_desc: Phase 5 complete — export screen, PDF pipeline, Excel/CSV writers
+last_updated: "2026-08-08T20:14:45.765Z"
+last_activity: 2026-08-09
+last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 13
+  total_plans: 15
   completed_plans: 13
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-08)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Phase 05 — export
+**Current focus:** Phase 06 — account-lifecycle
 
 ## Current Position
 
-Phase: 5 — Export
-Plan: Complete
-Status: Complete — 3 plans in 3 waves
-Last activity: 2026-08-08 — Phase 5 complete
+Phase: 06 (account-lifecycle) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 06
+Last activity: 2026-08-09 — Phase 06 execution started
 
 Progress: [████████████████████] 13/13 plans ([██████████] 100%)
 
