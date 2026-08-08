@@ -1,6 +1,6 @@
 // EntriesProvider — single source of truth for entry data (manual-sync model).
 // Loads entries once via getDocs when user.uid becomes available; there are NO
-// onSnapshot data listeners — remote changes reach the UI only through the
+// real-time data listeners — remote changes reach the UI only through the
 // user's own writes (mirrored into local state) or an explicit sync() call
 // (wired to the header Sync button). Exposes addEntry, updateEntry,
 // deleteEntry, copyEntry, sync, and useEntries() hook.
