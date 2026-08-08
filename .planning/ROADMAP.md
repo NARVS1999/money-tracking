@@ -55,7 +55,7 @@ Plans:
 
 ### Phase 2: Categories
 
-**Goal**: User can manage their two category groups (expense/income) with inline add, usage counts, and a safe delete guard.
+**Goal**: As a user, I want to manage my expense/income categories with inline add, usage counts, and a safe delete guard, so that my ledger stays organized and no in-use category is accidentally deleted.
 **Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: CATS-01, CATS-02, CATS-03, CATS-04
