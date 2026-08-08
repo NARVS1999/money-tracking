@@ -11,6 +11,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
+import { EntriesProvider } from "./src/entries/EntriesProvider";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
 import MainTabs from "./src/screens/MainTabs";
@@ -44,10 +45,12 @@ export default function App() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthProvider>
-          <CategoriesProvider>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </CategoriesProvider>
+          <EntriesProvider>
+            <CategoriesProvider>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </CategoriesProvider>
+          </EntriesProvider>
         </AuthProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
