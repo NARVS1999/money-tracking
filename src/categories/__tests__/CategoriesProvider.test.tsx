@@ -1,7 +1,8 @@
 /**
- * CategoriesProvider unit tests — mocks firebase/firestore, AuthProvider, and
- * queries to assert behavior of addCategory, deleteCategory, usageMap, listener
- * lifecycle, and the useCategories hook guard.
+ * CategoriesProvider unit tests — mocks firebase/firestore, AuthProvider,
+ * EntriesProvider, and queries to assert behavior of the manual-sync model:
+ * one-time getDocs load, sync(), usageMap derived from EntriesProvider,
+ * addCategory, deleteCategory, and the useCategories hook guard.
  *
  * React 19 + react-test-renderer: initial renderer.create MUST be wrapped in
  * act() or child components never execute.
@@ -14,28 +15,13 @@ import renderer, { act } from "react-test-renderer";
 // Mocks — must be BEFORE any imports of the modules under test
 // ---------------------------------------------------------------------------
 
-// Captured onSnapshot callbacks keyed by query tag so tests can fire the
-// expense/income/entries snapshots independently.
-const onSnapshotMocks: Record<string, (snap: any) => void> = {};
-const mockUnsubscribe = jest.fn();
-
 const mockAddDoc = jest.fn().mockResolvedValue({ id: "new-cat-1" });
 const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
 const mockGetDocs = jest.fn();
 const mockTimestampNow = jest.fn(() => {
-  // Lazy-require the real Timestamp so instanceof works in onSnapshot callbacks
+  // Lazy-require the real Timestamp so instanceof works in fetchCategories
   const realTs = (jest.requireActual("firebase/firestore") as any).Timestamp;
   return new realTs(0, 0);
-});
-
-const mockOnSnapshot = jest.fn((_query: any, observerOrNext: any) => {
-  const callback =
-    typeof observerOrNext === "function"
-      ? observerOrNext
-      : observerOrNext?.next ?? (() => {});
-  const tag = (_query as any)?._tag ?? "unknown";
-  onSnapshotMocks[tag] = callback;
-  return mockUnsubscribe;
 });
 
 jest.mock("firebase/firestore", () => {
@@ -43,8 +29,6 @@ jest.mock("firebase/firestore", () => {
   const TimestampMock = actual.Timestamp;
   TimestampMock.now = () => mockTimestampNow();
   return {
-    // @ts-expect-error – spread of any[] is intentional for mock forwarding
-    onSnapshot: (...args: any[]) => mockOnSnapshot(...args),
     addDoc: (...args: any[]) => mockAddDoc(...args),
     deleteDoc: (...args: any[]) => mockDeleteDoc(...args),
     getDocs: (...args: any[]) => mockGetDocs(...args),
@@ -74,9 +58,16 @@ jest.mock("../../auth/AuthProvider", () => ({
   useAuth: () => ({ user: mockUser, initializing: false }),
 }));
 
+// usageMap derives from EntriesProvider entries — per-test let so each test
+// controls the entry set.
+let mockEntries: Array<{ categoryId?: string }> = [];
+
+jest.mock("../../entries/EntriesProvider", () => ({
+  useEntries: () => ({ entries: mockEntries }),
+}));
+
 jest.mock("../../firebase/queries", () => ({
   categoriesOf: (_uid: string, kind: string) => ({ _tag: kind }),
-  entriesBase: (_uid: string) => ({ _tag: "entries" }),
   categoryInUse: (_uid: string, _categoryId: string) => ({ _tag: "categoryInUse" }),
 }));
 
@@ -104,38 +95,25 @@ function ctx(): CategoriesContextValue {
   return latestContext;
 }
 
-function fireExpenseSnapshot(docs: Array<{ id: string; name: string }>) {
-  const cb = onSnapshotMocks["expenseCategories"];
-  if (!cb) throw new Error("expenseCategories onSnapshot not subscribed");
-  cb({
+/** Shape of a getDocs QuerySnapshot stub consumed by fetchCategories. */
+function catSnap(docs: Array<{ id: string; name: string }>) {
+  return {
     docs: docs.map((d) => ({
       id: d.id,
       data: () => ({ name: d.name, createdAt: mockTimestampNow() }),
     })),
-  });
-}
-
-function fireEntriesSnapshot(entries: Array<{ categoryId: string }>) {
-  const cb = onSnapshotMocks["entries"];
-  if (!cb) throw new Error("entries onSnapshot not subscribed");
-  cb({
-    docs: entries.map((e) => ({ id: "e", data: () => e })),
-    forEach(fn: (d: any) => void) {
-      entries.forEach((e) => fn({ id: "e", data: () => e }));
-    },
-  });
+  };
 }
 
 /**
- * Mount CategoriesProvider + ContextCapture inside act().
- * The onSnapshot side-effect fires synchronously in the mock (callback is
- * captured but state is not updated until the callback is explicitly fired).
- * For the "empty map" test, use this directly. For tests that need
- * snapshot data, fire the callback separately inside act().
+ * Mount CategoriesProvider + ContextCapture inside act() and flush the
+ * one-time load effect's getDocs promises. The load effect fires on mount
+ * (two getDocs calls: expenseCategories, incomeCategories), so tests that
+ * care about load behavior must prime mockGetDocs BEFORE mounting.
  */
-function mountProvider() {
+async function mountProvider() {
   let root: any;
-  act(() => {
+  await act(async () => {
     root = renderer.create(
       <CategoriesProvider>
         <ContextCapture />
@@ -151,8 +129,8 @@ function mountProvider() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  Object.keys(onSnapshotMocks).forEach((k) => delete onSnapshotMocks[k]);
   mockUser = { uid: "user-1", email: "a@b.com" };
+  mockEntries = [];
   latestContext = null;
 });
 
@@ -160,9 +138,83 @@ beforeEach(() => {
 // Tests
 // ---------------------------------------------------------------------------
 
+describe("initial load", () => {
+  it("fetches both category lists once via uid-scoped queries", async () => {
+    mockGetDocs
+      .mockResolvedValueOnce(
+        catSnap([{ id: "cat-1", name: "Food" }, { id: "cat-2", name: "Transport" }]),
+      )
+      .mockResolvedValueOnce(catSnap([{ id: "cat-3", name: "Salary" }]));
+    await mountProvider();
+
+    expect(mockGetDocs).toHaveBeenCalledTimes(2);
+    const [expenseRef, incomeRef] = mockGetDocs.mock.calls.map((c) => c[0]);
+    expect(expenseRef._tag).toBe("expenseCategories");
+    expect(incomeRef._tag).toBe("incomeCategories");
+
+    expect(ctx().expenseCategories).toHaveLength(2);
+    expect(ctx().expenseCategories.map((c) => c.name)).toEqual(["Food", "Transport"]);
+    expect(ctx().incomeCategories.map((c) => c.name)).toEqual(["Salary"]);
+  });
+});
+
+describe("sync", () => {
+  it("refetches both lists, replaces state, and flips isSyncing", async () => {
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
+    expect(ctx().isSyncing).toBe(false);
+
+    // Hold the first sync getDocs promise open so we can observe isSyncing.
+    let release!: () => void;
+    const gate = new Promise<void>((res) => { release = res; });
+    mockGetDocs
+      .mockReturnValueOnce(gate.then(() => catSnap([{ id: "new-1", name: "New" }])))
+      .mockReturnValueOnce(Promise.resolve(catSnap([{ id: "new-2", name: "Other" }])));
+
+    let syncPromise: Promise<void>;
+    act(() => { syncPromise = ctx().sync(); });
+    expect(ctx().isSyncing).toBe(true);
+
+    await act(async () => {
+      release();
+      await syncPromise;
+    });
+
+    expect(ctx().isSyncing).toBe(false);
+    expect(ctx().expenseCategories.map((c) => c.name)).toEqual(["New"]);
+    expect(ctx().incomeCategories.map((c) => c.name)).toEqual(["Other"]);
+  });
+});
+
+describe("usageMap", () => {
+  it("derives correct per-category counts from EntriesProvider entries", async () => {
+    mockEntries = [
+      { categoryId: "A" },
+      { categoryId: "B" },
+      { categoryId: "A" },
+    ];
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
+
+    expect(ctx().usageMap).toBeInstanceOf(Map);
+    expect(ctx().usageMap.get("A")).toBe(2);
+    expect(ctx().usageMap.get("B")).toBe(1);
+    expect(ctx().usageMap.size).toBe(2);
+  });
+
+  it("is empty when there are no entries", async () => {
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
+
+    expect(ctx().usageMap).toBeInstanceOf(Map);
+    expect(ctx().usageMap.size).toBe(0);
+  });
+});
+
 describe("addCategory", () => {
-  it("calls addDoc with uid, trimmed name, createdAt (success)", async () => {
-    mountProvider();
+  it("calls addDoc with uid, trimmed name, createdAt and appends to state", async () => {
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
 
     await act(async () => {
       await ctx().addCategory("expenseCategories", "  Food  ");
@@ -174,10 +226,32 @@ describe("addCategory", () => {
     expect(data.uid).toBe("user-1");
     expect(data.name).toBe("Food");
     expect(data.createdAt).toBeDefined();
+
+    // Mirrored into state immediately (visible without a sync)
+    expect(ctx().expenseCategories).toHaveLength(1);
+    expect(ctx().expenseCategories[0]).toEqual({
+      id: "new-cat-1",
+      name: "Food",
+      createdAt: mockTimestampNow(),
+    });
+  });
+
+  it("appends income categories to the income list", async () => {
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
+
+    await act(async () => {
+      await ctx().addCategory("incomeCategories", "Salary");
+    });
+
+    expect(ctx().incomeCategories).toHaveLength(1);
+    expect(ctx().incomeCategories[0].name).toBe("Salary");
+    expect(ctx().expenseCategories).toHaveLength(0);
   });
 
   it("silently no-ops on blank input (whitespace only)", async () => {
-    mountProvider();
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
 
     await act(async () => {
       await ctx().addCategory("expenseCategories", "   ");
@@ -187,12 +261,10 @@ describe("addCategory", () => {
   });
 
   it("throws 'Already exists' on case-insensitive trimmed duplicate", async () => {
-    mountProvider();
-
-    // Seed the expenseCategories state
-    await act(async () => {
-      fireExpenseSnapshot([{ id: "cat-1", name: "Food" }]);
-    });
+    mockGetDocs
+      .mockResolvedValueOnce(catSnap([{ id: "cat-1", name: "Food" }]))
+      .mockResolvedValueOnce(catSnap([]));
+    await mountProvider();
 
     await act(async () => {
       await expect(
@@ -204,7 +276,8 @@ describe("addCategory", () => {
 
   it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
-    mountProvider();
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
 
     await act(async () => {
       await expect(
@@ -217,41 +290,52 @@ describe("addCategory", () => {
 });
 
 describe("deleteCategory", () => {
-  it("deletes unused category (getDocs for uid check returns doc, inUse returns empty)", async () => {
+  it("deletes unused category and removes it from state", async () => {
     mockGetDocs
-      .mockResolvedValueOnce({ empty: false, docs: [{ id: "cat-to-delete" }] }) // uid ownership check
-      .mockResolvedValueOnce({ empty: true }); // inUse check
-    mountProvider();
+      .mockResolvedValueOnce(catSnap([{ id: "cat-to-delete", name: "Food" }]))
+      .mockResolvedValueOnce(catSnap([]));
+    await mountProvider();
 
+    // Load consumed 2 getDocs calls; guard sequence: uid ownership check
+    // passes, inUse returns empty.
+    mockGetDocs
+      .mockResolvedValueOnce({ empty: false, docs: [{ id: "cat-to-delete" }] })
+      .mockResolvedValueOnce({ empty: true });
     await act(async () => {
       await ctx().deleteCategory("expenseCategories", "cat-to-delete");
     });
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(2);
+    expect(mockGetDocs).toHaveBeenCalledTimes(4);
     expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
     const [ref] = mockDeleteDoc.mock.calls[0];
     expect(ref._tag).toBe("expenseCategories/cat-to-delete");
+    expect(ctx().expenseCategories).toHaveLength(0);
   });
 
-  it("throws 'Category is in use' and does NOT delete (uid check passes, inUse not empty)", async () => {
+  it("throws 'Category is in use' and does NOT delete", async () => {
     mockGetDocs
-      .mockResolvedValueOnce({ empty: false, docs: [{ id: "in-use-cat" }] }) // uid ownership check
-      .mockResolvedValueOnce({ empty: false }); // inUse check
-    mountProvider();
+      .mockResolvedValueOnce(catSnap([]))
+      .mockResolvedValueOnce(catSnap([{ id: "in-use-cat", name: "X" }]));
+    await mountProvider();
 
+    mockGetDocs
+      .mockResolvedValueOnce({ empty: false, docs: [{ id: "in-use-cat" }] })
+      .mockResolvedValueOnce({ empty: false });
     await act(async () => {
       await expect(
         ctx().deleteCategory("incomeCategories", "in-use-cat"),
       ).rejects.toThrow("Category is in use");
     });
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(2);
+    expect(mockGetDocs).toHaveBeenCalledTimes(4);
     expect(mockDeleteDoc).not.toHaveBeenCalled();
+    expect(ctx().incomeCategories).toHaveLength(1);
   });
 
   it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
-    mountProvider();
+    mockGetDocs.mockResolvedValue(catSnap([]));
+    await mountProvider();
 
     await act(async () => {
       await expect(
@@ -261,60 +345,6 @@ describe("deleteCategory", () => {
 
     expect(mockGetDocs).not.toHaveBeenCalled();
     expect(mockDeleteDoc).not.toHaveBeenCalled();
-  });
-});
-
-describe("usageMap", () => {
-  it("derives correct per-category counts from entries snapshot", async () => {
-    mountProvider();
-
-    await act(async () => {
-      fireEntriesSnapshot([
-        { categoryId: "A" },
-        { categoryId: "B" },
-        { categoryId: "A" },
-      ]);
-    });
-
-    expect(ctx().usageMap).toBeInstanceOf(Map);
-    expect(ctx().usageMap.get("A")).toBe(2);
-    expect(ctx().usageMap.get("B")).toBe(1);
-    expect(ctx().usageMap.size).toBe(2);
-  });
-
-  it("starts as an empty Map before entries snapshot", () => {
-    mountProvider();
-
-    expect(ctx().usageMap).toBeInstanceOf(Map);
-    expect(ctx().usageMap.size).toBe(0);
-  });
-});
-
-describe("listener lifecycle", () => {
-  it("unsubscribes all three listeners when user changes to null", async () => {
-    mockUser = { uid: "user-1" };
-    let root: any;
-    act(() => {
-      root = renderer.create(
-        <CategoriesProvider>
-          <ContextCapture />
-        </CategoriesProvider>,
-      );
-    });
-
-    expect(mockOnSnapshot).toHaveBeenCalledTimes(3);
-
-    // Sign out
-    mockUser = null;
-    await act(async () => {
-      root.update(
-        <CategoriesProvider>
-          <ContextCapture />
-        </CategoriesProvider>,
-      );
-    });
-
-    expect(mockUnsubscribe).toHaveBeenCalledTimes(3);
   });
 });
 
