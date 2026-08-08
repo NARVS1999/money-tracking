@@ -209,8 +209,31 @@ export async function exportExcel(
   fromDate: string,
   toDate: string,
 ): Promise<string> {
-  // Stub — fully implemented in Plan 05-03
-  throw new Error("Excel export not yet implemented");
+  const XLSX = await import("xlsx");
+  const data = buildExcelData(
+    entries,
+    expenseCategories,
+    incomeCategories,
+    fromDate,
+    toDate,
+  );
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  // Set column widths for readability
+  ws["!cols"] = [
+    { wch: 12 }, // Date
+    { wch: 8 }, // Type
+    { wch: 15 }, // Category
+    { wch: 15 }, // Amount
+    { wch: 30 }, // Description
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Entries");
+  const base64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const filename = generateFilename(fromDate, toDate, "xlsx");
+  await saveToFile(base64, filename, "base64");
+  return filename;
 }
 
 export async function exportCSV(
@@ -220,6 +243,17 @@ export async function exportCSV(
   fromDate: string,
   toDate: string,
 ): Promise<string> {
-  // Stub — fully implemented in Plan 05-03
-  throw new Error("CSV export not yet implemented");
+  const XLSX = await import("xlsx");
+  const data = buildExcelData(
+    entries,
+    expenseCategories,
+    incomeCategories,
+    fromDate,
+    toDate,
+  );
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const filename = generateFilename(fromDate, toDate, "csv");
+  await saveToFile(csv, filename, "utf8");
+  return filename;
 }
