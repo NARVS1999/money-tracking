@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Entries** - Expenses/Income tabs with shared entry form: add/edit/delete/copy, per-type dropdowns, session-scoped offline (completed 2026-08-08)
 - [x] **Phase 4: Summary** - Home screen current-month totals and per-category breakdown with empty state (completed 2026-08-08)
 - [ ] **Phase 5: Export** - Date-range PDF/Excel/CSV exports saved to Downloads with share-sheet fallback (HIGH risk — SAF/SheetJS)
-- [ ] **Phase 6: Account Lifecycle** - In-app account creation, cascading account deletion, default-account protection, sign out
+- [x] **Phase 6: Account Lifecycle** - In-app account creation, cascading account deletion, default-account protection, sign out (completed 2026-08-09)
 
 ## Phase Details
 
@@ -161,13 +161,16 @@ Plans:
   3. User can delete a non-default account: password reauthentication → all data gone (verified with 600+ entries: no dangling docs) → back to Sign In
   4. User can sign out from the Account tab and sign back into any account
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans executed
 **Research flag**: MEDIUM — cascade concurrency/partial-failure surface; keep the chunked loop idempotent.
 
 Plans:
 
-- [ ] 06-01: In-app account creation — sign-up, `users/{uid}` doc write, immediate sign-in to the new empty ledger
-- [ ] 06-02: Account deletion — reauth gate (disabled offline) → chunked cascade ≤500 docs/batch (entries → categories → users doc → `deleteUser()` last) → Sign In; default-account badge/guard; sign out
+- [x] 06-01-PLAN.md
+- [x] 06-02-PLAN.md
+
+- [x] 06-01: In-app account creation — sign-up, `users/{uid}` doc write, immediate sign-in to the new empty ledger
+- [x] 06-02: Account deletion — reauth gate (disabled offline) → chunked cascade ≤500 docs/batch (entries → categories → users doc → `deleteUser()` last) → Sign In; default-account badge/guard; sign out
 
 ## Progress
 
@@ -181,4 +184,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Entries | 3/3 | In Progress|  |
 | 4. Summary | 0/2 | Not started | - |
 | 5. Export | 3/3 | In Progress|  |
-| 6. Account Lifecycle | 0/2 | Not started | - |
+| 6. Account Lifecycle | 2/2 | Complete    | 2026-08-09 |
