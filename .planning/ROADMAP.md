@@ -91,11 +91,11 @@ Plans:
   4. User can edit an entry (form pre-filled, saves to the same entry), delete it after a confirmation dialog, and copy it (same category/amount/description, date reset to today, saved as a new entry with the original untouched)
   5. With the phone in airplane mode mid-session, entries still save and appear immediately; a visible indicator shows pending sync, and data reconciles when the network returns
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
 
-- [ ] 03-01-PLAN.md — EntriesProvider (uid-scoped `onSnapshot`) + Expenses/Income tabs with entry lists
+- [x] 03-01-PLAN.md — EntriesProvider (uid-scoped `onSnapshot`) + Expenses/Income tabs with entry lists
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -178,7 +178,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-08-07 |
 | 2. Categories | 2/2 | Complete    | 2026-08-08 |
-| 3. Entries | 0/3 | Not started | - |
+| 3. Entries | 1/3 | In Progress|  |
 | 4. Summary | 0/2 | Not started | - |
 | 5. Export | 0/3 | Not started | - |
 | 6. Account Lifecycle | 0/2 | Not started | - |

@@ -24,11 +24,11 @@
 
 ### Entries (ENTR)
 
-- [ ] **ENTR-01**: User can log an expense or income entry with amount, category, date, and optional description (≤200 chars)
+- [x] **ENTR-01**: User can log an expense or income entry with amount, category, date, and optional description (≤200 chars)
 - [ ] **ENTR-02**: Entry form category dropdown lists only the matching tab's categories (expense tab → expense categories)
 - [ ] **ENTR-03**: Amount input accepts up to 2 decimals (₱24.50); stored as integer cents; displayed with ₱ and thousand separators
 - [ ] **ENTR-04**: Date defaults to today; any past date selectable; future dates blocked
-- [ ] **ENTR-05**: Saved entry is visible immediately, even offline (session-scoped offline persistence; no network required mid-session)
+- [x] **ENTR-05**: Saved entry is visible immediately, even offline (session-scoped offline persistence; no network required mid-session)
 - [ ] **ENTR-06**: User can edit an entry — tapping it opens the form pre-filled; changes save back to the same entry
 - [ ] **ENTR-07**: User can delete an entry after a confirmation dialog
 - [ ] **ENTR-08**: User can copy an entry — form pre-filled with same category, amount, description, date reset to today; saves as a new entry, original untouched
@@ -102,11 +102,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | CATS-02 | Phase 2: Categories | Complete |
 | CATS-03 | Phase 2: Categories | Complete |
 | CATS-04 | Phase 2: Categories | Complete |
-| ENTR-01 | Phase 3: Entries | Pending |
+| ENTR-01 | Phase 3: Entries | Complete |
 | ENTR-02 | Phase 3: Entries | Pending |
 | ENTR-03 | Phase 3: Entries | Pending |
 | ENTR-04 | Phase 3: Entries | Pending |
-| ENTR-05 | Phase 3: Entries | Pending |
+| ENTR-05 | Phase 3: Entries | Complete |
 | ENTR-06 | Phase 3: Entries | Pending |
 | ENTR-07 | Phase 3: Entries | Pending |
 | ENTR-08 | Phase 3: Entries | Pending |
