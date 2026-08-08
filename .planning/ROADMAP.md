@@ -15,8 +15,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Expo SDK 57 + Firebase bootstrap, auth gate with persistent session, money/date utils, uid-scoped query scaffolding, security rules (completed 2026-08-07)
 - [x] **Phase 2: Categories** - Two category groups with inline add, usage counts, and in-use delete guard (completed 2026-08-08)
-- [ ] **Phase 3: Entries** - Expenses/Income tabs with shared entry form: add/edit/delete/copy, per-type dropdowns, session-scoped offline
-- [ ] **Phase 4: Summary** - Home screen current-month totals and per-category breakdown with empty state
+- [x] **Phase 3: Entries** - Expenses/Income tabs with shared entry form: add/edit/delete/copy, per-type dropdowns, session-scoped offline (completed 2026-08-08)
+- [x] **Phase 4: Summary** - Home screen current-month totals and per-category breakdown with empty state (completed 2026-08-08)
 - [ ] **Phase 5: Export** - Date-range PDF/Excel/CSV exports saved to Downloads with share-sheet fallback (HIGH risk — SAF/SheetJS)
 - [ ] **Phase 6: Account Lifecycle** - In-app account creation, cascading account deletion, default-account protection, sign out
 
@@ -118,12 +118,12 @@ Plans:
   3. A month with no entries shows an empty state ("Nothing logged this month") with an add CTA
   4. The summary updates immediately when an entry is added, edited, or deleted — no manual refresh, correct at month boundaries
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans executed
 
 Plans:
 
-- [ ] 04-01: Home screen derived summary — reduce cached entries over `monthRange()` for totals + per-category breakdown (no aggregation queries)
-- [ ] 04-02: Empty state + add CTA, month-boundary correctness, and live update verification
+- [x] 04-01: Home screen derived summary — reduce cached entries over `monthRange()` for totals + per-category breakdown (no aggregation queries)
+- [x] 04-02: Empty state + add CTA, month-boundary correctness, and live update verification
 
 ### Phase 5: Export
 
