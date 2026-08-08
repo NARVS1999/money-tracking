@@ -7,6 +7,7 @@ import IncomeScreen from "./IncomeScreen";
 import CategoriesScreen from "./CategoriesScreen";
 import ExportScreen from "./ExportScreen";
 import AccountScreen from "./AccountScreen";
+import SyncButton from "../components/SyncButton";
 
 const Tab = createBottomTabNavigator();
 
@@ -14,6 +15,7 @@ export default function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
+        headerRight: () => <SyncButton />,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
