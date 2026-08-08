@@ -30,7 +30,7 @@
 - [x] **ENTR-04**: Date defaults to today; any past date selectable; future dates blocked
 - [x] **ENTR-05**: Saved entry is visible immediately, even offline (session-scoped offline persistence; no network required mid-session)
 - [x] **ENTR-06**: User can edit an entry — tapping it opens the form pre-filled; changes save back to the same entry
-- [ ] **ENTR-07**: User can delete an entry after a confirmation dialog
+- [x] **ENTR-07**: User can delete an entry after a confirmation dialog
 - [x] **ENTR-08**: User can copy an entry — form pre-filled with same category, amount, description, date reset to today; saves as a new entry, original untouched
 
 ### Summary (SUMM)
@@ -50,7 +50,7 @@
 ### Non-Functional (NFR)
 
 - [x] **NFR-01**: Every Firestore query includes a `uid` equality filter (security rules are not filters)
-- [ ] **NFR-02**: App is fully usable with no network mid-session; Firestore listeners reconcile on reconnect
+- [x] **NFR-02**: App is fully usable with no network mid-session; Firestore listeners reconcile on reconnect
 - [x] **NFR-03**: Money computed and stored as integer cents only; formatting via a single `money.js` utility (no float math, no device-dependent `Intl` output)
 - [x] **NFR-04**: Dates computed and stored as local `"YYYY-MM-DD"` strings (no UTC-based slicing)
 - [x] **NFR-05**: All libraries are Expo Go compatible on Expo SDK 57; Firebase JS SDK ^12; AsyncStorage 2.2.0 for auth persistence; SheetJS from CDN tarball
@@ -108,7 +108,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | ENTR-04 | Phase 3: Entries | Complete |
 | ENTR-05 | Phase 3: Entries | Complete |
 | ENTR-06 | Phase 3: Entries | Complete |
-| ENTR-07 | Phase 3: Entries | Pending |
+| ENTR-07 | Phase 3: Entries | Complete |
 | ENTR-08 | Phase 3: Entries | Complete |
 | SUMM-01 | Phase 4: Summary | Pending |
 | SUMM-02 | Phase 4: Summary | Pending |
@@ -119,7 +119,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | EXPT-04 | Phase 5: Export | Pending |
 | EXPT-05 | Phase 5: Export | Pending |
 | NFR-01 | Phase 1: Foundation | Complete |
-| NFR-02 | Phase 3: Entries | Pending |
+| NFR-02 | Phase 3: Entries | Complete |
 | NFR-03 | Phase 1: Foundation | Complete |
 | NFR-04 | Phase 1: Foundation | Complete |
 | NFR-05 | Phase 1: Foundation | Complete |

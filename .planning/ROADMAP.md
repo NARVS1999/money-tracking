@@ -91,7 +91,7 @@ Plans:
   4. User can edit an entry (form pre-filled, saves to the same entry), delete it after a confirmation dialog, and copy it (same category/amount/description, date reset to today, saved as a new entry with the original untouched)
   5. With the phone in airplane mode mid-session, entries still save and appear immediately; a visible indicator shows pending sync, and data reconciles when the network returns
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 
@@ -103,7 +103,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-03-PLAN.md — Delete confirmation + offline-sync indicator (`hasPendingWrites`/`fromCache`) and `.catch()` handling on every write
+- [x] 03-03-PLAN.md — Delete confirmation + offline-sync indicator (`hasPendingWrites`/`fromCache`) and `.catch()` handling on every write
 
 ### Phase 4: Summary
 
@@ -178,7 +178,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-08-07 |
 | 2. Categories | 2/2 | Complete    | 2026-08-08 |
-| 3. Entries | 2/3 | In Progress|  |
+| 3. Entries | 3/3 | In Progress|  |
 | 4. Summary | 0/2 | Not started | - |
 | 5. Export | 0/3 | Not started | - |
 | 6. Account Lifecycle | 0/2 | Not started | - |
