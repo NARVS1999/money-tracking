@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthProvider";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 
