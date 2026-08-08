@@ -139,14 +139,14 @@ Plans:
   4. CSV export contains the same data (one row per entry + totals)
   5. Exported entries respect the date range exactly (first/last day included, outside entries excluded)
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans executed
 **Research flag**: HIGH — SAF (StorageAccessFramework via `expo-file-system/legacy`) + SheetJS CDN tarball + base64 writes are the least textbook code in the app; needs a research pass at plan time and device testing on both platforms via QR workflow.
 
 Plans:
 
-- [ ] 05-01-PLAN.md — Tracer: ExportScreen (date pickers, format buttons, validation, toasts) + tab wiring + exportPipeline skeleton + files.js SAF wrapper
-- [ ] 05-02-PLAN.md — PDF pipeline: buildPdfHtml (A4 landscape, totals, category breakdown, entry table) + expo-print printToFileAsync + file save
-- [ ] 05-03-PLAN.md — Excel + CSV: SheetJS 0.20.3 from CDN, XLSX.write base64 for .xlsx, sheet_to_csv for .csv, full export expansion
+- [x] 05-01-PLAN.md — Tracer: ExportScreen (date pickers, format buttons, validation, toasts) + tab wiring + exportPipeline skeleton + files.js SAF wrapper
+- [x] 05-02-PLAN.md — PDF pipeline: buildPdfHtml (A4 landscape, totals, category breakdown, entry table) + expo-print printToFileAsync + file save
+- [x] 05-03-PLAN.md — Excel + CSV: SheetJS 0.20.3 from CDN, XLSX.write base64 for .xlsx, sheet_to_csv for .csv, full export expansion
 
 ### Phase 6: Account Lifecycle
 
@@ -180,5 +180,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Categories | 2/2 | Complete    | 2026-08-08 |
 | 3. Entries | 3/3 | In Progress|  |
 | 4. Summary | 0/2 | Not started | - |
-| 5. Export | 0/3 | Not started | - |
+| 5. Export | 3/3 | In Progress|  |
 | 6. Account Lifecycle | 0/2 | Not started | - |

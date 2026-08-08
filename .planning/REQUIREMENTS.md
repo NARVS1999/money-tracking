@@ -41,11 +41,11 @@
 
 ### Export (EXPT)
 
-- [ ] **EXPT-01**: Export screen defaults to the current month; start and end dates selectable independently; To cannot be before From
-- [ ] **EXPT-02**: PDF export contains total expense, total income, per-category totals, and the entry list in range
-- [ ] **EXPT-03**: Excel export contains the same data, one sheet, one row per entry, with a totals row
-- [ ] **EXPT-04**: CSV export contains the same data (one row per entry + totals)
-- [ ] **EXPT-05**: Exports are saved to the phone's Downloads folder (Android) with share-sheet fallback (iOS); success confirmation shows the file name
+- [x] **EXPT-01**: Export screen defaults to the current month; start and end dates selectable independently; To cannot be before From
+- [x] **EXPT-02**: PDF export contains total expense, total income, per-category totals, and the entry list in range
+- [x] **EXPT-03**: Excel export contains the same data, one sheet, one row per entry, with a totals row
+- [x] **EXPT-04**: CSV export contains the same data (one row per entry + totals)
+- [x] **EXPT-05**: Exports are saved to the phone's Downloads folder (Android) with share-sheet fallback (iOS); success confirmation shows the file name
 
 ### Non-Functional (NFR)
 
@@ -113,11 +113,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | SUMM-01 | Phase 4: Summary | Pending |
 | SUMM-02 | Phase 4: Summary | Pending |
 | SUMM-03 | Phase 4: Summary | Pending |
-| EXPT-01 | Phase 5: Export | Pending |
-| EXPT-02 | Phase 5: Export | Pending |
-| EXPT-03 | Phase 5: Export | Pending |
-| EXPT-04 | Phase 5: Export | Pending |
-| EXPT-05 | Phase 5: Export | Pending |
+| EXPT-01 | Phase 5: Export | Complete |
+| EXPT-02 | Phase 5: Export | Complete |
+| EXPT-03 | Phase 5: Export | Complete |
+| EXPT-04 | Phase 5: Export | Complete |
+| EXPT-05 | Phase 5: Export | Complete |
 | NFR-01 | Phase 1: Foundation | Complete |
 | NFR-02 | Phase 3: Entries | Complete |
 | NFR-03 | Phase 1: Foundation | Complete |
