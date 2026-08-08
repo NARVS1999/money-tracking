@@ -79,12 +79,6 @@ export default function EntryRow({ entry, onEdit, onCopy, onDelete }: EntryRowPr
             {entry.date}
             {entry.description ? ` · ${entry.description}` : ""}
           </Text>
-          {entry.hasPendingWrites && (
-            <View style={styles.syncIndicator}>
-              <View style={styles.syncDot} />
-              <Text style={styles.syncText}>Syncing…</Text>
-            </View>
-          )}
         </View>
         <Text style={[styles.amount, { color: amountColor }]}>
           {formatCents(entry.amount)}
@@ -137,23 +131,5 @@ const styles = StyleSheet.create({
     fontSize: typography.label.size,
     fontWeight: typography.label.weight as "400",
     lineHeight: typography.label.lineHeight,
-  },
-  syncIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 2,
-  },
-  syncDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.expense,
-    marginRight: spacing.xs,
-  },
-  syncText: {
-    fontSize: typography.label.size,
-    fontWeight: typography.label.weight as "400",
-    lineHeight: typography.label.lineHeight,
-    color: colors.textSecondary,
   },
 });

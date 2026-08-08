@@ -17,7 +17,6 @@ const makeEntry = (overrides: Partial<Entry> = {}): Entry => ({
   date: "2026-08-15",
   description: "Groceries",
   createdAt: { seconds: 0, nanoseconds: 0, toDate: () => new Date() } as any,
-  hasPendingWrites: false,
   ...overrides,
 });
 
