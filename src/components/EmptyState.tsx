@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: typography.body.size,
     fontWeight: typography.body.weight as "400",
-    color: "#FFFFFF",
+    color: colors.onAccent,
     textAlign: "center",
   },
 });

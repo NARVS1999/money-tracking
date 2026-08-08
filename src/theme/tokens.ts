@@ -3,7 +3,7 @@
 export const colors = {
   background: '#F7F7F8', surface: '#FFFFFF', textPrimary: '#1A1A1A',
   textSecondary: '#6B7280', border: '#E5E7EB', income: '#16A34A',
-  expense: '#DC2626', accent: '#111827', danger: '#DC2626',
+  expense: '#DC2626', accent: '#111827', danger: '#DC2626', onAccent: '#FFFFFF',
 };
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, '2xl': 48, '3xl': 64 };
 // `as const` makes `weight` the literal '400'/'700' so styles can assign it
