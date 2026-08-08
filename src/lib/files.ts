@@ -27,6 +27,9 @@ export async function saveToFile(
   filename: string,
   encoding: "base64" | "utf8" = "utf8",
 ): Promise<void> {
+  if (!FileSystem.cacheDirectory) {
+    throw new Error("Cache directory unavailable");
+  }
   const cachePath = `${FileSystem.cacheDirectory}${filename}`;
   const encType =
     encoding === "base64"
