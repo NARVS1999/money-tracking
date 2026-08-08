@@ -1,0 +1,186 @@
+// exportPipeline.ts — export financial data to PDF, Excel, or CSV.
+// PDF: HTML → expo-print → cache → saveToFile.
+// Excel/CSV: stubs (implemented in Plan 05-03).
+import { Entry } from "../entries/EntriesProvider";
+import { Category } from "../categories/CategoriesProvider";
+import { formatCents } from "./money";
+import { saveToFile } from "./files";
+
+export function generateFilename(
+  start: string,
+  end: string,
+  ext: string,
+): string {
+  return `money-tracking-${start}-to-${end}.${ext}`;
+}
+
+export function buildPdfHtml(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): string {
+  const expenseTotal = entries
+    .filter((e) => e.type === "expense")
+    .reduce((s, e) => s + e.amount, 0);
+  const incomeTotal = entries
+    .filter((e) => e.type === "income")
+    .reduce((s, e) => s + e.amount, 0);
+
+  const categoryMap = new Map<string, string>();
+  [...expenseCategories, ...incomeCategories].forEach((c) =>
+    categoryMap.set(c.id, c.name),
+  );
+
+  const entryRows = entries
+    .map(
+      (e) => `
+    <tr>
+      <td>${e.date}</td>
+      <td>${e.type}</td>
+      <td>${categoryMap.get(e.categoryId) || "Unknown"}</td>
+      <td style="color: ${e.type === "income" ? "#16A34A" : "#DC2626"}">${formatCents(e.amount)}</td>
+      <td>${e.description || ""}</td>
+    </tr>`,
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4 landscape; margin: 1cm; }
+    body { font-family: -apple-system, sans-serif; font-size: 12px; color: #1A1A1A; }
+    h1 { font-size: 18px; margin-bottom: 8px; }
+    .summary { margin-bottom: 16px; }
+    .summary span { margin-right: 24px; }
+    .expense { color: #DC2626; }
+    .income { color: #16A34A; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #E5E7EB; padding: 6px 8px; text-align: left; }
+    th { background: #F7F7F8; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Money Tracking — ${fromDate} to ${toDate}</h1>
+  <div class="summary">
+    <span class="expense">Total Expense: ${formatCents(expenseTotal)}</span>
+    <span class="income">Total Income: ${formatCents(incomeTotal)}</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      ${entryRows || '<tr><td colspan="5" style="text-align:center">No entries in this range</td></tr>'}
+    </tbody>
+  </table>
+</body>
+</html>`;
+}
+
+export function buildExcelData(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): string[][] {
+  const categoryMap = new Map<string, string>();
+  [...expenseCategories, ...incomeCategories].forEach((c) =>
+    categoryMap.set(c.id, c.name),
+  );
+
+  const expenseTotal = entries
+    .filter((e) => e.type === "expense")
+    .reduce((s, e) => s + e.amount, 0);
+  const incomeTotal = entries
+    .filter((e) => e.type === "income")
+    .reduce((s, e) => s + e.amount, 0);
+
+  const header = ["Date", "Type", "Category", "Amount", "Description"];
+  const rows = entries.map((e) => [
+    e.date,
+    e.type,
+    categoryMap.get(e.categoryId) || "Unknown",
+    formatCents(e.amount),
+    e.description || "",
+  ]);
+  const totals = [
+    "",
+    "",
+    "TOTAL",
+    `Expense: ${formatCents(expenseTotal)} / Income: ${formatCents(incomeTotal)}`,
+    "",
+  ];
+
+  return [header, ...rows, totals];
+}
+
+export function buildCsvString(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): string {
+  const data = buildExcelData(
+    entries,
+    expenseCategories,
+    incomeCategories,
+    fromDate,
+    toDate,
+  );
+  return data
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\n");
+}
+
+export async function exportPDF(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): Promise<string> {
+  const html = buildPdfHtml(
+    entries,
+    expenseCategories,
+    incomeCategories,
+    fromDate,
+    toDate,
+  );
+  const Print = await import("expo-print");
+  const { uri } = await Print.printToFileAsync({ html });
+  const filename = generateFilename(fromDate, toDate, "pdf");
+  const FileSystem = (await import("expo-file-system/legacy")).default;
+  const content = await FileSystem.readAsStringAsync(uri);
+  await saveToFile(content, filename, "utf8");
+  return filename;
+}
+
+export async function exportExcel(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): Promise<string> {
+  // Stub — fully implemented in Plan 05-03
+  throw new Error("Excel export not yet implemented");
+}
+
+export async function exportCSV(
+  entries: Entry[],
+  expenseCategories: Category[],
+  incomeCategories: Category[],
+  fromDate: string,
+  toDate: string,
+): Promise<string> {
+  // Stub — fully implemented in Plan 05-03
+  throw new Error("CSV export not yet implemented");
+}

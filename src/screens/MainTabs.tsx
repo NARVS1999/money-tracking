@@ -5,6 +5,7 @@ import HomeScreen from "./HomeScreen";
 import ExpensesScreen from "./ExpensesScreen";
 import IncomeScreen from "./IncomeScreen";
 import CategoriesScreen from "./CategoriesScreen";
+import ExportScreen from "./ExportScreen";
 import AccountScreen from "./AccountScreen";
 
 const Tab = createBottomTabNavigator();
@@ -58,6 +59,15 @@ export default function MainTabs() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="pricetags-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Export"
+        component={ExportScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
           ),
         }}
       />
