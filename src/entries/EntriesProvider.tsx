@@ -17,6 +17,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   Timestamp,
   updateDoc,
@@ -189,6 +190,11 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
     async (id: string) => {
       if (!user) throw new Error("Not authenticated");
       try {
+        // Verify ownership before deletion (defense-in-depth)
+        const entryDoc = await getDoc(doc(db, "entries", id));
+        if (!entryDoc.exists() || entryDoc.data().uid !== user.uid) {
+          throw new Error("Entry not found");
+        }
         await deleteDoc(doc(db, "entries", id));
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Delete failed — retry?";
