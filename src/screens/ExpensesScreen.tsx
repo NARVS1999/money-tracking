@@ -14,7 +14,7 @@ import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries, type Entry } from "../entries/EntriesProvider";
 import EntryRow from "../components/EntryRow";
 import DateSectionHeader from "../components/DateSectionHeader";
-import { colors, spacing, typography } from "../theme/tokens";
+import { colors, spacing, typography, radius } from "../theme/tokens";
 
 // Group entries by date string
 function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
@@ -35,7 +35,7 @@ function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
 
 export default function ExpensesScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const { entries, isLoading, deleteEntry } = useEntries();
+  const { entries, isLoading, deleteEntry, lastError, clearError } = useEntries();
 
   const expenseEntries = useMemo(
     () => entries.filter((e) => e.type === "expense"),
@@ -121,6 +121,14 @@ export default function ExpensesScreen() {
           return null;
         }}
       />
+      {lastError && (
+        <View style={styles.errorToast}>
+          <Text style={styles.errorText}>{lastError}</Text>
+          <TouchableOpacity onPress={clearError}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <TouchableOpacity
         style={styles.fab}
         onPress={() =>
@@ -180,5 +188,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     lineHeight: 30,
+  },
+  errorToast: {
+    position: "absolute",
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    backgroundColor: colors.danger,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  errorText: {
+    fontSize: typography.body.size,
+    fontWeight: typography.body.weight as "400",
+    color: "#FFFFFF",
+    flex: 1,
+  },
+  retryText: {
+    fontSize: typography.body.size,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginLeft: spacing.md,
   },
 });
