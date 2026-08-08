@@ -4,11 +4,13 @@
 import { useMemo } from "react";
 import {
   FlatList,
+  TouchableOpacity,
   Text,
   View,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries, type Entry } from "../entries/EntriesProvider";
 import EntryRow from "../components/EntryRow";
 import DateSectionHeader from "../components/DateSectionHeader";
@@ -32,6 +34,7 @@ function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
 }
 
 export default function ExpensesScreen() {
+  const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries, isLoading } = useEntries();
 
   const expenseEntries = useMemo(
@@ -86,6 +89,14 @@ export default function ExpensesScreen() {
           return null;
         }}
       />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() =>
+          navigation.navigate("EntryForm", { mode: "add", type: "expense" })
+        }
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -115,5 +126,27 @@ const styles = StyleSheet.create({
     lineHeight: typography.label.lineHeight,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  fab: {
+    position: "absolute",
+    bottom: spacing.lg,
+    right: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabText: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    lineHeight: 30,
   },
 });

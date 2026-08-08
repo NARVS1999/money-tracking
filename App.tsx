@@ -15,6 +15,7 @@ import { EntriesProvider } from "./src/entries/EntriesProvider";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
 import MainTabs from "./src/screens/MainTabs";
+import EntryForm from "./src/components/EntryForm";
 
 const Stack = createNativeStackNavigator();
 
@@ -31,7 +32,14 @@ function RootNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen
+              name="EntryForm"
+              component={EntryForm}
+              options={{ presentation: "modal", headerShown: false }}
+            />
+          </>
         ) : (
           <Stack.Screen name="SignIn" component={SignInScreen} />
         )}
