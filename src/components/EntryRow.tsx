@@ -28,7 +28,7 @@ export default function EntryRow({ entry, onEdit, onCopy, onDelete }: EntryRowPr
     return (
       <>
         <TouchableOpacity
-          style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}
+          style={[styles.swipeAction, { backgroundColor: colors.border }]}
           onPress={() => onEdit(entry)}
         >
           <Text style={[styles.swipeActionText, { color: colors.textPrimary }]}>
@@ -36,7 +36,7 @@ export default function EntryRow({ entry, onEdit, onCopy, onDelete }: EntryRowPr
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}
+          style={[styles.swipeAction, { backgroundColor: colors.border }]}
           onPress={() => onCopy(entry)}
         >
           <Text style={[styles.swipeActionText, { color: colors.textPrimary }]}>
