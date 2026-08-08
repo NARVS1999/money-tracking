@@ -34,7 +34,7 @@ function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
 
 export default function IncomeScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const { entries, isLoading } = useEntries();
+  const { entries, isLoading, deleteEntry } = useEntries();
 
   const incomeEntries = useMemo(
     () => entries.filter((e) => e.type === "income"),
@@ -75,6 +75,10 @@ export default function IncomeScreen() {
     });
   };
 
+  const handleDelete = (id: string) => {
+    deleteEntry(id);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -109,6 +113,7 @@ export default function IncomeScreen() {
                 entry={item.entry}
                 onEdit={handleEdit}
                 onCopy={handleCopy}
+                onDelete={handleDelete}
               />
             );
           }

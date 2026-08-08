@@ -35,7 +35,7 @@ function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
 
 export default function ExpensesScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
-  const { entries, isLoading } = useEntries();
+  const { entries, isLoading, deleteEntry } = useEntries();
 
   const expenseEntries = useMemo(
     () => entries.filter((e) => e.type === "expense"),
@@ -76,6 +76,10 @@ export default function ExpensesScreen() {
     });
   };
 
+  const handleDelete = (id: string) => {
+    deleteEntry(id);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -110,6 +114,7 @@ export default function ExpensesScreen() {
                 entry={item.entry}
                 onEdit={handleEdit}
                 onCopy={handleCopy}
+                onDelete={handleDelete}
               />
             );
           }

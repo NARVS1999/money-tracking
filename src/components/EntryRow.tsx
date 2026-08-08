@@ -1,6 +1,6 @@
 // EntryRow — single entry row with category name, amount, date+description,
-// and swipeable Edit/Copy actions. Used in ExpensesScreen and IncomeScreen FlatLists.
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+// and swipeable Edit/Copy/Delete actions. Used in ExpensesScreen and IncomeScreen FlatLists.
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { colors, spacing, typography } from "../theme/tokens";
 import { formatCents } from "../lib/money";
@@ -11,9 +11,10 @@ type EntryRowProps = {
   entry: Entry;
   onEdit: (entry: Entry) => void;
   onCopy: (entry: Entry) => void;
+  onDelete: (id: string) => void;
 };
 
-export default function EntryRow({ entry, onEdit, onCopy }: EntryRowProps) {
+export default function EntryRow({ entry, onEdit, onCopy, onDelete }: EntryRowProps) {
   const { expenseCategories, incomeCategories } = useCategories();
 
   const categories =
@@ -40,6 +41,27 @@ export default function EntryRow({ entry, onEdit, onCopy }: EntryRowProps) {
         >
           <Text style={[styles.swipeActionText, { color: colors.textPrimary }]}>
             Copy
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: colors.danger }]}
+          onPress={() => {
+            Alert.alert(
+              "Delete this entry?",
+              "This entry will be permanently removed.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => onDelete(entry.id),
+                },
+              ],
+            );
+          }}
+        >
+          <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>
+            Delete
           </Text>
         </TouchableOpacity>
       </>
