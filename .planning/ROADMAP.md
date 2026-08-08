@@ -144,9 +144,9 @@ Plans:
 
 Plans:
 
-- [ ] 05-01: Export screen — date range picker, uid-scoped range query, range validation, filename confirmation flow
-- [ ] 05-02: PDF pipeline — `export.js` (range query → totals → PDF HTML) + `expo-print` `printToFileAsync` → cache → SAF copy to Downloads / share sheet (iOS)
-- [ ] 05-03: Excel + CSV writers — SheetJS 0.20.3 from CDN, `XLSX.write(..., { type: "base64" })` + `writeAsStringAsync` base64 path, `files.js` SAF wrapper (the only `Platform.OS` branch)
+- [ ] 05-01-PLAN.md — Tracer: ExportScreen (date pickers, format buttons, validation, toasts) + tab wiring + exportPipeline skeleton + files.js SAF wrapper
+- [ ] 05-02-PLAN.md — PDF pipeline: buildPdfHtml (A4 landscape, totals, category breakdown, entry table) + expo-print printToFileAsync + file save
+- [ ] 05-03-PLAN.md — Excel + CSV: SheetJS 0.20.3 from CDN, XLSX.write base64 for .xlsx, sheet_to_csv for .csv, full export expansion
 
 ### Phase 6: Account Lifecycle
 
