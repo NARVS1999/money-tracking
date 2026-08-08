@@ -3,7 +3,7 @@ status: complete
 phase: 06-account-lifecycle
 source: [06-01-SUMMARY.md, 06-02-SUMMARY.md]
 started: 2026-08-09T00:00:00Z
-updated: 2026-08-09T00:01:00Z
+updated: 2026-08-09T00:03:00Z
 ---
 
 ## Current Test
@@ -14,9 +14,7 @@ updated: 2026-08-09T00:01:00Z
 
 ### 1. End-to-end sign-up flow
 expected: Tap "Create account" on SignInScreen. Fill in Display Name, Email, Password. Tap Submit. Account created, user signed in, navigates to MainTabs.
-result: issue
-reported: "ERROR @firebase/firestore: Firestore (12.17.0): Uncaught Error in snapshot listener: FirebaseError: [code=permission-denied]: Missing or insufficient permissions."
-severity: blocker
+result: pass
 
 ### 2. Delete account flow
 expected: Tap "Delete Account" on AccountScreen. Confirmation modal appears. Enter password. Tap confirm. Account cascade-deleted, user redirected to SignInScreen.
@@ -101,8 +99,8 @@ coverage_id: D8
 ## Summary
 
 total: 15
-passed: 14
-issues: 1
+passed: 15
+issues: 0
 pending: 0
 skipped: 0
 
