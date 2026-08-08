@@ -305,7 +305,6 @@ export default function ExportScreen() {
               style={styles.toastAction}
               onPress={() => {
                 if (toast.type === "success") {
-                  // Open action — placeholder for now
                   setToast(null);
                 } else {
                   handleRetry();
@@ -313,7 +312,7 @@ export default function ExportScreen() {
               }}
             >
               <Text style={styles.toastActionText}>
-                {toast.type === "success" ? "Open" : "Retry"}
+                {toast.type === "success" ? "Dismiss" : "Retry"}
               </Text>
             </TouchableOpacity>
           </View>
