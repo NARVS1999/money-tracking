@@ -95,9 +95,15 @@ Plans:
 
 Plans:
 
-- [ ] 03-01: EntriesProvider (uid-scoped `onSnapshot`, re-subscribe per `user.uid`, unsubscribe on sign-out) + Expenses/Income tabs with entry lists
-- [ ] 03-02: Shared entry form — add/edit/copy pre-fill, per-type dropdown, integer-cents amount input, local-date picker with `maximumDate`, keyboard handling
-- [ ] 03-03: Delete confirmation + offline-sync indicator (`hasPendingWrites`/`fromCache`) and `.catch()` handling on every write
+- [ ] 03-01-PLAN.md — EntriesProvider (uid-scoped `onSnapshot`) + Expenses/Income tabs with entry lists
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Shared entry form — add/edit/copy pre-fill, per-type dropdown, integer-cents amount input, local-date picker with `maximumDate`, keyboard handling
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — Delete confirmation + offline-sync indicator (`hasPendingWrites`/`fromCache`) and `.catch()` handling on every write
 
 ### Phase 4: Summary
 
