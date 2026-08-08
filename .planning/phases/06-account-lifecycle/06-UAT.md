@@ -110,9 +110,17 @@ skipped: 0
 
 - gap_id: G-06-1
   truth: "Sign-up flow completes without Firestore permission errors"
-  status: failed
-  reason: "User reported: ERROR @firebase/firestore: Firestore (12.17.0): Uncaught Error in snapshot listener: FirebaseError: [code=permission-denied]: Missing or insufficient permissions."
+  status: resolved
+  reason: "Firestore rules checked resource.data.uid (never written) instead of path-based request.auth.uid == uid"
   severity: blocker
   test: 1
-  artifacts: []
-  missing: []
+  root_cause: "firestore.rules used resource.data.uid for reads, but signUp never wrote uid field. Fix: changed to path-based request.auth.uid == uid and added uid to signUp payload."
+  artifacts:
+    - path: "firestore.rules"
+      issue: "allow read checked resource.data.uid which was never set"
+    - path: "src/auth/AuthProvider.tsx"
+      issue: "signUp payload missing uid field"
+  missing:
+    - "Redeploy Firestore rules in Firebase console"
+  resolved_by: "debug session"
+  resolved_at: 2026-08-09
