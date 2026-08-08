@@ -1,6 +1,7 @@
-// EntryRow — single entry row with category name, amount, and date+description.
-// Used in ExpensesScreen and IncomeScreen FlatLists.
-import { View, Text, StyleSheet } from "react-native";
+// EntryRow — single entry row with category name, amount, date+description,
+// and swipeable Edit/Copy actions. Used in ExpensesScreen and IncomeScreen FlatLists.
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import { colors, spacing, typography } from "../theme/tokens";
 import { formatCents } from "../lib/money";
 import { useCategories } from "../categories/CategoriesProvider";
@@ -8,9 +9,11 @@ import type { Entry } from "../entries/EntriesProvider";
 
 type EntryRowProps = {
   entry: Entry;
+  onEdit: (entry: Entry) => void;
+  onCopy: (entry: Entry) => void;
 };
 
-export default function EntryRow({ entry }: EntryRowProps) {
+export default function EntryRow({ entry, onEdit, onCopy }: EntryRowProps) {
   const { expenseCategories, incomeCategories } = useCategories();
 
   const categories =
@@ -20,21 +23,46 @@ export default function EntryRow({ entry }: EntryRowProps) {
 
   const amountColor = entry.type === "income" ? colors.income : colors.expense;
 
+  const renderRightActions = () => {
+    return (
+      <>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}
+          onPress={() => onEdit(entry)}
+        >
+          <Text style={[styles.swipeActionText, { color: colors.textPrimary }]}>
+            Edit
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}
+          onPress={() => onCopy(entry)}
+        >
+          <Text style={[styles.swipeActionText, { color: colors.textPrimary }]}>
+            Copy
+          </Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.left}>
-        <Text style={styles.categoryName} numberOfLines={1}>
-          {categoryName}
-        </Text>
-        <Text style={styles.dateDescription} numberOfLines={1}>
-          {entry.date}
-          {entry.description ? ` · ${entry.description}` : ""}
+    <Swipeable renderRightActions={renderRightActions}>
+      <View style={styles.container}>
+        <View style={styles.left}>
+          <Text style={styles.categoryName} numberOfLines={1}>
+            {categoryName}
+          </Text>
+          <Text style={styles.dateDescription} numberOfLines={1}>
+            {entry.date}
+            {entry.description ? ` · ${entry.description}` : ""}
+          </Text>
+        </View>
+        <Text style={[styles.amount, { color: amountColor }]}>
+          {formatCents(entry.amount)}
         </Text>
       </View>
-      <Text style={[styles.amount, { color: amountColor }]}>
-        {formatCents(entry.amount)}
-      </Text>
-    </View>
+    </Swipeable>
   );
 }
 
@@ -71,5 +99,15 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
     minWidth: 44,
     textAlign: "right",
+  },
+  swipeAction: {
+    width: 80,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  swipeActionText: {
+    fontSize: typography.label.size,
+    fontWeight: typography.label.weight as "400",
+    lineHeight: typography.label.lineHeight,
   },
 });

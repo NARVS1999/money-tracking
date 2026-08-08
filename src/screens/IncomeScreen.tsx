@@ -54,6 +54,27 @@ export default function IncomeScreen() {
     return result;
   }, [sections]);
 
+  const handleEdit = (entry: Entry) => {
+    navigation.navigate("EntryForm", {
+      mode: "edit",
+      type: entry.type,
+      entryId: entry.id,
+    });
+  };
+
+  const handleCopy = (entry: Entry) => {
+    navigation.navigate("EntryForm", {
+      mode: "copy",
+      type: entry.type,
+      entryId: entry.id,
+      prefill: {
+        categoryId: entry.categoryId,
+        amount: entry.amount,
+        description: entry.description,
+      },
+    });
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -83,7 +104,13 @@ export default function IncomeScreen() {
             return <DateSectionHeader date={item.date} />;
           }
           if (item.entry) {
-            return <EntryRow entry={item.entry} />;
+            return (
+              <EntryRow
+                entry={item.entry}
+                onEdit={handleEdit}
+                onCopy={handleCopy}
+              />
+            );
           }
           return null;
         }}
