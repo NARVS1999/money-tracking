@@ -197,8 +197,10 @@ export async function exportPDF(
   const { uri } = await Print.printToFileAsync({ html });
   const filename = generateFilename(fromDate, toDate, "pdf");
   const FileSystem = (await import("expo-file-system/legacy")).default;
-  const content = await FileSystem.readAsStringAsync(uri);
-  await saveToFile(content, filename, "utf8");
+  const content = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  await saveToFile(content, filename, "base64");
   return filename;
 }
 
