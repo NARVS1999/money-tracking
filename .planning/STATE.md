@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 2
-current_phase_name: Categories
-status: executing
+current_phase: 3
+current_phase_name: Entries
+status: planning
 stopped_at: Completed 02-categories-02-PLAN.md (Categories tab E2E tracer + tests)
-last_updated: "2026-08-06T20:39:16.765Z"
-last_activity: 2026-08-07
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
+last_updated: "2026-08-08T15:23:02.415Z"
+last_activity: 2026-08-08
+last_activity_desc: Phase 2 complete, transitioned to Phase 3
 progress:
   total_phases: 2
   completed_phases: 2
@@ -20,25 +20,25 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-06)
+See: .planning/PROJECT.md (updated 2026-08-08)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Phase 01 — Foundation
+**Current focus:** Phase 3 — Entries
 
 ## Current Position
 
-Phase: 2 — Categories
+Phase: 3 — Entries
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-08-07 — Phase 01 complete, transitioned to Phase 2
+Status: Ready to plan
+Last activity: 2026-08-08 — Phase 2 complete, transitioned to Phase 3
 
-Progress: [██████████] 100%
+Progress: [████████████████████] 5/5 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 18
+- Total plans completed: 20
 - Average duration: —
 - Total execution time: —
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 | 5. Export | 3 | 0 | — |
 | 6. Account Lifecycle | 2 | 0 | — |
 | 01 | 3 | - | - |
+| 2 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase ?]: React 19 react-test-renderer requires wrapping renderer.create in act(); child components do not execute without it
 - [Phase ?]: CategoriesProvider follows AuthProvider pattern: module-level createContext(null), custom hook with null guard, useEffect subscriptions with cleanup
 - [Phase ?]: Firestore mock strategy: capture onSnapshot callbacks in Record<tag, fn>, fire from test helpers for controlled testing
+- [Phase 2]: Categories UX = two grouped SectionLists with sticky headers + per-group inline add (dup guard, blank no-op); swipe-to-delete reveals red Delete (unused) or grey In use (non-tappable) — validated via 16-pass on-device UAT (2 skips acknowledged: in-use swipe N/A until entries exist, offline error copy deferred)
+- [Phase 2]: gesture-handler pinned ~2.32.0 via `npx expo install` (Expo Go bundled), NOT npm latest — same pin rule as AsyncStorage 2.2.0
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-06T20:39:16.733Z
-Stopped at: Completed 02-categories-02-PLAN.md (Categories tab E2E tracer + tests)
+Last session: 2026-08-08
+Stopped at: Phase 2 complete — UAT 16 passed / 0 issues / 2 acknowledged skips, verification passed, security clear. Ready to plan Phase 3 (Entries).
 Resume file: None

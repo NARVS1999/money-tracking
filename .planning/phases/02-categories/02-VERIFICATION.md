@@ -1,35 +1,42 @@
 ---
 phase: 02-categories
 verified: 2026-08-07T00:00:00Z
-status: human_needed
+status: passed
 score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: "Start dev server (`npx expo start`), scan QR with Expo Go, sign in, navigate to Categories tab"
     expected: "Both 'Expense Categories' and 'Income Categories' headers are visible; empty groups show 'No expense/income categories yet' with inline add inputs accessible"
     why_human: "Visual layout — SectionList rendering with sticky headers and per-group inputs cannot be verified programmatically"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Type 'Groceries' in the Expense Categories input, press return or tap '+'; type 'groceries' (case-insensitive duplicate); type blank/whitespace and submit"
     expected: "'Groceries' appears immediately in Expense group; 'Already exists' error in danger color below input for duplicate, clears on next keystroke; blank submit is silent no-op"
     why_human: "Firestore write latency, onSnapshot update timing, error display lifecycle — all runtime behaviors not verifiable via grep/unit tests alone"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Add 10+ categories to one group, scroll the list; verify headers stay pinned"
     expected: "Sticky section headers stay pinned at the top while scrolling; inline add input scrolls with the header — always accessible"
     why_human: "SectionList sticky header scrolling behavior is platform-native and cannot be verified via unit tests"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Swipe left on an unused category (0 entries); tap 'Delete' then Cancel; swipe again and confirm Delete"
     expected: "Red 'Delete' action panel reveals at 80px width; Alert shows 'Delete {name}? This cannot be undone.'; Cancel dismisses alert and swipe retracts; Delete removes the row"
     why_human: "Swipeable gesture friction, overshoot, native feel — react-native-gesture-handler Swipeable is native-thread, not unit-testable"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Swipe left on a category with usage count > 0 (if no entries exist, verify grey panel renders correctly visually)"
     expected: "Grey '#E5E7EB' panel with 'In use' text '#6B7280' — NOT tappable, no Alert, tapping away retracts swipe"
     why_human: "In-use guard visual differentiation (grey vs red), non-tappable behavior — requires visual inspection"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Sign out from Account tab, sign back in, navigate to Categories tab"
     expected: "Categories persist from Firestore; usage counts still display correctly after sign-out/in cycle; no stale data"
     why_human: "onSnapshot re-subscription on auth state change, Firestore cache sync — end-to-end auth+data flow"
     source: "02-02-PLAN Task 3 (checkpoint:human-verify)"
+
   - test: "Repeat swipe and scroll behaviors on both Android and iOS (if both devices available)"
     expected: "Swipe friction, overshoot, and scroll feel platform-native on each"
     why_human: "Cross-platform gesture and scroll behavior — platform differences not visible in code"
@@ -40,8 +47,8 @@ gaps: []
 # Phase 2: Categories — Verification Report
 
 **Phase Goal:** User can manage their two category groups (expense/income) with inline add, usage counts, and a safe delete guard.
-**Verified:** 2026-08-07
-**Status:** human_needed
+**Verified:** 2026-08-08
+**Status:** passed
 **Re-verification:** No — initial verification
 
 ## Automated Gate Results
@@ -172,6 +179,19 @@ The automated verification confirms the code is functionally complete and all un
 6. **Cross-platform** — Android and iOS swipe/scroll feel
 
 See the `human_verification` frontmatter list for detailed test instructions (7 items derived from 02-02-PLAN Task 3).
+
+## UAT Results
+
+UAT (`02-UAT.md`) complete: **16 passed, 0 issues, 2 skipped**. Verification canonicalized to `passed` on 2026-08-08.
+
+### Acknowledged Gaps (UAT skips, accepted on 2026-08-08)
+
+| UAT Test | Status | Reason |
+|----------|--------|--------|
+| 15. Swipe-to-delete on an in-use category | skipped | N/A — no entries exist until Phase 3, so no category can be in use. Guard logic covered by automated tests (CATS-04); retest during Phase 3 verification. |
+| 16. Error display uses locked copy | skipped (deferred) | User deferred offline-error testing. Locked copy verified at code level (VERIFICATION anti-pattern #6); test when convenient. |
+
+These skips are acknowledged and non-blocking — they are NOT code defects. Phase advancement approved by user.
 
 ---
 

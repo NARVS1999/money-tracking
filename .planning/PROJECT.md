@@ -19,12 +19,11 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Manage expense and income categories separately; block deletion of categories still in use — Phase 2 (inline add + duplicate guard, live usage counts, swipe-to-delete with in-use guard)
 
 ### Active
 
 - [ ] Log expense/income entries (type, amount, category, date, optional description) that save instantly, even offline
-- [ ] Manage expense and income categories separately; block deletion of categories still in use
 - [ ] Edit and delete entries
 - [ ] Copy an entry with the date reset to today (repeating payments)
 - [ ] Current-month summary on Home: total spent, total earned, per-category breakdown
@@ -73,7 +72,7 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 | Firestore only, no local SQLite | Built-in offline persistence = local-first behavior with zero sync code (ADR-0001) | — Pending |
 | Anonymous auth → email/password accounts | Owner wants real login identity with protected default + account create/delete (ADR-0005 supersedes ADR-0002) | — Pending |
 | Amounts as integer cents | Exact math, standard currency practice, no float errors (ADR-0003) | — Pending |
-| Category deletion blocked until empty | Zero data loss; forces explicit choice; no orphaned refs (ADR-0004) | — Pending |
+| Category deletion blocked until empty | Zero data loss; forces explicit choice; no orphaned refs (ADR-0004) | Implemented Phase 2 — swipe-to-delete reveals red Delete (unused) or grey In use (non-tappable) |
 | Dates as `"YYYY-MM-DD"` strings | Timezone-safe range queries, no midnight-offset bugs | — Pending |
 | Firebase JS SDK instead of native modules | Only option that runs in Expo Go | — Pending |
 | expo-print + SheetJS for exports | Expo Go compatible, no native builds | — Pending |
@@ -97,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-06 after initialization*
+*Last updated: 2026-08-08 after Phase 2*
