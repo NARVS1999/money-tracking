@@ -45,6 +45,16 @@ export default function EntryForm() {
     return entries.find((e) => e.id === entryId) ?? null;
   }, [entries, entryId]);
 
+  // Guard: if entry was deleted while form is open, alert and go back
+  const { isLoading } = useEntries();
+  useEffect(() => {
+    if ((mode === "edit" || mode === "copy") && entryId && !existingEntry && !isLoading) {
+      Alert.alert("Entry not found", "This entry may have been deleted.", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+    }
+  }, [mode, entryId, existingEntry, isLoading, navigation]);
+
   // Form state
   const [rawAmount, setRawAmount] = useState(() => {
     if (mode === "edit" && existingEntry) {
