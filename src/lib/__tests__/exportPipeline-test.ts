@@ -96,6 +96,39 @@ describe("buildPdfHtml", () => {
     const html = buildPdfHtml([], [], [], "2026-08-01", "2026-08-31");
     expect(html).toContain("No entries in this range");
   });
+
+  it("contains per-category breakdown with category names and totals", () => {
+    const entries = [
+      makeEntry({ type: "expense", amount: 50000, categoryId: "cat1" }),
+      makeEntry({ id: "e2", type: "expense", amount: 30000, categoryId: "cat1" }),
+      makeEntry({ id: "e3", type: "expense", amount: 20000, categoryId: "cat2" }),
+    ];
+    const html = buildPdfHtml(entries, expenseCategories, incomeCategories, "2026-08-01", "2026-08-31");
+    expect(html).toContain("Category Breakdown");
+    expect(html).toContain("Food");
+    expect(html).toContain("Transport");
+    // Food total: 50000 + 30000 = 80000 = ₱ 800.00
+    expect(html).toContain("₱ 800.00");
+    // Transport total: 20000 = ₱ 200.00
+    expect(html).toContain("₱ 200.00");
+  });
+
+  it("does not show category breakdown for empty entries", () => {
+    const html = buildPdfHtml([], [], [], "2026-08-01", "2026-08-31");
+    expect(html).not.toContain("Category Breakdown");
+  });
+
+  it("contains entries from multiple categories with correct category names", () => {
+    const entries = [
+      makeEntry({ categoryId: "cat1", type: "expense", amount: 10000 }),
+      makeEntry({ id: "e2", categoryId: "cat2", type: "expense", amount: 20000 }),
+      makeEntry({ id: "e3", categoryId: "cat3", type: "income", amount: 100000 }),
+    ];
+    const html = buildPdfHtml(entries, expenseCategories, incomeCategories, "2026-08-01", "2026-08-31");
+    expect(html).toContain("Food");
+    expect(html).toContain("Transport");
+    expect(html).toContain("Salary");
+  });
 });
 
 describe("buildExcelData", () => {

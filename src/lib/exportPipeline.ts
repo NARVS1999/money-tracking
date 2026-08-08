@@ -46,6 +46,32 @@ export function buildPdfHtml(
     )
     .join("");
 
+  // Per-category breakdown
+  const categoryTotals = new Map<string, { name: string; total: number; count: number }>();
+  entries.forEach((e) => {
+    const name = categoryMap.get(e.categoryId) || "Unknown";
+    const existing = categoryTotals.get(e.categoryId);
+    if (existing) {
+      existing.total += e.amount;
+      existing.count += 1;
+    } else {
+      categoryTotals.set(e.categoryId, { name, total: e.amount, count: 1 });
+    }
+  });
+  const sortedCategories = Array.from(categoryTotals.values()).sort(
+    (a, b) => b.total - a.total,
+  );
+  const categoryBreakdownRows = sortedCategories
+    .map(
+      (c) => `
+    <tr>
+      <td>${c.name}</td>
+      <td style="text-align:right">${c.count}</td>
+      <td style="text-align:right; color: #1A1A1A">${formatCents(c.total)}</td>
+    </tr>`,
+    )
+    .join("");
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -54,6 +80,7 @@ export function buildPdfHtml(
     @page { size: A4 landscape; margin: 1cm; }
     body { font-family: -apple-system, sans-serif; font-size: 12px; color: #1A1A1A; }
     h1 { font-size: 18px; margin-bottom: 8px; }
+    h2 { font-size: 14px; margin-top: 16px; margin-bottom: 8px; }
     .summary { margin-bottom: 16px; }
     .summary span { margin-right: 24px; }
     .expense { color: #DC2626; }
@@ -69,6 +96,18 @@ export function buildPdfHtml(
     <span class="expense">Total Expense: ${formatCents(expenseTotal)}</span>
     <span class="income">Total Income: ${formatCents(incomeTotal)}</span>
   </div>
+  ${sortedCategories.length > 0 ? `
+  <h2>Category Breakdown</h2>
+  <table>
+    <thead>
+      <tr><th>Category</th><th style="text-align:right">Count</th><th style="text-align:right">Total</th></tr>
+    </thead>
+    <tbody>
+      ${categoryBreakdownRows}
+    </tbody>
+  </table>
+  ` : ""}
+  <h2>Entries</h2>
   <table>
     <thead>
       <tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th></tr>
