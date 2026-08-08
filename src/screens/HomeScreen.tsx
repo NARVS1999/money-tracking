@@ -31,14 +31,17 @@ export default function HomeScreen() {
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
 
-  // Current month range
-  const { start, end } = useMemo(() => monthRange(today()), []);
-
-  // Month label: "August 2026"
-  const monthLabel = useMemo(() => {
-    const parts = today().split("-");
+  // Current month range + label — single memo ensures they always stay in sync.
+  // Empty deps[] is correct: `today()` is deterministic within a render pass;
+  // when the month changes (midnight crossing) the user must restart the app
+  // (Expo Go limitation — no background refresh).
+  const { start, end, monthLabel } = useMemo(() => {
+    const todayStr = today();
+    const { start, end } = monthRange(todayStr);
+    const parts = todayStr.split("-");
     const monthIndex = parseInt(parts[1], 10) - 1;
-    return `${MONTH_NAMES[monthIndex]} ${parts[0]}`;
+    const monthLabel = `${MONTH_NAMES[monthIndex]} ${parts[0]}`;
+    return { start, end, monthLabel };
   }, []);
 
   // Filter entries to current month
