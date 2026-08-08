@@ -114,14 +114,15 @@ export default function ExportScreen() {
     setToDate(range.end);
   }, []);
 
-  const handleExport = useCallback(async () => {
-    if (!selectedFormat || rangeEntries.length === 0 || hasValidationError) return;
+  const handleExport = useCallback(async (formatOverride?: FormatType) => {
+    const fmt = formatOverride || selectedFormat;
+    if (!fmt || rangeEntries.length === 0 || hasValidationError) return;
     setIsExporting(true);
     try {
       const fn =
-        selectedFormat === "pdf"
+        fmt === "pdf"
           ? exportPDF
-          : selectedFormat === "excel"
+          : fmt === "excel"
             ? exportExcel
             : exportCSV;
       const filename = await fn(
@@ -253,28 +254,8 @@ export default function ExportScreen() {
                 ]}
                 onPress={() => {
                   setSelectedFormat(fmt);
-                  // Trigger export immediately on tap
-                  if (!isExporting && !hasValidationError && rangeEntries.length > 0) {
-                    setSelectedFormat(fmt);
-                    setIsExporting(true);
-                    const fn =
-                      fmt === "pdf"
-                        ? exportPDF
-                        : fmt === "excel"
-                          ? exportExcel
-                          : exportCSV;
-                    fn(rangeEntries, expenseCategories, incomeCategories, fromDate, toDate)
-                      .then((filename) =>
-                        setToast({ type: "success", message: "Saved", filename }),
-                      )
-                      .catch((e) =>
-                        setToast({
-                          type: "error",
-                          message: e instanceof Error ? e.message : "Export failed",
-                        }),
-                      )
-                      .finally(() => setIsExporting(false));
-                  }
+                  // Trigger export immediately on tap with the selected format
+                  handleExport(fmt);
                 }}
                 disabled={isExporting || hasValidationError || rangeEntries.length === 0}
                 activeOpacity={0.7}
