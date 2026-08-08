@@ -14,6 +14,7 @@ import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import { EntriesProvider } from "./src/entries/EntriesProvider";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
+import SignUpScreen from "./src/screens/SignUpScreen";
 import MainTabs from "./src/screens/MainTabs";
 import EntryForm from "./src/components/EntryForm";
 
@@ -41,7 +42,10 @@ function RootNavigator() {
             />
           </>
         ) : (
-          <Stack.Screen name="SignIn" component={SignInScreen} />
+          <>
+            <Stack.Screen name="SignIn" component={SignInScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

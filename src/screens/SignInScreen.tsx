@@ -15,12 +15,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../auth/AuthProvider";
 import { authErrorMessage } from "../auth/errors";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
+  const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -123,6 +125,13 @@ export default function SignInScreen() {
             {submitting ? "Signing in…" : "Sign in"}
           </Text>
         </Pressable>
+
+        <Pressable
+          style={styles.createAccountLink}
+          onPress={() => navigation.navigate("SignUp" as never)}
+        >
+          <Text style={styles.createAccountText}>Create account</Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -192,5 +201,14 @@ const styles = StyleSheet.create({
     lineHeight: typography.body.lineHeight,
     fontWeight: typography.body.weight,
     color: colors.surface,
+  },
+  createAccountLink: {
+    marginTop: spacing.md,
+    alignItems: "center",
+  },
+  createAccountText: {
+    fontSize: typography.body.size,
+    lineHeight: typography.body.lineHeight,
+    color: colors.textSecondary,
   },
 });
