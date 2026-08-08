@@ -123,8 +123,11 @@ describe("CategoriesScreen", () => {
     expect(findText(root, "1 entry")).toBeTruthy();
   });
 
-  // ── 4. Renders em-dash loading state ───────────────────────────
-  test("renders em-dash loading state when usageMap is empty", () => {
+  // ── 4. Hides usage counts while usageMap is empty ─────────────
+  // UI contract (02-02 Task 2, amended e3d0ca1): while usageMap is empty the
+  // per-row count renders as an empty string — the loading placeholder, not
+  // an em-dash and not "0 entries".
+  test("renders no usage count text when usageMap is empty", () => {
     mockUseCategories.mockReturnValue({
       ...defaults(),
       expenseCategories: [toCat("1", "Food")],
@@ -133,7 +136,9 @@ describe("CategoriesScreen", () => {
     });
     let root!: renderer.ReactTestRenderer;
     act(() => { root = renderer.create(<CategoriesScreen />); });
-    expect(findAllText(root, "\u2014").length).toBe(2);
+    expect(findAllText(root, "\u2014").length).toBe(0);
+    expect(findAllText(root, "entry").length).toBe(0);
+    expect(findAllText(root, "entries").length).toBe(0);
   });
 
   // ── 5. Renders empty state per group ────────────────────────────
