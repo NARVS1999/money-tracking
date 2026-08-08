@@ -10,6 +10,7 @@ import { colors, spacing, typography } from "../theme/tokens";
 import SummaryTotals from "../components/SummaryTotals";
 import CategorySection from "../components/CategorySection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import EmptyState from "../components/EmptyState";
 
 const MONTH_NAMES = [
   "January",
@@ -101,6 +102,10 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return <LoadingSkeleton />;
+  }
+
+  if (monthEntries.length === 0) {
+    return <EmptyState onAddPress={() => {}} />;
   }
 
   return (
