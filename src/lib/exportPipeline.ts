@@ -6,6 +6,14 @@ import { Category } from "../categories/CategoriesProvider";
 import { formatCents } from "./money";
 import { saveToFile } from "./files";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function generateFilename(
   start: string,
   end: string,
@@ -39,9 +47,9 @@ export function buildPdfHtml(
     <tr>
       <td>${e.date}</td>
       <td>${e.type}</td>
-      <td>${categoryMap.get(e.categoryId) || "Unknown"}</td>
+      <td>${escapeHtml(categoryMap.get(e.categoryId) || "Unknown")}</td>
       <td style="color: ${e.type === "income" ? "#16A34A" : "#DC2626"}">${formatCents(e.amount)}</td>
-      <td>${e.description || ""}</td>
+      <td>${escapeHtml(e.description || "")}</td>
     </tr>`,
     )
     .join("");
@@ -65,7 +73,7 @@ export function buildPdfHtml(
     .map(
       (c) => `
     <tr>
-      <td>${c.name}</td>
+      <td>${escapeHtml(c.name)}</td>
       <td style="text-align:right">${c.count}</td>
       <td style="text-align:right; color: #1A1A1A">${formatCents(c.total)}</td>
     </tr>`,
