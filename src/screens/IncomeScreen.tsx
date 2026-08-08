@@ -124,7 +124,7 @@ export default function IncomeScreen() {
         <View style={styles.errorToast}>
           <Text style={styles.errorText}>{lastError}</Text>
           <TouchableOpacity onPress={clearError}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>Dismiss</Text>
           </TouchableOpacity>
         </View>
       )}
