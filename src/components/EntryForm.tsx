@@ -15,6 +15,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing, typography, radius } from "../theme/tokens";
 import { formatCents, parsePesoInput } from "../lib/money";
 import { today } from "../lib/dates";
@@ -152,7 +153,7 @@ export default function EntryForm() {
         : "Copy Entry";
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -167,10 +168,14 @@ export default function EntryForm() {
       </View>
 
       <KeyboardAwareScrollView style={styles.form} contentContainerStyle={styles.formContent}>
-        {/* Amount Display */}
-        <View style={styles.amountContainer}>
+        {/* Amount Display — tappable to re-focus the hidden input */}
+        <TouchableOpacity
+          style={styles.amountContainer}
+          activeOpacity={0.6}
+          onPress={() => amountInputRef.current?.focus()}
+        >
           <Text style={styles.amountDisplay}>{displayAmount}</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Hidden amount input */}
         <TextInput
@@ -287,7 +292,7 @@ export default function EntryForm() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -343,8 +348,10 @@ const styles = StyleSheet.create({
   hiddenInput: {
     position: "absolute",
     opacity: 0,
-    height: 0,
-    width: 0,
+    // Non-zero size: Android cannot re-focus a 0x0 input after the keyboard
+    // is dismissed a couple of times ("tap works twice, then stops").
+    height: 1,
+    width: 1,
   },
   label: {
     fontSize: typography.label.size,

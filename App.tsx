@@ -8,6 +8,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
@@ -56,14 +57,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AuthProvider>
-          <EntriesProvider>
-            <CategoriesProvider>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </CategoriesProvider>
-          </EntriesProvider>
-        </AuthProvider>
+        <KeyboardProvider>
+          <AuthProvider>
+            <EntriesProvider>
+              <CategoriesProvider>
+                <StatusBar style="dark" />
+                <RootNavigator />
+              </CategoriesProvider>
+            </EntriesProvider>
+          </AuthProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

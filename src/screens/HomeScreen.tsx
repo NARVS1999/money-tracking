@@ -3,6 +3,7 @@
 // Data is derived from cached entries via monthRange() — no aggregation queries.
 import { useMemo } from "react";
 import { ScrollView, Text, View, StyleSheet } from "react-native";
+import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { monthRange, today } from "../lib/dates";
@@ -28,6 +29,7 @@ const MONTH_NAMES = [
 ];
 
 export default function HomeScreen() {
+  const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
 
@@ -108,7 +110,13 @@ export default function HomeScreen() {
   }
 
   if (monthEntries.length === 0) {
-    return <EmptyState onAddPress={() => {}} />;
+    return (
+      <EmptyState
+        onAddPress={() =>
+          navigation.navigate("EntryForm", { mode: "add", type: "expense" })
+        }
+      />
+    );
   }
 
   return (

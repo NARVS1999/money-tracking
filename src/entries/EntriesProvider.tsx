@@ -80,7 +80,9 @@ async function fetchAllEntries(uid: string): Promise<Entry[]> {
       id: d.id,
       uid,
       type,
-      amount: typeof data.amount === "number" ? data.amount : 0,
+      // Firestore field is amountCents (backend-schema.md / rules WR-04);
+      // the internal Entry type keeps the short name `amount`.
+      amount: typeof data.amountCents === "number" ? data.amountCents : 0,
       categoryId: typeof data.categoryId === "string" ? data.categoryId : "",
       date: typeof data.date === "string" ? data.date : "",
       description: typeof data.description === "string" ? data.description : "",
@@ -162,7 +164,7 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
         const docRef = await addDoc(collection(db, "entries"), {
           uid: user.uid,
           type: input.type,
-          amount: input.amount,
+          amountCents: input.amount,
           categoryId: input.categoryId,
           date: input.date,
           description: input.description,
@@ -199,7 +201,7 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
       try {
         const updateData: Record<string, unknown> = {};
         if (input.type !== undefined) updateData.type = input.type;
-        if (input.amount !== undefined) updateData.amount = input.amount;
+        if (input.amount !== undefined) updateData.amountCents = input.amount;
         if (input.categoryId !== undefined) updateData.categoryId = input.categoryId;
         if (input.date !== undefined) updateData.date = input.date;
         if (input.description !== undefined) updateData.description = input.description;
@@ -253,7 +255,7 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
         const docRef = await addDoc(collection(db, "entries"), {
           uid: user.uid,
           type: source.type,
-          amount: source.amount,
+          amountCents: source.amount,
           categoryId: source.categoryId,
           date: today(), // Copy resets date to today (ENTR-08)
           description: source.description,
