@@ -11,9 +11,12 @@ import { monthRange, today } from "../lib/dates";
 import { colors, spacing, typography, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
 import BudgetCard from "../components/BudgetCard";
+import DonutChart from "../components/DonutChart";
+import ChartLegend from "../components/ChartLegend";
 import CategorySection from "../components/CategorySection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import EmptyState from "../components/EmptyState";
+import { CHART_COLORS } from "../components/chartColors";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -91,6 +94,27 @@ export default function HomeScreen() {
       .sort((a, b) => b.cents - a.cents);
   }, [monthEntries, incomeCategories]);
 
+  // Chart data: compute percentages for legend
+  const expenseChartData = useMemo(() => {
+    const total = expenseBreakdown.reduce((s, r) => s + r.cents, 0);
+    return expenseBreakdown.map((r, i) => ({
+      name: r.name,
+      value: r.cents,
+      percent: total > 0 ? Math.round((r.cents / total) * 100) : 0,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }));
+  }, [expenseBreakdown]);
+
+  const incomeChartData = useMemo(() => {
+    const total = incomeBreakdown.reduce((s, r) => s + r.cents, 0);
+    return incomeBreakdown.map((r, i) => ({
+      name: r.name,
+      value: r.cents,
+      percent: total > 0 ? Math.round((r.cents / total) * 100) : 0,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }));
+  }, [incomeBreakdown]);
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -147,6 +171,34 @@ export default function HomeScreen() {
           <Text style={styles.quickBtnIncomeText}>+ Income</Text>
         </TouchableOpacity>
       </View>
+
+      {expenseChartData.length > 0 && (
+        <View style={styles.chartSection}>
+          <Text style={styles.chartTitle}>Expenses by Category</Text>
+          <View style={styles.chartRow}>
+            <DonutChart
+              data={expenseChartData}
+              size={120}
+              colors={CHART_COLORS}
+            />
+            <ChartLegend items={expenseChartData} />
+          </View>
+        </View>
+      )}
+
+      {incomeChartData.length > 0 && (
+        <View style={styles.chartSection}>
+          <Text style={styles.chartTitle}>Income by Category</Text>
+          <View style={styles.chartRow}>
+            <DonutChart
+              data={incomeChartData}
+              size={120}
+              colors={CHART_COLORS}
+            />
+            <ChartLegend items={incomeChartData} />
+          </View>
+        </View>
+      )}
 
       {expenseBreakdown.length > 0 && (
         <CategorySection
@@ -231,5 +283,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: colors.teal,
+  },
+  chartSection: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  chartTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  chartRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
   },
 });
