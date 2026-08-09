@@ -37,6 +37,7 @@ export default function AccountScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [budgetSaving, setBudgetSaving] = useState(false);
+  const [budgetError, setBudgetError] = useState<string | null>(null);
 
   // Loading state while userProfile fetches
   if (!userProfile) {
@@ -84,6 +85,7 @@ export default function AccountScreen() {
   const hasBudget = !!userProfile?.budgetAmount && !!userProfile?.budgetStartDate && !!userProfile?.budgetEndDate;
 
   const openBudgetForm = () => {
+    setBudgetError(null);
     if (hasBudget) {
       setBudgetAmountInput(userProfile!.budgetAmount!.toString());
       const [sy, sm, sd] = userProfile!.budgetStartDate!.split("-").map(Number);
@@ -106,13 +108,18 @@ export default function AccountScreen() {
     if (!amountCents || amountCents <= 0 || budgetSaving) return;
     const startStr = formatDateObj(budgetStartDate);
     const endStr = formatDateObj(budgetEndDate);
-    if (startStr > endStr) return;
+    if (startStr > endStr) {
+      setBudgetError("End date must be after start date");
+      return;
+    }
+    setBudgetError(null);
     setBudgetSaving(true);
     try {
       await updateBudget(amountCents, startStr, endStr);
       setShowBudgetForm(false);
-    } catch {
-      // Silently handle — budget save is non-critical
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Couldn't save budget. Try again.";
+      setBudgetError(msg);
     } finally {
       setBudgetSaving(false);
     }
@@ -290,7 +297,7 @@ export default function AccountScreen() {
             <View style={styles.modalActions}>
               <Pressable
                 style={styles.cancelButton}
-                onPress={() => setShowBudgetForm(false)}
+                onPress={() => { setShowBudgetForm(false); setBudgetError(null); }}
                 disabled={budgetSaving}
               >
                 <Text style={styles.cancelButtonLabel}>Cancel</Text>
@@ -305,6 +312,9 @@ export default function AccountScreen() {
                 </Text>
               </Pressable>
             </View>
+            {budgetError ? (
+              <Text style={styles.error} accessibilityRole="alert">{budgetError}</Text>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -432,6 +442,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing.md,
   },
   buttonDisabled: {
     opacity: 0.5,
