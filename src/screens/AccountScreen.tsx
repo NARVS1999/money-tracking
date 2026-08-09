@@ -6,6 +6,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -87,7 +88,8 @@ export default function AccountScreen() {
   const openBudgetForm = () => {
     setBudgetError(null);
     if (hasBudget) {
-      setBudgetAmountInput(userProfile!.budgetAmount!.toString());
+      // Convert cents back to pesos for display (e.g. 200000 cents → "2000")
+      setBudgetAmountInput(String(userProfile!.budgetAmount! / 100));
       const [sy, sm, sd] = userProfile!.budgetStartDate!.split("-").map(Number);
       const [ey, em, ed] = userProfile!.budgetEndDate!.split("-").map(Number);
       setBudgetStartDate(new Date(sy, sm - 1, sd));
@@ -125,17 +127,30 @@ export default function AccountScreen() {
     }
   };
 
-  const handleRemoveBudget = async () => {
-    if (budgetSaving) return;
-    setBudgetSaving(true);
-    try {
-      await clearBudget();
-      setShowBudgetForm(false);
-    } catch {
-      // Silently handle
-    } finally {
-      setBudgetSaving(false);
-    }
+  const handleRemoveBudget = () => {
+    Alert.alert(
+      "Remove budget?",
+      "This will hide the budget card from your Home screen.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            if (budgetSaving) return;
+            setBudgetSaving(true);
+            try {
+              await clearBudget();
+              setShowBudgetForm(false);
+            } catch {
+              // Silently handle
+            } finally {
+              setBudgetSaving(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const formatDateObj = (d: Date): string => {
