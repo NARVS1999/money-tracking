@@ -207,7 +207,7 @@ export default function CategoriesScreen() {
               ) : null}
               <View style={styles.inlineAdd}>
                 <TextInput
-                  style={[styles.input, isFocused && styles.inputFocused]}
+                  style={[styles.input, isFocused && styles.inputFocused, { flex: 1 }]}
                   placeholder="New category"
                   placeholderTextColor={colors.textSecondary}
                   value={inputValue}
@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
   },
   inlineAdd: { flexDirection: "row", alignItems: "center", marginTop: spacing.sm },
   input: {
-    flex: 1,
     height: 48,
     borderWidth: 1,
     borderColor: colors.border,
@@ -360,6 +359,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.body.weight as "400",
     lineHeight: typography.body.lineHeight,
     color: colors.textPrimary,
+    backgroundColor: colors.background,
   },
   inputFocused: { borderColor: colors.accent },
   addButton: { marginLeft: spacing.sm, minWidth: 44, height: 48, justifyContent: "center", alignItems: "center" },
