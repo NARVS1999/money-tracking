@@ -67,13 +67,13 @@ All rules key on the auth `uid`. In-app creation of a default account is impossi
 
 ```
 match /users/{uid} {
-  allow read: if resource.data.uid == request.auth.uid;
-  allow delete: if resource.data.uid == request.auth.uid
+  allow read: if request.auth != null && request.auth.uid == uid;
+  allow delete: if request.auth != null && request.auth.uid == uid
                  && !resource.data.isDefault;
   allow create: if request.auth != null
-                 && request.resource.data.uid == request.auth.uid
+                 && request.auth.uid == uid
                  && request.resource.data.isDefault == false;
-  allow update: if resource.data.uid == request.auth.uid
+  allow update: if request.auth != null && request.auth.uid == uid
                  && request.resource.data.isDefault == resource.data.isDefault;
 }
 

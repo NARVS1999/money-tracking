@@ -132,6 +132,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // doc. Errors propagate — the caller maps them via signUpErrorMessage.
     const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
     await setDoc(doc(db, "users", userCredential.user.uid), {
+      // uid field is REQUIRED by backend-schema.md and matched by the
+      // firestore rules (read/update key on request.auth.uid). Omitting it
+      // makes every read of this doc permission-denied (resource.data.uid
+      // undefined != request.auth.uid).
+      uid: userCredential.user.uid,
       displayName: displayName.trim(),
       email: email.trim().toLowerCase(),
       isDefault: false,
