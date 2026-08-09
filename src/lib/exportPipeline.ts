@@ -1,10 +1,11 @@
 // exportPipeline.ts — export financial data to PDF, Excel, or CSV.
-// PDF: HTML → expo-print → cache → saveToFile.
+// PDF: HTML → expo-print (base64) → saveToFile.
 // Excel/CSV: stubs (implemented in Plan 05-03).
 import { Entry } from "../entries/EntriesProvider";
 import { Category } from "../categories/CategoriesProvider";
 import { formatCents } from "./money";
 import { saveToFile } from "./files";
+import * as Print from "expo-print";
 
 function escapeHtml(s: string): string {
   return s
@@ -201,14 +202,10 @@ export async function exportPDF(
     fromDate,
     toDate,
   );
-  const Print = await import("expo-print");
-  const { uri } = await Print.printToFileAsync({ html });
+  // Use base64: true to get PDF content directly — avoids Android cache access issues
+  const { base64 } = await Print.printToFileAsync({ html, base64: true });
   const filename = generateFilename(fromDate, toDate, "pdf");
-  const FileSystem = (await import("expo-file-system/legacy")).default;
-  const content = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  await saveToFile(content, filename, "base64");
+  await saveToFile(base64!, filename, "base64");
   return filename;
 }
 

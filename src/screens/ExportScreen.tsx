@@ -293,7 +293,7 @@ export default function ExportScreen() {
             </Text>
             <View style={styles.toastContent}>
               <Text style={styles.toastHeading}>
-                {toast.type === "success" ? "Saved" : "Export failed"}
+                {toast.type === "success" ? "Saved" : toast.message}
               </Text>
               <Text style={styles.toastBody}>
                 {toast.type === "success"

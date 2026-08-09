@@ -4,9 +4,72 @@ import {
   buildPdfHtml,
   buildExcelData,
   buildCsvString,
+  exportPDF,
 } from "../exportPipeline";
 import { Entry } from "../../entries/EntriesProvider";
 import { Category } from "../../categories/CategoriesProvider";
+
+// ── Mocks for async export functions ───────────────────────────────
+jest.mock("expo-print", () => ({
+  printToFileAsync: jest.fn().mockResolvedValue({
+    base64: "mock-base64-content",
+  }),
+}));
+
+jest.mock("expo-file-system/legacy", () => ({
+  readAsStringAsync: jest.fn().mockResolvedValue("mock-base64-content"),
+  EncodingType: { Base64: "base64" },
+  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
+  cacheDirectory: "/mock-cache/",
+  StorageAccessFramework: {
+    requestDirectoryPermissionsAsync: jest.fn().mockResolvedValue({
+      granted: true,
+      directoryUri: "content://mock/dir",
+    }),
+    createFileAsync: jest.fn().mockResolvedValue("content://mock/file"),
+  },
+}));
+
+jest.mock("expo-file-system/legacy", () => ({
+  readAsStringAsync: jest.fn().mockResolvedValue("mock-base64-content"),
+  EncodingType: { Base64: "base64" },
+  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
+  cacheDirectory: "/mock-cache/",
+  StorageAccessFramework: {
+    requestDirectoryPermissionsAsync: jest.fn().mockResolvedValue({
+      granted: true,
+      directoryUri: "content://mock/dir",
+    }),
+    createFileAsync: jest.fn().mockResolvedValue("content://mock/file"),
+  },
+}));
+
+jest.mock("../files", () => ({
+  saveToFile: jest.fn().mockResolvedValue(undefined),
+  getMimeType: jest.fn().mockReturnValue("application/pdf"),
+}));
+
+// Re-import mocked modules for assertions in tests
+const Print = require("expo-print") as {
+  printToFileAsync: jest.Mock;
+};
+const FileSystem = require("expo-file-system/legacy") as {
+  readAsStringAsync: jest.Mock;
+  EncodingType: { Base64: string };
+  writeAsStringAsync: jest.Mock;
+  deleteAsync: jest.Mock;
+  cacheDirectory: string;
+  StorageAccessFramework: {
+    requestDirectoryPermissionsAsync: jest.Mock;
+    createFileAsync: jest.Mock;
+  };
+};
+const Files = require("../files") as {
+  saveToFile: jest.Mock;
+  getMimeType: jest.Mock;
+};
 
 const makeEntry = (overrides: Partial<Entry> = {}): Entry => ({
   id: "e1",
@@ -180,5 +243,57 @@ describe("buildCsvString", () => {
     const entries = [makeEntry({ description: "Coffee, snacks" })];
     const csv = buildCsvString(entries, expenseCategories, incomeCategories, "2026-08-01", "2026-08-31");
     expect(csv).toContain('"Coffee, snacks"');
+  });
+});
+
+describe("exportPDF", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Print.printToFileAsync.mockResolvedValue({ base64: "mock-base64-content" });
+    Files.saveToFile.mockResolvedValue(undefined);
+  });
+
+  it("generates PDF and passes base64 content to saveToFile", async () => {
+    const result = await exportPDF(
+      [],
+      expenseCategories,
+      incomeCategories,
+      "2026-08-01",
+      "2026-08-31",
+    );
+    expect(result).toBe("money-tracking-2026-08-01-to-2026-08-31.pdf");
+    expect(Print.printToFileAsync).toHaveBeenCalledWith({
+      html: expect.stringContaining("Money Tracking"),
+      base64: true,
+    });
+    expect(Files.saveToFile).toHaveBeenCalledWith(
+      "mock-base64-content",
+      "money-tracking-2026-08-01-to-2026-08-31.pdf",
+      "base64",
+    );
+  });
+
+  it("calls printToFileAsync with HTML content", async () => {
+    await exportPDF(
+      [],
+      expenseCategories,
+      incomeCategories,
+      "2026-08-01",
+      "2026-08-31",
+    );
+    expect(Print.printToFileAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ html: expect.stringContaining("Money Tracking") }),
+    );
+  });
+
+  it("does not call readAsStringAsync", async () => {
+    await exportPDF(
+      [],
+      expenseCategories,
+      incomeCategories,
+      "2026-08-01",
+      "2026-08-31",
+    );
+    expect(FileSystem.readAsStringAsync).not.toHaveBeenCalled();
   });
 });
