@@ -88,39 +88,37 @@ export default function ExpensesScreen() {
     );
   }
 
-  if (expenseEntries.length === 0) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyTitle}>No entries yet</Text>
-        <Text style={styles.emptySubtitle}>
-          Tap the + button below to log your first expense.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <FlatList
-        data={flatData}
-        keyExtractor={(item) => item.key}
-        renderItem={({ item }) => {
-          if (item.type === "header" && item.date) {
-            return <DateSectionHeader date={item.date} />;
-          }
-          if (item.entry) {
-            return (
-              <EntryRow
-                entry={item.entry}
-                onEdit={handleEdit}
-                onCopy={handleCopy}
-                onDelete={handleDelete}
-              />
-            );
-          }
-          return null;
-        }}
-      />
+      {expenseEntries.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>No entries yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Tap the + button below to log your first expense.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={flatData}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => {
+            if (item.type === "header" && item.date) {
+              return <DateSectionHeader date={item.date} />;
+            }
+            if (item.entry) {
+              return (
+                <EntryRow
+                  entry={item.entry}
+                  onEdit={handleEdit}
+                  onCopy={handleCopy}
+                  onDelete={handleDelete}
+                />
+              );
+            }
+            return null;
+          }}
+        />
+      )}
       {lastError && (
         <View style={styles.errorToast}>
           <Text style={styles.errorText}>{lastError}</Text>
