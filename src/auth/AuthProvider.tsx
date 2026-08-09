@@ -34,6 +34,7 @@ import {
   query,
   setDoc,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/app";
@@ -42,6 +43,9 @@ type UserProfile = {
   displayName: string;
   email: string;
   isDefault: boolean;
+  budgetAmount?: number;
+  budgetStartDate?: string;
+  budgetEndDate?: string;
 };
 
 type AuthContextValue = {
@@ -54,6 +58,8 @@ type AuthContextValue = {
   isOnline: boolean;
   reauthenticate: (password: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
+  updateBudget: (amountCents: number, startDate: string, endDate: string) => Promise<void>;
+  clearBudget: () => Promise<void>;
 };
 
 // Default null so useAuth() can detect "outside provider" usage.
@@ -81,6 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               displayName: typeof data.displayName === "string" ? data.displayName : "",
               email: typeof data.email === "string" ? data.email : (u.email ?? ""),
               isDefault: typeof data.isDefault === "boolean" ? data.isDefault : false,
+              budgetAmount: typeof data.budgetAmount === "number" ? data.budgetAmount : undefined,
+              budgetStartDate: typeof data.budgetStartDate === "string" ? data.budgetStartDate : undefined,
+              budgetEndDate: typeof data.budgetEndDate === "string" ? data.budgetEndDate : undefined,
             });
           } else {
             // Fallback for legacy accounts or race conditions
@@ -200,6 +209,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await deleteUser(currentUser);
   }, [user, reauthenticate]);
 
+  const updateBudget = useCallback(async (amountCents: number, startDate: string, endDate: string) => {
+    if (!user) throw new Error("Not signed in");
+    await updateDoc(doc(db, "users", user.uid), {
+      budgetAmount: amountCents,
+      budgetStartDate: startDate,
+      budgetEndDate: endDate,
+    });
+    // Update local state immediately
+    setUserProfile((prev) =>
+      prev
+        ? { ...prev, budgetAmount: amountCents, budgetStartDate: startDate, budgetEndDate: endDate }
+        : prev,
+    );
+  }, [user]);
+
+  const clearBudget = useCallback(async () => {
+    if (!user) throw new Error("Not signed in");
+    await updateDoc(doc(db, "users", user.uid), {
+      budgetAmount: null,
+      budgetStartDate: null,
+      budgetEndDate: null,
+    });
+    setUserProfile((prev) =>
+      prev
+        ? { ...prev, budgetAmount: undefined, budgetStartDate: undefined, budgetEndDate: undefined }
+        : prev,
+    );
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -212,6 +250,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isOnline,
         reauthenticate,
         deleteAccount,
+        updateBudget,
+        clearBudget,
       }}
     >
       {children}

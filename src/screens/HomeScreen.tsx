@@ -6,9 +6,11 @@ import { ScrollView, Text, View, StyleSheet, TouchableOpacity } from "react-nati
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
+import { useAuth } from "../auth/AuthProvider";
 import { monthRange, today } from "../lib/dates";
 import { colors, spacing, typography, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
+import BudgetCard from "../components/BudgetCard";
 import CategorySection from "../components/CategorySection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import EmptyState from "../components/EmptyState";
@@ -22,6 +24,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
+  const { userProfile } = useAuth();
 
   const { start, end, monthLabel } = useMemo(() => {
     const todayStr = today();
@@ -48,6 +51,19 @@ export default function HomeScreen() {
   );
 
   const balance = incomeTotal - expenseTotal;
+
+  // Budget: expense total within budget date range (may differ from current month)
+  const budgetExpense = useMemo(() => {
+    if (!userProfile?.budgetAmount || !userProfile?.budgetStartDate || !userProfile?.budgetEndDate) return 0;
+    return entries
+      .filter(
+        (e) =>
+          e.type === "expense" &&
+          e.date >= userProfile.budgetStartDate! &&
+          e.date <= userProfile.budgetEndDate!,
+      )
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [entries, userProfile]);
 
   const expenseBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -106,6 +122,16 @@ export default function HomeScreen() {
         expenseCents={expenseTotal}
         incomeCents={incomeTotal}
       />
+
+      {userProfile?.budgetAmount && userProfile?.budgetStartDate && userProfile?.budgetEndDate && (
+        <BudgetCard
+          budgetAmount={userProfile.budgetAmount}
+          budgetStartDate={userProfile.budgetStartDate}
+          budgetEndDate={userProfile.budgetEndDate}
+          expenseCents={budgetExpense}
+          onTap={() => navigation.navigate("Account" as never)}
+        />
+      )}
 
       <View style={styles.quickActions}>
         <TouchableOpacity
