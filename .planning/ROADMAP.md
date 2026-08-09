@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 7: Theme Overhaul** - Repaint all screens to Modern UI style: orange/red gradient summary card, rounded surfaces, frosted tab bar, quick-action buttons (completed 2026-08-09)
 - [x] **Phase 8: Budget** - Single global budget with custom date range, progress bar on Home, budget settings in Account (completed 2026-08-09)
-- [ ] **Phase 9: Category Icons** - Preset icon grid on category creation, icon rendering across all screens, backward-compatible data model
+- [x] **Phase 9: Category Icons** - Preset icon grid on category creation, icon rendering across all screens, backward-compatible data model (completed 2026-08-09)
 - [ ] **Phase 10: Charts** - Expense/income pie charts on Home via react-native-svg, legend, "Other" grouping for small slices
 
 ## Phase Details
@@ -99,5 +99,5 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 |-------|----------------|--------|-----------|
 | 7. Theme Overhaul | 1/1 | Complete | 2026-08-09 |
 | 8. Budget | 1/1 | Complete | 2026-08-09 |
-| 9. Category Icons | 0/0 | Not started | - |
+| 9. Category Icons | 1/1 | Complete | 2026-08-09 |
 | 10. Charts | 0/0 | Not started | - |
