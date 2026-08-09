@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: theme-budget-icons-charts
-current_phase: 10
-status: in-progress
-stopped_at: Completed Phase 9 — Category Icons
-last_updated: "2026-08-09T14:00:00.000Z"
+current_phase: 0
+status: milestone_complete
+stopped_at: Completed Phase 10 — Charts
+last_updated: "2026-08-09T15:30:00.000Z"
 last_activity: 2026-08-09
-last_activity_desc: Phase 9 complete
+last_activity_desc: Phase 10 complete — all phases done
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-current_phase_name: charts
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
+current_phase_name: none — milestone complete
 ---
 
 # Project State
@@ -23,24 +23,22 @@ current_phase_name: charts
 See: .planning/PROJECT.md (updated 2026-08-09)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** v1.1 — Phase 10 (Charts) next
+**Current focus:** v1.1 milestone complete — ready for audit/complete/cleanup
 
 ## Current Position
 
-Milestone: v1.1 — IN PROGRESS
-Phase: 09 — COMPLETE ✓
-Phase: 10 — Charts (not started)
-Plan: 3 of 3
+Milestone: v1.1 — COMPLETE ✓
+All 4 phases done (7, 8, 9, 10)
 
-Progress: [████████████░░░░░░░░] 3/4 phases (75%)
+Progress: [████████████████████] 4/4 phases (100%)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3
-- Average duration: ~25min
-- Total execution time: ~75min
+- Total plans completed: 4
+- Average duration: ~23min
+- Total execution time: ~90min
 
 **By Phase:**
 
@@ -49,19 +47,17 @@ Progress: [████████████░░░░░░░░] 3/4 pha
 | 7. Theme Overhaul | 1 | 1 |
 | 8. Budget | 1 | 1 |
 | 9. Category Icons | 1 | 1 |
-| 10. Charts | 0 | 0 |
+| 10. Charts | 1 | 1 |
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Phase 9]: 20 preset emoji icons, stored as string in Firestore, backward-compatible optional field
-- [Phase 9]: CategoryIcon renders emoji if set, else initial letter fallback
-- [Phase 8]: Budget stored on users/{uid} doc with setDoc merge:true
-- [Phase 7]: Orange/red gradient via expo-linear-gradient; accent shifted to orange
+- [Phase 10]: react-native-svg for donut charts — custom SVG arcs, no external charting lib
+- [Phase 10]: Slices <5% grouped into Other
+- [Phase 9]: 55 Ionicons, swipe Edit + Delete/In use actions
+- [Phase 8]: Budget on users/{uid} doc with setDoc merge:true
+- [Phase 7]: Orange/red gradient via expo-linear-gradient
 
 ### Pending Todos
 
@@ -69,7 +65,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 10]: react-native-svg pie chart implementation — custom SVG path math
+None.
 
 ### Quick Tasks Completed
 
@@ -86,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-08-09
-Stopped at: Phase 9 complete — ready for Phase 10
+Stopped at: Phase 10 complete — all phases done
 Resume file: None
