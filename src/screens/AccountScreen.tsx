@@ -14,7 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthProvider";
 import { colors, radius, spacing, typography } from "../theme/tokens";
@@ -143,14 +143,22 @@ export default function AccountScreen() {
     return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
   };
 
-  const onStartChange = (event: DateTimePickerEvent, selected?: Date) => {
+  const onStartValueChange = (_event: unknown, selectedDate: Date) => {
     setShowStartPicker(Platform.OS === "ios");
-    if (selected) setBudgetStartDate(selected);
+    setBudgetStartDate(selectedDate);
   };
 
-  const onEndChange = (event: DateTimePickerEvent, selected?: Date) => {
+  const onStartDismiss = () => {
+    setShowStartPicker(Platform.OS === "ios");
+  };
+
+  const onEndValueChange = (_event: unknown, selectedDate: Date) => {
     setShowEndPicker(Platform.OS === "ios");
-    if (selected) setBudgetEndDate(selected);
+    setBudgetEndDate(selectedDate);
+  };
+
+  const onEndDismiss = () => {
+    setShowEndPicker(Platform.OS === "ios");
   };
 
   return (
@@ -259,7 +267,8 @@ export default function AccountScreen() {
                 value={budgetStartDate}
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={onStartChange}
+                onValueChange={onStartValueChange}
+                onDismiss={onStartDismiss}
                 maximumDate={new Date()}
               />
             )}
@@ -273,7 +282,8 @@ export default function AccountScreen() {
                 value={budgetEndDate}
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={onEndChange}
+                onValueChange={onEndValueChange}
+                onDismiss={onEndDismiss}
               />
             )}
 

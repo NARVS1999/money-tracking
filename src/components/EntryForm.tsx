@@ -284,12 +284,11 @@ export default function EntryForm() {
           mode="date"
           display="default"
           maximumDate={new Date()}
-          onChange={(event: unknown, selectedDate: Date | undefined) => {
+          onValueChange={(_event: unknown, selectedDate: Date) => {
             setShowDatePicker(false);
-            if (selectedDate) {
-              setDateValue(selectedDate);
-            }
+            setDateValue(selectedDate);
           }}
+          onDismiss={() => setShowDatePicker(false)}
         />
       )}
     </SafeAreaView>

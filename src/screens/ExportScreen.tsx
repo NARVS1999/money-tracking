@@ -9,9 +9,7 @@ import {
   View,
   StyleSheet,
 } from "react-native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { monthRange, today, compare } from "../lib/dates";
@@ -84,29 +82,33 @@ export default function ExportScreen() {
   const isDisabled =
     isExporting || selectedFormat === null || rangeEntries.length === 0 || hasValidationError;
 
-  const handleFromChange = useCallback(
-    (_event: DateTimePickerEvent, date?: Date) => {
+  const handleFromValueChange = useCallback(
+    (_event: unknown, date: Date) => {
       setShowFromPicker(false);
-      if (date) {
-        const [y, m, d] = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
-        const pad = (n: number) => n.toString().padStart(2, "0");
-        setFromDate(`${y}-${pad(m)}-${pad(d)}`);
-      }
+      const [y, m, d] = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setFromDate(`${y}-${pad(m)}-${pad(d)}`);
     },
     [],
   );
 
-  const handleToChange = useCallback(
-    (_event: DateTimePickerEvent, date?: Date) => {
+  const handleFromDismiss = useCallback(() => {
+    setShowFromPicker(false);
+  }, []);
+
+  const handleToValueChange = useCallback(
+    (_event: unknown, date: Date) => {
       setShowToPicker(false);
-      if (date) {
-        const [y, m, d] = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
-        const pad = (n: number) => n.toString().padStart(2, "0");
-        setToDate(`${y}-${pad(m)}-${pad(d)}`);
-      }
+      const [y, m, d] = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setToDate(`${y}-${pad(m)}-${pad(d)}`);
     },
     [],
   );
+
+  const handleToDismiss = useCallback(() => {
+    setShowToPicker(false);
+  }, []);
 
   const handleThisMonth = useCallback(() => {
     const range = monthRange(today());
@@ -187,7 +189,8 @@ export default function ExportScreen() {
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             maximumDate={fromMaxDate}
-            onChange={handleFromChange}
+            onValueChange={handleFromValueChange}
+            onDismiss={handleFromDismiss}
           />
         )}
 
@@ -207,7 +210,8 @@ export default function ExportScreen() {
             display={Platform.OS === "ios" ? "spinner" : "default"}
             minimumDate={toMinDate}
             maximumDate={new Date()}
-            onChange={handleToChange}
+            onValueChange={handleToValueChange}
+            onDismiss={handleToDismiss}
           />
         )}
 
