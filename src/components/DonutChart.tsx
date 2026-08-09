@@ -80,7 +80,7 @@ export default function DonutChart({ data, size = 120, colors: chartColors }: Do
       </Svg>
       <View style={[styles.center, { width: innerR * 2, height: innerR * 2, borderRadius: innerR }]}>
         <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalValue}>{total.toLocaleString()}</Text>
+        <Text style={styles.totalValue}>₱{(total / 100).toLocaleString()}</Text>
       </View>
     </View>
   );
