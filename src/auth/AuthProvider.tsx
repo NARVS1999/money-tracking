@@ -34,7 +34,6 @@ import {
   query,
   setDoc,
   Timestamp,
-  updateDoc,
   where,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/app";
@@ -211,11 +210,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateBudget = useCallback(async (amountCents: number, startDate: string, endDate: string) => {
     if (!user) throw new Error("Not signed in");
-    await updateDoc(doc(db, "users", user.uid), {
+    await setDoc(doc(db, "users", user.uid), {
       budgetAmount: amountCents,
       budgetStartDate: startDate,
       budgetEndDate: endDate,
-    });
+    }, { merge: true });
     // Update local state immediately
     setUserProfile((prev) =>
       prev
@@ -226,11 +225,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearBudget = useCallback(async () => {
     if (!user) throw new Error("Not signed in");
-    await updateDoc(doc(db, "users", user.uid), {
+    await setDoc(doc(db, "users", user.uid), {
       budgetAmount: null,
       budgetStartDate: null,
       budgetEndDate: null,
-    });
+    }, { merge: true });
     setUserProfile((prev) =>
       prev
         ? { ...prev, budgetAmount: undefined, budgetStartDate: undefined, budgetEndDate: undefined }
