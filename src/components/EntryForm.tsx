@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing, typography, radius } from "../theme/tokens";
 import { formatCents, parsePesoInput } from "../lib/money";
 import { today } from "../lib/dates";
+import CategoryIcon from "./CategoryIcon";
 import { useEntries, type Entry, type EntryInput } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 
@@ -257,6 +258,7 @@ export default function EntryForm() {
                     setShowCategoryPicker(false);
                   }}
                 >
+                  <CategoryIcon icon={item.icon} name={item.name} size={32} />
                   <Text
                     style={[
                       styles.categoryOptionText,
@@ -418,6 +420,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   categoryOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,

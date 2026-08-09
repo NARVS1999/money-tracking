@@ -71,10 +71,10 @@ export default function HomeScreen() {
       map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
     });
     return Array.from(map.entries())
-      .map(([categoryId, cents]) => ({
-        name: expenseCategories.find((c) => c.id === categoryId)?.name || "Unknown",
-        cents,
-      }))
+      .map(([categoryId, cents]) => {
+        const cat = expenseCategories.find((c) => c.id === categoryId);
+        return { name: cat?.name || "Unknown", cents, icon: cat?.icon };
+      })
       .sort((a, b) => b.cents - a.cents);
   }, [monthEntries, expenseCategories]);
 
@@ -84,10 +84,10 @@ export default function HomeScreen() {
       map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
     });
     return Array.from(map.entries())
-      .map(([categoryId, cents]) => ({
-        name: incomeCategories.find((c) => c.id === categoryId)?.name || "Unknown",
-        cents,
-      }))
+      .map(([categoryId, cents]) => {
+        const cat = incomeCategories.find((c) => c.id === categoryId);
+        return { name: cat?.name || "Unknown", cents, icon: cat?.icon };
+      })
       .sort((a, b) => b.cents - a.cents);
   }, [monthEntries, incomeCategories]);
 

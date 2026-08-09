@@ -31,14 +31,14 @@ import { categoriesOf, categoryInUse } from "../firebase/queries";
 import { useAuth } from "../auth/AuthProvider";
 import { useEntries } from "../entries/EntriesProvider";
 
-export type Category = { id: string; name: string; createdAt: Timestamp };
+export type Category = { id: string; name: string; createdAt: Timestamp; icon?: string };
 export type CategoryKind = "expenseCategories" | "incomeCategories";
 
 export type CategoriesContextValue = {
   expenseCategories: Category[];
   incomeCategories: Category[];
   usageMap: Map<string, number>;
-  addCategory: (kind: CategoryKind, name: string) => Promise<void>;
+  addCategory: (kind: CategoryKind, name: string, icon?: string) => Promise<void>;
   deleteCategory: (kind: CategoryKind, categoryId: string) => Promise<void>;
   sync: () => Promise<void>;
   isSyncing: boolean;
@@ -66,7 +66,8 @@ async function fetchCategories(
     const name = typeof data.name === "string" ? data.name : "";
     const createdAt =
       data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now();
-    return { id: d.id, name, createdAt };
+    const icon = typeof data.icon === "string" ? data.icon : undefined;
+    return { id: d.id, name, createdAt, icon };
   };
 
   return [
@@ -142,7 +143,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   }, [user]);
 
   const addCategory = useCallback(
-    async (kind: CategoryKind, name: string) => {
+    async (kind: CategoryKind, name: string, icon?: string) => {
       if (!user) throw new Error("Not authenticated");
       const trimmed = name.trim();
       if (!trimmed) return;
@@ -156,16 +157,19 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         throw new Error("Already exists");
       }
       try {
-        const docRef = await addDoc(collection(db, kind), {
+        const docData: Record<string, unknown> = {
           uid: user.uid,
           name: trimmed,
           createdAt: Timestamp.now(),
-        });
+        };
+        if (icon) docData.icon = icon;
+        const docRef = await addDoc(collection(db, kind), docData);
         // Mirror the write into local state (visible immediately)
         const local: Category = {
           id: docRef.id,
           name: trimmed,
           createdAt: Timestamp.now(),
+          icon,
         };
         if (kind === "expenseCategories") {
           setExpenseCategories((prev) => [...prev, local]);
