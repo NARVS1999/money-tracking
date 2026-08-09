@@ -151,7 +151,7 @@ export default function CategoriesScreen() {
       return (
         <>
           <TouchableOpacity
-            style={[styles.swipeAction, { backgroundColor: colors.primary }]}
+            style={[styles.swipeAction, { backgroundColor: "#3B82F6" }]}
             onPress={() => openEdit(kind, item)}
           >
             <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>Edit</Text>
