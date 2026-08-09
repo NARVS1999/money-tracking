@@ -16,10 +16,8 @@ match /users/{uid} {
   allow delete: if request.auth != null && request.auth.uid == uid
                  && !resource.data.isDefault;
   allow create: if request.auth != null
-                 && request.auth.uid == uid
-                 && request.resource.data.isDefault == false;
-  allow update: if request.auth != null && request.auth.uid == uid
-                 && request.resource.data.isDefault == resource.data.isDefault;
+                 && request.auth.uid == uid;
+  allow update: if request.auth != null && request.auth.uid == uid;
 }
 
 match /entries/{id} {
