@@ -94,25 +94,39 @@ export default function HomeScreen() {
       .sort((a, b) => b.cents - a.cents);
   }, [monthEntries, incomeCategories]);
 
-  // Chart data: compute percentages for legend
+  // Chart data: group small slices into "Other" to match DonutChart behavior
   const expenseChartData = useMemo(() => {
     const total = expenseBreakdown.reduce((s, r) => s + r.cents, 0);
-    return expenseBreakdown.map((r, i) => ({
-      name: r.name,
-      value: r.cents,
-      percent: total > 0 ? Math.round((r.cents / total) * 100) : 0,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-    }));
+    if (total === 0) return [];
+    const THRESHOLD = 0.05;
+    const main: { name: string; value: number; percent: number; color: string }[] = [];
+    let otherValue = 0;
+    expenseBreakdown.forEach((r, i) => {
+      if (r.cents / total < THRESHOLD) {
+        otherValue += r.cents;
+      } else {
+        main.push({ name: r.name, value: r.cents, percent: Math.round((r.cents / total) * 100), color: CHART_COLORS[main.length % CHART_COLORS.length] });
+      }
+    });
+    if (otherValue > 0) main.push({ name: "Other", value: otherValue, percent: Math.round((otherValue / total) * 100), color: "#94A3B8" });
+    return main;
   }, [expenseBreakdown]);
 
   const incomeChartData = useMemo(() => {
     const total = incomeBreakdown.reduce((s, r) => s + r.cents, 0);
-    return incomeBreakdown.map((r, i) => ({
-      name: r.name,
-      value: r.cents,
-      percent: total > 0 ? Math.round((r.cents / total) * 100) : 0,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-    }));
+    if (total === 0) return [];
+    const THRESHOLD = 0.05;
+    const main: { name: string; value: number; percent: number; color: string }[] = [];
+    let otherValue = 0;
+    incomeBreakdown.forEach((r, i) => {
+      if (r.cents / total < THRESHOLD) {
+        otherValue += r.cents;
+      } else {
+        main.push({ name: r.name, value: r.cents, percent: Math.round((r.cents / total) * 100), color: CHART_COLORS[main.length % CHART_COLORS.length] });
+      }
+    });
+    if (otherValue > 0) main.push({ name: "Other", value: otherValue, percent: Math.round((otherValue / total) * 100), color: "#94A3B8" });
+    return main;
   }, [incomeBreakdown]);
 
   if (isLoading) {
