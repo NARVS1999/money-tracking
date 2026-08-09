@@ -1,10 +1,28 @@
-// Preset icons for category selection and shared icon utilities.
+// Preset icons for category selection — 55 Ionicons.
+// Icon name is stored as string in Firestore; rendered via Ionicons in CategoryIcon.
+import { Ionicons } from "@expo/vector-icons";
 
-export const PRESET_ICONS = [
-  "🏠", "🍔", "🚗", "💰", "🛒",
-  "💊", "📚", "🎭", "🎵", "💻",
-  "🏋️", "🐾", "✈️", "🎂", "💇",
-  "🏥", "📱", "🎯", "🌿", "☕",
+export type IconName = keyof typeof Ionicons.glyphMap;
+
+export const PRESET_ICONS: IconName[] = [
+  // Home & Living
+  "home", "home-outline", "bed", "shirt", "car", "car-outline",
+  // Food & Drink
+  "restaurant", "cafe", "wine", "pizza", "fast-food", "nutrition",
+  // Money & Shopping
+  "wallet", "cash", "card", "cart", "bag", "pricetag",
+  // Health & Fitness
+  "fitness", "medical", "pulse", "body", "walk", "bicycle",
+  // Work & Study
+  "briefcase", "laptop", "book", "school", "pencil", "calculator",
+  // Entertainment
+  "musical-notes", "film", "game-controller", "football", "boat", "airplane",
+  // Nature & Animals
+  "leaf", "flower", "paw", "fish", "bug", "sunny",
+  // Tech & Communication
+  "phone-portrait", "mail", "chatbubble", "notifications", "globe", "camera",
+  // Misc
+  "heart", "star", "flag", "gift", "bookmark", "rocket", "color-palette",
 ];
 
 export const ICON_COLORS = [

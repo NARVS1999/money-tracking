@@ -1,6 +1,6 @@
-// CategoriesScreen — full Categories tab with icon picker on add.
+// CategoriesScreen — full Categories tab with icon picker on add and edit.
 // SectionList with two grouped sections, sticky headers with inline add,
-// icon picker modal after adding, Swipeable rows with icons and usage counts.
+// swipe actions (Edit + Delete/In use), and edit modal with name + icon.
 import { useState } from "react";
 import {
   SectionList,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Text,
   View,
+  Modal,
   StyleSheet,
   Alert,
 } from "react-native";
@@ -33,6 +34,7 @@ export default function CategoriesScreen() {
     incomeCategories,
     usageMap,
     addCategory,
+    updateCategory,
     deleteCategory,
   } = useCategories();
 
@@ -42,19 +44,22 @@ export default function CategoriesScreen() {
   const [errorKind, setErrorKind] = useState<CategoryKind | null>(null);
   const [focusedInput, setFocusedInput] = useState<CategoryKind | null>(null);
 
-  // Icon picker state
+  // Icon picker state (for add)
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [pendingAdd, setPendingAdd] = useState<{ kind: CategoryKind; name: string; setInput: (s: string) => void } | null>(null);
 
-  const handleAdd = async (
-    kind: CategoryKind,
-    input: string,
-    setInput: (s: string) => void,
-  ) => {
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{ kind: CategoryKind; category: Category } | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState<string | undefined>();
+  const [showEditIconPicker, setShowEditIconPicker] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // ── Add handlers ──────────────────────────────────────────────
+  const handleAdd = async (kind: CategoryKind, input: string, setInput: (s: string) => void) => {
     const trimmed = input.trim();
     if (!trimmed) return;
-
-    // Show icon picker before saving
     setPendingAdd({ kind, name: trimmed, setInput });
     setShowIconPicker(true);
   };
@@ -98,50 +103,85 @@ export default function CategoriesScreen() {
     setPendingAdd(null);
   };
 
-  const handleChangeText =
-    (kind: CategoryKind, setter: (s: string) => void) =>
-    (text: string) => {
-      setter(text);
-      setError(null);
-      setErrorKind(null);
-    };
+  // ── Edit handlers ─────────────────────────────────────────────
+  const openEdit = (kind: CategoryKind, category: Category) => {
+    setEditingCategory({ kind, category });
+    setEditName(category.name);
+    setEditIcon(category.icon);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCategory || editSaving) return;
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      Alert.alert("Error", "Category name cannot be empty.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await updateCategory(editingCategory.kind, editingCategory.category.id, {
+        name: trimmed,
+        icon: editIcon,
+      });
+      setShowEditModal(false);
+      setEditingCategory(null);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Couldn't update. Try again.";
+      Alert.alert("Error", message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleChangeText = (kind: CategoryKind, setter: (s: string) => void) => (text: string) => {
+    setter(text);
+    setError(null);
+    setErrorKind(null);
+  };
 
   const sections: SectionData[] = [
     { title: "Expense Categories", kind: "expenseCategories", data: expenseCategories },
     { title: "Income Categories", kind: "incomeCategories", data: incomeCategories },
   ];
 
+  // ── Swipe actions: Edit + Delete/In use ───────────────────────
   const renderRightActions = (kind: CategoryKind, item: Category, count: number) => {
-    if (count > 0) {
-      return function SwipeInUseAction() {
-        return (
-          <View style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}>
-            <Text style={[styles.swipeActionText, { color: "#6B7280" }]}>In use</Text>
-          </View>
-        );
-      };
-    }
-    return function SwipeDeleteAction() {
+    return function SwipeActions() {
       return (
-        <TouchableOpacity
-          style={[styles.swipeAction, { backgroundColor: colors.danger }]}
-          onPress={() => {
-            Alert.alert(`Delete ${item.name}?`, "This cannot be undone.", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: () => {
-                  deleteCategory(kind, item.id).catch(() =>
-                    Alert.alert("Error", "Couldn't delete category. Try again."),
-                  );
-                },
-              },
-            ]);
-          }}
-        >
-          <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>Delete</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            style={[styles.swipeAction, { backgroundColor: colors.primary }]}
+            onPress={() => openEdit(kind, item)}
+          >
+            <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>Edit</Text>
+          </TouchableOpacity>
+          {count > 0 ? (
+            <View style={[styles.swipeAction, { backgroundColor: "#E5E7EB" }]}>
+              <Text style={[styles.swipeActionText, { color: "#6B7280" }]}>In use</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.swipeAction, { backgroundColor: colors.danger }]}
+              onPress={() => {
+                Alert.alert(`Delete ${item.name}?`, "This cannot be undone.", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                      deleteCategory(kind, item.id).catch(() =>
+                        Alert.alert("Error", "Couldn't delete category. Try again."),
+                      );
+                    },
+                  },
+                ]);
+              }}
+            >
+              <Text style={[styles.swipeActionText, { color: "#FFFFFF" }]}>Delete</Text>
+            </TouchableOpacity>
+          )}
+        </>
       );
     };
   };
@@ -219,11 +259,68 @@ export default function CategoriesScreen() {
           );
         }}
       />
+
+      {/* Add icon picker */}
       <IconPicker
         visible={showIconPicker}
         onSelect={handleIconSelect}
         onSkip={handleIconSkip}
         onClose={handleIconClose}
+      />
+
+      {/* Edit modal */}
+      <Modal visible={showEditModal} transparent animationType="fade" onRequestClose={() => setShowEditModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit Category</Text>
+
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Category name"
+              placeholderTextColor={colors.textSecondary}
+              editable={!editSaving}
+              autoFocus
+            />
+
+            <Text style={styles.label}>Icon</Text>
+            <TouchableOpacity
+              style={styles.iconPreview}
+              onPress={() => setShowEditIconPicker(true)}
+            >
+              <CategoryIcon icon={editIcon} name={editName || "A"} size={40} />
+              <Text style={styles.iconPreviewText}>Tap to change</Text>
+            </TouchableOpacity>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setShowEditModal(false)}
+                disabled={editSaving}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, editSaving && styles.saveBtnDisabled]}
+                onPress={handleSaveEdit}
+                disabled={editSaving}
+              >
+                <Text style={styles.saveBtnText}>{editSaving ? "Saving..." : "Save"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit icon picker */}
+      <IconPicker
+        visible={showEditIconPicker}
+        selectedIcon={editIcon}
+        onSelect={(icon) => { setEditIcon(icon); setShowEditIconPicker(false); }}
+        onSkip={() => { setEditIcon(undefined); setShowEditIconPicker(false); }}
+        onClose={() => setShowEditIconPicker(false)}
       />
     </>
   );
@@ -298,10 +395,10 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   swipeHint: { fontSize: 14, color: colors.textSecondary, marginLeft: spacing.xs },
-  swipeAction: { width: 80, justifyContent: "center", alignItems: "center" },
+  swipeAction: { width: 72, justifyContent: "center", alignItems: "center" },
   swipeActionText: {
     fontSize: typography.label.size,
-    fontWeight: typography.label.weight as "400",
+    fontWeight: "600",
     lineHeight: typography.label.lineHeight,
   },
   emptyContainer: { paddingVertical: spacing.xl, alignItems: "center" },
@@ -311,5 +408,82 @@ const styles = StyleSheet.create({
     lineHeight: typography.body.lineHeight,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  // Edit modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: typography.heading.size,
+    fontWeight: typography.heading.weight as "700",
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  label: {
+    fontSize: typography.label.size,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  iconPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  iconPreviewText: {
+    fontSize: typography.label.size,
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  cancelBtn: {
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  cancelBtnText: {
+    fontSize: typography.body.size,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  saveBtn: {
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  saveBtnDisabled: { opacity: 0.5 },
+  saveBtnText: {
+    fontSize: typography.body.size,
+    fontWeight: "600",
+    color: colors.onAccent,
   },
 });

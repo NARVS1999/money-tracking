@@ -1,8 +1,9 @@
-// CategoryIcon — renders either a preset emoji icon or initial letter fallback.
+// CategoryIcon — renders either a preset Ionicon or initial letter fallback.
 // Consistent icon rendering across Home, Categories, and EntryForm screens.
 import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { radius } from "../theme/tokens";
-import { getIconColor, getIconTextColor } from "./categoryIcons";
+import { getIconColor, getIconTextColor, type IconName } from "./categoryIcons";
 
 type CategoryIconProps = {
   icon?: string;
@@ -26,7 +27,11 @@ export default function CategoryIcon({ icon, name, size = 44 }: CategoryIconProp
           },
         ]}
       >
-        <Text style={[styles.emoji, { fontSize: size * 0.45 }]}>{icon}</Text>
+        <Ionicons
+          name={icon as IconName}
+          size={size * 0.5}
+          color={getIconTextColor(colorIndex)}
+        />
       </View>
     );
   }
@@ -55,9 +60,6 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: "center",
     alignItems: "center",
-  },
-  emoji: {
-    lineHeight: undefined,
   },
   initial: {
     fontWeight: "700",

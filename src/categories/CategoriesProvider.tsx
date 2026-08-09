@@ -24,6 +24,7 @@ import {
   getDocs,
   query,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "../firebase/app";
@@ -39,6 +40,7 @@ export type CategoriesContextValue = {
   incomeCategories: Category[];
   usageMap: Map<string, number>;
   addCategory: (kind: CategoryKind, name: string, icon?: string) => Promise<void>;
+  updateCategory: (kind: CategoryKind, categoryId: string, updates: { name?: string; icon?: string }) => Promise<void>;
   deleteCategory: (kind: CategoryKind, categoryId: string) => Promise<void>;
   sync: () => Promise<void>;
   isSyncing: boolean;
@@ -185,6 +187,45 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     [user, expenseCategories, incomeCategories],
   );
 
+  const updateCategory = useCallback(
+    async (kind: CategoryKind, categoryId: string, updates: { name?: string; icon?: string }) => {
+      if (!user) throw new Error("Not authenticated");
+      const existing = kind === "expenseCategories" ? expenseCategories : incomeCategories;
+
+      // Duplicate name check if name is being changed
+      if (updates.name) {
+        const trimmed = updates.name.trim();
+        if (!trimmed) throw new Error("Name cannot be empty");
+        if (existing.some((c) => c.id !== categoryId && c.name.toLowerCase().trim() === trimmed.toLowerCase())) {
+          throw new Error("Already exists");
+        }
+      }
+
+      try {
+        const docRef = doc(db, kind, categoryId);
+        const firestoreUpdates: Record<string, unknown> = {};
+        if (updates.name !== undefined) firestoreUpdates.name = updates.name.trim();
+        if (updates.icon !== undefined) firestoreUpdates.icon = updates.icon;
+        await updateDoc(docRef, firestoreUpdates);
+
+        // Mirror into local state
+        const setter = kind === "expenseCategories" ? setExpenseCategories : setIncomeCategories;
+        setter((prev) =>
+          prev.map((c) =>
+            c.id === categoryId
+              ? { ...c, ...updates, name: updates.name ? updates.name.trim() : c.name }
+              : c,
+          ),
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Update failed — retry?";
+        setLastError(msg);
+        throw e;
+      }
+    },
+    [user, expenseCategories, incomeCategories],
+  );
+
   const deleteCategory = useCallback(
     async (kind: CategoryKind, categoryId: string) => {
       if (!user) throw new Error("Not authenticated");
@@ -225,6 +266,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         incomeCategories,
         usageMap,
         addCategory,
+        updateCategory,
         deleteCategory,
         sync,
         isSyncing,

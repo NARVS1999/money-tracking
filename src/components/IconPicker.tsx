@@ -1,17 +1,19 @@
 // IconPicker — bottom sheet modal for selecting a category icon.
-// Shows a 4-column grid of preset emoji icons with a "Skip" option.
+// Shows a 5-column scrollable grid of Ionicons with a "Skip" option.
 import { View, Text, TouchableOpacity, FlatList, Modal, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, typography, radius } from "../theme/tokens";
-import { PRESET_ICONS } from "./categoryIcons";
+import { PRESET_ICONS, getIconColor, getIconTextColor, type IconName } from "./categoryIcons";
 
 type IconPickerProps = {
   visible: boolean;
+  selectedIcon?: string;
   onSelect: (icon: string) => void;
   onSkip: () => void;
   onClose: () => void;
 };
 
-export default function IconPicker({ visible, onSelect, onSkip, onClose }: IconPickerProps) {
+export default function IconPicker({ visible, selectedIcon, onSelect, onSkip, onClose }: IconPickerProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
@@ -21,16 +23,27 @@ export default function IconPicker({ visible, onSelect, onSkip, onClose }: IconP
           <FlatList
             data={PRESET_ICONS}
             keyExtractor={(item) => item}
-            numColumns={4}
+            numColumns={5}
             contentContainerStyle={styles.grid}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() => onSelect(item)}
-              >
-                <Text style={styles.iconEmoji}>{item}</Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item, index }) => {
+              const isSelected = item === selectedIcon;
+              const colorIdx = index % 8;
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.iconBtn,
+                    isSelected && { backgroundColor: getIconColor(colorIdx), borderWidth: 2, borderColor: getIconTextColor(colorIdx) },
+                  ]}
+                  onPress={() => onSelect(item)}
+                >
+                  <Ionicons
+                    name={item as IconName}
+                    size={24}
+                    color={isSelected ? getIconTextColor(colorIdx) : colors.textPrimary}
+                  />
+                </TouchableOpacity>
+              );
+            }}
           />
           <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>
             <Text style={styles.skipText}>Skip</Text>
@@ -52,7 +65,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingBottom: spacing.xl,
-    maxHeight: "60%",
+    maxHeight: "70%",
   },
   handle: {
     width: 40,
@@ -76,15 +89,14 @@ const styles = StyleSheet.create({
   iconBtn: {
     flex: 1,
     aspectRatio: 1,
-    maxWidth: "25%",
+    maxWidth: "20%",
     justifyContent: "center",
     alignItems: "center",
-    margin: 4,
+    margin: 3,
     backgroundColor: colors.background,
     borderRadius: radius.md,
-  },
-  iconEmoji: {
-    fontSize: 28,
+    borderWidth: 2,
+    borderColor: "transparent",
   },
   skipBtn: {
     marginTop: spacing.md,
