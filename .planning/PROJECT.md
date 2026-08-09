@@ -1,5 +1,11 @@
 # Money Tracking
 
+## Current State
+
+**v1.0 shipped 2026-08-09.** Full personal expense/income tracker: email/password auth, category management, entry logging (<10s), current-month summary, PDF/Excel/CSV export, account creation/deletion with cascade, session-scoped offline persistence.
+
+**Built with:** Expo SDK 57, Firebase JS SDK 12, React Native 0.86, React Context state, Expo Go QR workflow.
+
 ## What This Is
 
 A personal expense and income tracker on the phone. Entries are logged manually (under 10 seconds), stored in Firebase Firestore with offline-first persistence, and exported as date-range PDF/Excel summaries. Each account (email + password) owns a private ledger with its own categories; a seeded **default account** can never be deleted in-app.
@@ -15,39 +21,20 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 - **Success metric**: Entries logged daily; the phone is the only device
 - **Strategy notes**: None — personal project, not commercial
 
-## Requirements
+## Next Milestone Goals
 
-### Validated
+To be defined with `/gsd:new-milestone`. Candidates:
 
-- ✓ Manage expense and income categories separately; block deletion of categories still in use — Phase 2 (inline add + duplicate guard, live usage counts, swipe-to-delete with in-use guard)
-
-### Active
-
-- [ ] Log expense/income entries (type, amount, category, date, optional description) that save instantly, even offline
-- [ ] Edit and delete entries
-- [ ] Copy an entry with the date reset to today (repeating payments)
-- [ ] Current-month summary on Home: total spent, total earned, per-category breakdown
-- [ ] Export date-range summary to PDF and Excel, saved to the phone's Downloads folder
-- [ ] Sign in with email/password on first launch; session persists
-- [ ] Create additional accounts in-app (empty ledger, signs into the new account)
-- [ ] Delete an account (password reauth) with full cascade: entries → categories → users doc → auth account
-- [ ] Default account is undeletable in-app and seedable only at setup
-
-### Out of Scope
-
-- Bank/payment integrations — manual entry only
-- Cross-account sharing or family ledgers — each account's data is private
-- Budgets, savings goals, recurring-entry automation
-- Multi-currency — PHP only
-- Web/desktop version — phone only (Expo Go testing)
-- Charts/graphs beyond the summary — numbers are the interface
-- Dark mode, themes, custom fonts, onboarding — rejected in design brief
+- Search/filter entries (SEAR-01)
+- Per-category monthly budgets (BUDG-01)
+- Spending chart (CHRT-01)
+- Durable offline via expo-sqlite sync layer (OFFL-01)
 
 ## Context
 
-- **Platform**: React Native + Expo (latest SDK), Expo Go workflow — no custom native modules; testing is QR-code based
+- **Platform**: React Native + Expo SDK 57, Expo Go workflow — no custom native modules; testing is QR-code based
 - **Stack**: Firebase JS SDK (`firebase` npm package) — NOT `@react-native-firebase/*` (requires dev build, fails in Expo Go); AsyncStorage-backed persistence; `expo-print` for PDF; `xlsx` (SheetJS) for Excel; `expo-file-system` + `expo-sharing` for output; `@react-navigation/bottom-tabs` + `native-stack`; React Context for state
-- **Data**: Firestore is the only database (ADR-0001); offline persistence enabled at startup via `persistentLocalCache`; live `onSnapshot` listeners for optimistic UI
+- **Data**: Firestore is the only database (ADR-0001); session-scoped offline via memory cache; live `onSnapshot` listeners for optimistic UI
 - **Money**: integer cents everywhere (₱24.50 = `2450`), formatted only in `money.js` (ADR-0003)
 - **Dates**: local calendar date as `"YYYY-MM-DD"` strings — lexicographic range queries, no timezone bugs
 - **Auth**: Email/Password; `users/{uid}` docs with `displayName` + immutable `isDefault`; rules reject in-app default creation (ADR-0005, supersedes ADR-0002)
@@ -69,31 +56,29 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Firestore only, no local SQLite | Built-in offline persistence = local-first behavior with zero sync code (ADR-0001) | — Pending |
-| Anonymous auth → email/password accounts | Owner wants real login identity with protected default + account create/delete (ADR-0005 supersedes ADR-0002) | — Pending |
-| Amounts as integer cents | Exact math, standard currency practice, no float errors (ADR-0003) | — Pending |
-| Category deletion blocked until empty | Zero data loss; forces explicit choice; no orphaned refs (ADR-0004) | Implemented Phase 2 — swipe-to-delete reveals red Delete (unused) or grey In use (non-tappable) |
-| Dates as `"YYYY-MM-DD"` strings | Timezone-safe range queries, no midnight-offset bugs | — Pending |
-| Firebase JS SDK instead of native modules | Only option that runs in Expo Go | — Pending |
-| expo-print + SheetJS for exports | Expo Go compatible, no native builds | — Pending |
-| App signs into newly created account immediately | New empty ledger is where you land; sign out to return | — Pending |
+| Firestore only, no local SQLite | Built-in offline persistence = local-first behavior with zero sync code (ADR-0001) | Implemented v1.0 |
+| Anonymous auth → email/password accounts | Owner wants real login identity with protected default + account create/delete (ADR-0005 supersedes ADR-0002) | Implemented v1.0 |
+| Amounts as integer cents | Exact math, standard currency practice, no float errors (ADR-0003) | Implemented v1.0 |
+| Category deletion blocked until empty | Zero data loss; forces explicit choice; no orphaned refs (ADR-0004) | Implemented Phase 2 |
+| Dates as `"YYYY-MM-DD"` strings | Timezone-safe range queries, no midnight-offset bugs | Implemented v1.0 |
+| Firebase JS SDK instead of native modules | Only option that runs in Expo Go | Implemented v1.0 |
+| expo-print + SheetJS for exports | Expo Go compatible, no native builds | Implemented v1.0 |
+| App signs into newly created account immediately | New empty ledger is where you land; sign out to return | Implemented v1.0 |
 
-## Evolution
+## Out of Scope
 
-This document evolves at phase transitions and milestone boundaries.
-
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+| Feature | Reason |
+|---------|--------|
+| Bank/payment integrations | Manual entry only by design |
+| Cross-account sharing / family ledgers | Each account's data is private to that account |
+| Recurring-entry automation | Copy covers repeating payments at near-zero complexity |
+| Multi-currency | PHP only; `currency` field is future-proofing only |
+| Web/desktop version | Phone-only app, Expo Go testing |
+| Dark mode, themes, custom fonts | Explicitly rejected in design brief |
+| Receipt photos, tags, widgets | Anti-features — widgets impossible in Expo Go |
+| Push notifications | No recurring automation to notify about |
+| Charts beyond summary | Numbers are the interface (design principle) — revisit as CHRT-01 |
 
 ---
-*Last updated: 2026-08-08 after Phase 2*
+
+*Last updated: 2026-08-09 after v1.0 milestone completion*

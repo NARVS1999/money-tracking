@@ -2,77 +2,55 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-status: completed
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-08-08T20:44:32.709Z"
+current_phase: 0
+status: milestone_complete
+stopped_at: v1.0 archived
+last_updated: "2026-08-09T10:17:00.000Z"
 last_activity: 2026-08-09
-last_activity_desc: Phase 06 marked complete
+last_activity_desc: v1.0 milestone archived
 progress:
   total_phases: 6
   completed_phases: 6
   total_plans: 15
   completed_plans: 15
-current_phase_name: account-lifecycle
+current_phase_name: none — milestone complete
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-08)
+See: .planning/PROJECT.md (updated 2026-08-09)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Phase 06 — account-lifecycle
+**Current focus:** v1.0 milestone complete — awaiting next milestone definition
 
 ## Current Position
 
-Phase: 06 — COMPLETE
-Plan: 2 of 2
-Status: Phase 06 complete
-Last activity: 2026-08-09 — Completed quick task 260809-7u6: Replace automatic Firestore data sync with a manual sync button at the top of the screen
+Milestone: v1.0 — COMPLETE (archived 2026-08-09)
+Phases: 6/6 complete
+Plans: 15/15 complete
 
-Progress: [████████████████████] 13/13 plans ([██████████] 100%)
+No active phase. Start next milestone with `/gsd:new-milestone`.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 13
+- Total plans completed: 15
 - Average duration: —
 - Total execution time: —
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1. Foundation | 3 | 3 | — |
-| 2. Categories | 2 | 2 | — |
-| 3. Entries | 3 | 3 | — |
-| 4. Summary | 2 | 2 | — |
-| 5. Export | 3 | 3 | — |
-| 6. Account Lifecycle | 2 | 0 | — |
-
-**Recent Trend:**
-
-- Last 5 plans: —
-- Trend: —
-
-*Updated after each plan completion*
-**Per-Plan Metrics:**
-
-| Plan | Duration | Tasks | Files |
-|------|----------|-------|-------|
-| Phase 02-categories P01 | 17 | 2 tasks | 4 files |
-| Phase 02-categories P02 | 43m 45s | 3 tasks | 5 files |
-| Phase 03 P01 | 11min | 2 tasks | 6 files |
-| Phase 03 P02 | 13min | 2 tasks | 5 files |
-| Phase 03 P03 | 7min | 2 tasks | 3 files |
-| Phase 04 P01 | 4min | 2 tasks | 4 files |
-| Phase 04 P02 | 1min | 1 task | 2 files |
-| Phase 05 P01 | 13min | 2 tasks | 7 files |
-| Phase 05 P02 | 4min | 1 tasks | 2 files |
-| Phase 05 P03 | 3min | 1 tasks | 3 files |
+| Phase | Plans | Total |
+|-------|-------|-------|
+| 1. Foundation | 3 | 3 |
+| 2. Categories | 2 | 2 |
+| 3. Entries | 3 | 3 |
+| 4. Summary | 2 | 2 |
+| 5. Export | 3 | 3 |
+| 6. Account Lifecycle | 2 | 2 |
 
 ## Accumulated Context
 
@@ -85,11 +63,6 @@ Recent decisions affecting current work:
 - [Phase 1]: AsyncStorage 2.2.0 (pinned) backs AUTH persistence only, via `initializeAuth`; every Firestore query carries an explicit `uid` filter (rules are not filters).
 - [Phase 5]: CSV export included alongside Excel (near-free, same pipeline); SheetJS 0.20.3 from CDN tarball; `expo-file-system/legacy` for SAF/base64 writes.
 - [Phase 6]: Cascade deletes chunked ≤500 ops/batch, auth user deleted LAST (reauth first).
-- [Phase ?]: React 19 react-test-renderer requires wrapping renderer.create in act(); child components do not execute without it
-- [Phase ?]: CategoriesProvider follows AuthProvider pattern: module-level createContext(null), custom hook with null guard, useEffect subscriptions with cleanup
-- [Phase ?]: Firestore mock strategy: capture onSnapshot callbacks in Record<tag, fn>, fire from test helpers for controlled testing
-- [Phase 2]: Categories UX = two grouped SectionLists with sticky headers + per-group inline add (dup guard, blank no-op); swipe-to-delete reveals red Delete (unused) or grey In use (non-tappable) — validated via 16-pass on-device UAT (2 skips acknowledged: in-use swipe N/A until entries exist, offline error copy deferred)
-- [Phase 2]: gesture-handler pinned ~2.32.0 via `npx expo install` (Expo Go bundled), NOT npm latest — same pin rule as AsyncStorage 2.2.0
 
 ### Pending Todos
 
@@ -101,8 +74,6 @@ None yet.
 
 [Issues that affect future work]
 
-- [Phase 5]: HIGH risk — SAF + SheetJS CDN + base64 write pipeline needs research pass at plan time (`/gsd-plan-phase --research-phase 5`) and device testing on both platforms.
-- [Phase 6]: MEDIUM risk — cascade concurrency/partial-failure surface; keep chunked loop idempotent.
 - [All phases]: Re-check uid clause on every new query (P1) — failure mode only surfaces with a second account.
 
 ### Quick Tasks Completed
@@ -113,7 +84,7 @@ None yet.
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
+Items acknowledged and carried forward from v1.0:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
@@ -122,6 +93,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-08T18:42:00Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-08-09
+Stopped at: v1.0 milestone archived
 Resume file: None
