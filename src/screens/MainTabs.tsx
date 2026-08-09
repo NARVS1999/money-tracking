@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../theme/tokens";
+import { View, Image, Text, StyleSheet } from "react-native";
+import { colors, spacing, typography } from "../theme/tokens";
 import HomeScreen from "./HomeScreen";
 import ExpensesScreen from "./ExpensesScreen";
 import IncomeScreen from "./IncomeScreen";
@@ -11,10 +12,20 @@ import SyncButton from "../components/SyncButton";
 
 const Tab = createBottomTabNavigator();
 
+function LogoTitle() {
+  return (
+    <View style={styles.logoContainer}>
+      <Image source={require("../../assets/icon.png")} style={styles.logo} />
+      <Text style={styles.logoText}>Money</Text>
+    </View>
+  );
+}
+
 export default function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
+        headerLeft: () => <LogoTitle />,
         headerRight: () => <SyncButton />,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
@@ -40,6 +51,7 @@ export default function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{
+          headerTitle: () => <LogoTitle />,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
@@ -93,3 +105,23 @@ export default function MainTabs() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: spacing.md,
+    gap: spacing.xs,
+  },
+  logo: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: colors.primary,
+    letterSpacing: -0.5,
+  },
+});
