@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Image, Text, StyleSheet } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import { colors, spacing, typography } from "../theme/tokens";
 import HomeScreen from "./HomeScreen";
 import ExpensesScreen from "./ExpensesScreen";
@@ -16,7 +16,6 @@ function LogoTitle() {
   return (
     <View style={styles.logoContainer}>
       <Image source={require("../../assets/icon.png")} style={styles.logo} />
-      <Text style={styles.logoText}>Money</Text>
     </View>
   );
 }
@@ -117,11 +116,5 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.primary,
-    letterSpacing: -0.5,
   },
 });
