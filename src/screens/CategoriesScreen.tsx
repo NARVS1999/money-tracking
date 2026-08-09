@@ -282,7 +282,6 @@ export default function CategoriesScreen() {
               placeholder="Category name"
               placeholderTextColor={colors.textSecondary}
               editable={!editSaving}
-              autoFocus
             />
 
             <Text style={styles.label}>Icon</Text>
