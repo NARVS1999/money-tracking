@@ -2,8 +2,7 @@
 // Groups slices <5% into "Other". Shows total in center.
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { colors, typography } from "../theme/tokens";
-import { formatCents } from "../lib/money";
+import { colors } from "../theme/tokens";
 
 type DonutChartProps = {
   data: { name: string; value: number }[];
@@ -81,7 +80,7 @@ export default function DonutChart({ data, size = 120, colors: chartColors }: Do
       </Svg>
       <View style={[styles.center, { width: innerR * 2, height: innerR * 2, borderRadius: innerR }]}>
         <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalValue}>{formatCents(total)}</Text>
+        <Text style={styles.totalValue}>{total.toLocaleString()}</Text>
       </View>
     </View>
   );
