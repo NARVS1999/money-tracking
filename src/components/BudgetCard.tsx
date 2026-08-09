@@ -1,8 +1,8 @@
 // BudgetCard — shows budget progress on Home screen.
-// Displays budget amount, date range, progress bar with color-coded thresholds,
+// Displays budget amount, date range, reverse progress bar (full = no spending),
 // and remaining amount. Shows "Set new budget" prompt when period expired.
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { colors, spacing, typography, radius } from "../theme/tokens";
+import { colors, spacing, typography, radius, shadow } from "../theme/tokens";
 import { formatCents } from "../lib/money";
 
 type BudgetCardProps = {
@@ -22,12 +22,6 @@ function formatDateRange(start: string, end: string): string {
   return `${startLabel} – ${endLabel}`;
 }
 
-function getProgressColor(percent: number): string {
-  if (percent < 70) return "#16A34A";
-  if (percent <= 90) return "#F8C519";
-  return "#DC2626";
-}
-
 function isExpired(endDate: string): boolean {
   const today = new Date();
   const [y, m, d] = endDate.split("-").map(Number);
@@ -43,9 +37,11 @@ export default function BudgetCard({
   onTap,
 }: BudgetCardProps) {
   const expired = isExpired(budgetEndDate);
-  const percent = budgetAmount > 0 ? Math.min((expenseCents / budgetAmount) * 100, 100) : 0;
+  // Reverse bar: full bar = no spending, shrinks as expenses increase
+  const remainingPercent = budgetAmount > 0
+    ? Math.max(((budgetAmount - expenseCents) / budgetAmount) * 100, 0)
+    : 100;
   const remaining = budgetAmount - expenseCents;
-  const barColor = getProgressColor(percent);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onTap} activeOpacity={0.7}>
@@ -63,7 +59,12 @@ export default function BudgetCard({
       ) : (
         <>
           <View style={styles.progressBg}>
-            <View style={[styles.progressFill, { width: `${percent}%`, backgroundColor: barColor }]} />
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${remainingPercent}%` },
+              ]}
+            />
           </View>
           <Text style={[styles.remaining, { color: remaining >= 0 ? colors.income : colors.expense }]}>
             Remaining: {formatCents(remaining)}
@@ -76,18 +77,14 @@ export default function BudgetCard({
 
 const styles = StyleSheet.create({
   card: {
+    marginTop: spacing.md,
     marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
     padding: spacing.lg,
-    backgroundColor: "rgba(239, 109, 64, 0.06)",
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.primary,
-    shadowColor: "#EF6D40",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderColor: colors.border,
+    ...shadow.surface,
   },
   header: {
     flexDirection: "row",
@@ -98,7 +95,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: colors.primaryDark,
+    color: colors.primary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -110,18 +107,19 @@ const styles = StyleSheet.create({
   },
   dateRange: {
     fontSize: 13,
-    color: colors.primaryDark,
+    color: colors.textSecondary,
     marginBottom: spacing.md,
   },
   progressBg: {
     height: 10,
-    backgroundColor: "rgba(239,109,64,0.15)",
+    backgroundColor: colors.border,
     borderRadius: 5,
     overflow: "hidden",
     marginBottom: spacing.sm,
   },
   progressFill: {
     height: "100%",
+    backgroundColor: colors.primary,
     borderRadius: 5,
   },
   remaining: {
