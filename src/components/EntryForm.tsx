@@ -397,8 +397,8 @@ const styles = StyleSheet.create({
   },
   bottomSheet: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.sm * 2,
-    borderTopRightRadius: radius.sm * 2,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
     maxHeight: "60%",
     paddingBottom: spacing.xl,
   },

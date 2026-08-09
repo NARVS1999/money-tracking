@@ -1,32 +1,21 @@
-// HomeScreen — derived summary screen. Shows month header, expense/income
-// totals, per-category breakdown sections, and loading skeleton.
-// Data is derived from cached entries via monthRange() — no aggregation queries.
+// HomeScreen — derived summary screen. Shows gradient summary card, quick-action
+// buttons, and per-category breakdown sections. Data derived from cached entries
+// via monthRange() — no aggregation queries.
 import { useMemo } from "react";
-import { ScrollView, Text, View, StyleSheet } from "react-native";
+import { ScrollView, Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { monthRange, today } from "../lib/dates";
-import { colors, spacing, typography } from "../theme/tokens";
-import { formatCents } from "../lib/money";
-import SummaryTotals from "../components/SummaryTotals";
+import { colors, spacing, typography, radius } from "../theme/tokens";
+import SummaryCard from "../components/SummaryCard";
 import CategorySection from "../components/CategorySection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import EmptyState from "../components/EmptyState";
 
 const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 export default function HomeScreen() {
@@ -34,10 +23,6 @@ export default function HomeScreen() {
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
 
-  // Current month range + label — single memo ensures they always stay in sync.
-  // Empty deps[] is correct: `today()` is deterministic within a render pass;
-  // when the month changes (midnight crossing) the user must restart the app
-  // (Expo Go limitation — no background refresh).
   const { start, end, monthLabel } = useMemo(() => {
     const todayStr = today();
     const { start, end } = monthRange(todayStr);
@@ -47,63 +32,44 @@ export default function HomeScreen() {
     return { start, end, monthLabel };
   }, []);
 
-  // Filter entries to current month
   const monthEntries = useMemo(
     () => entries.filter((e) => e.date >= start && e.date <= end),
     [entries, start, end],
   );
 
-  // Expense total
   const expenseTotal = useMemo(
-    () =>
-      monthEntries
-        .filter((e) => e.type === "expense")
-        .reduce((sum, e) => sum + e.amount, 0),
+    () => monthEntries.filter((e) => e.type === "expense").reduce((sum, e) => sum + e.amount, 0),
     [monthEntries],
   );
 
-  // Income total
   const incomeTotal = useMemo(
-    () =>
-      monthEntries
-        .filter((e) => e.type === "income")
-        .reduce((sum, e) => sum + e.amount, 0),
+    () => monthEntries.filter((e) => e.type === "income").reduce((sum, e) => sum + e.amount, 0),
     [monthEntries],
   );
 
-  // Balance = income - expenses
   const balance = incomeTotal - expenseTotal;
 
-  // Expense breakdown: group by categoryId, sum, sort descending
   const expenseBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    monthEntries
-      .filter((e) => e.type === "expense")
-      .forEach((e) => {
-        map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
-      });
+    monthEntries.filter((e) => e.type === "expense").forEach((e) => {
+      map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
+    });
     return Array.from(map.entries())
       .map(([categoryId, cents]) => ({
-        name:
-          expenseCategories.find((c) => c.id === categoryId)?.name ||
-          "Unknown",
+        name: expenseCategories.find((c) => c.id === categoryId)?.name || "Unknown",
         cents,
       }))
       .sort((a, b) => b.cents - a.cents);
   }, [monthEntries, expenseCategories]);
 
-  // Income breakdown: group by categoryId, sum, sort descending
   const incomeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    monthEntries
-      .filter((e) => e.type === "income")
-      .forEach((e) => {
-        map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
-      });
+    monthEntries.filter((e) => e.type === "income").forEach((e) => {
+      map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
+    });
     return Array.from(map.entries())
       .map(([categoryId, cents]) => ({
-        name:
-          incomeCategories.find((c) => c.id === categoryId)?.name || "Unknown",
+        name: incomeCategories.find((c) => c.id === categoryId)?.name || "Unknown",
         cents,
       }))
       .sort((a, b) => b.cents - a.cents);
@@ -128,17 +94,34 @@ export default function HomeScreen() {
       style={styles.screen}
       contentContainerStyle={styles.contentContainer}
     >
-      <Text style={styles.monthHeader}>{monthLabel}</Text>
-      <SummaryTotals expenseCents={expenseTotal} incomeCents={incomeTotal} />
-      <Text
-        style={[
-          styles.balance,
-          { color: balance > 0 ? colors.income : balance < 0 ? colors.expense : colors.textSecondary },
-        ]}
-      >
-        Balance: {formatCents(balance)}
-      </Text>
-      <View style={styles.divider} />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.monthHeader}>{monthLabel.split(" ")[0]}</Text>
+          <Text style={styles.monthSub}>{monthLabel.split(" ")[1]}</Text>
+        </View>
+      </View>
+
+      <SummaryCard
+        balanceCents={balance}
+        expenseCents={expenseTotal}
+        incomeCents={incomeTotal}
+      />
+
+      <View style={styles.quickActions}>
+        <TouchableOpacity
+          style={styles.quickBtnExpense}
+          onPress={() => navigation.navigate("EntryForm", { mode: "add", type: "expense" })}
+        >
+          <Text style={styles.quickBtnExpenseText}>- Expense</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.quickBtnIncome}
+          onPress={() => navigation.navigate("EntryForm", { mode: "add", type: "income" })}
+        >
+          <Text style={styles.quickBtnIncomeText}>+ Income</Text>
+        </TouchableOpacity>
+      </View>
+
       {expenseBreakdown.length > 0 && (
         <CategorySection
           title="Expenses"
@@ -166,27 +149,61 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    backgroundColor: colors.background,
+    paddingBottom: spacing.xl,
+  },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   monthHeader: {
-    fontSize: typography.heading.size,
-    fontWeight: typography.heading.weight as "700",
-    lineHeight: typography.heading.lineHeight,
+    fontSize: 28,
+    fontWeight: "800",
     color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  monthSub: {
+    fontSize: typography.label.size,
+    color: colors.textSecondary,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  quickActions: {
+    flexDirection: "row",
+    gap: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    marginBottom: spacing.lg,
+    marginTop: spacing.md,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.md,
+  quickBtnExpense: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(219,40,28,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(219,40,28,0.15)",
+    alignItems: "center",
   },
-  balance: {
-    fontSize: 20,
+  quickBtnExpenseText: {
+    fontSize: 15,
     fontWeight: "600",
-    fontVariant: ["tabular-nums"],
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    color: colors.expense,
+  },
+  quickBtnIncome: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(69,192,207,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(69,192,207,0.15)",
+    alignItems: "center",
+  },
+  quickBtnIncomeText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.teal,
   },
 });

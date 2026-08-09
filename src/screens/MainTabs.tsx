@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography } from "../theme/tokens";
+import { colors } from "../theme/tokens";
 import HomeScreen from "./HomeScreen";
 import ExpensesScreen from "./ExpensesScreen";
 import IncomeScreen from "./IncomeScreen";
@@ -19,10 +19,18 @@ export default function MainTabs() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: "rgba(255, 255, 255, 0.95)",
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 64,
         },
-        tabBarLabelStyle: { fontSize: typography.label.size },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
         tabBarIcon: ({ color, size }) => {
           return null;
         },
@@ -32,8 +40,8 @@ export default function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -41,8 +49,8 @@ export default function MainTabs() {
         name="Expenses"
         component={ExpensesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trending-down-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "trending-down" : "trending-down-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -50,8 +58,8 @@ export default function MainTabs() {
         name="Income"
         component={IncomeScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trending-up-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "trending-up" : "trending-up-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -59,8 +67,8 @@ export default function MainTabs() {
         name="Categories"
         component={CategoriesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pricetags-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "pricetags" : "pricetags-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -68,8 +76,8 @@ export default function MainTabs() {
         name="Export"
         component={ExportScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "document-text" : "document-text-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -77,8 +85,8 @@ export default function MainTabs() {
         name="Account"
         component={AccountScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
           ),
         }}
       />

@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 44,
     backgroundColor: colors.border,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
   divider: {
     height: 1,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 44,
     backgroundColor: colors.border,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
   rowGap: {
     height: 1,

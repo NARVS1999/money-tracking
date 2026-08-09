@@ -39,9 +39,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   label: {
-    fontSize: typography.label.size,
-    fontWeight: typography.label.weight as "700",
-    lineHeight: typography.label.lineHeight,
+    fontSize: 13,
+    fontWeight: "700",
     color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });

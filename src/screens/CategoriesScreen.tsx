@@ -293,10 +293,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   sectionTitle: {
-    fontSize: typography.heading.size,
+    fontSize: 13,
     fontWeight: typography.heading.weight as "700",
     lineHeight: typography.heading.lineHeight,
-    color: colors.accent,
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   errorText: {
     fontSize: typography.label.size,

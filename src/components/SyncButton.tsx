@@ -41,9 +41,9 @@ export default function SyncButton() {
       accessibilityRole="button"
     >
       {syncing ? (
-        <ActivityIndicator size="small" color={colors.textPrimary} />
+        <ActivityIndicator size="small" color={colors.primary} />
       ) : (
-        <Ionicons name="refresh" size={22} color={colors.textPrimary} />
+        <Ionicons name="refresh" size={22} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
