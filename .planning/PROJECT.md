@@ -23,12 +23,12 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 
 ## Next Milestone Goals
 
-To be defined with `/gsd:new-milestone`. Candidates:
+**v1.1** — Theme overhaul, budget, category icons, charts (defined 2026-08-09)
 
-- Search/filter entries (SEAR-01)
-- Per-category monthly budgets (BUDG-01)
-- Spending chart (CHRT-01)
-- Durable offline via expo-sqlite sync layer (OFFL-01)
+- Full theme overhaul to Modern UI style (orange/red gradient, rounded surfaces, frosted tab bar)
+- Single global budget with custom date range and progress bar on Home
+- Preset icon grid for categories (optional, default fallback)
+- Pie/donut charts for expense/income breakdowns on Home
 
 ## Context
 
