@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme: Basic</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #FFFFFF; color: #000000;
+    max-width: 375px; margin: 0 auto; min-height: 100vh;
+  }
+  .header { padding: 24px 16px 16px; border-bottom: 2px solid #0A121A; }
+  .month { font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .budget-card {
+    margin: 16px; padding: 16px; border: 3px solid #EF6D40; background: rgba(239,109,64,0.06);
+  }
+  .budget-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .budget-label { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #DB281C; }
+  .budget-amount { font-size: 24px; font-weight: 700; color: #EF6D40; font-variant-numeric: tabular-nums; }
+  .budget-date { font-size: 12px; color: #DB281C; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .budget-progress-bg { height: 10px; background: rgba(239,109,64,0.15); border: 1px solid #EF6D40; overflow: hidden; margin-bottom: 8px; }
+  .budget-progress-fill { height: 100%; width: 72%; background: linear-gradient(90deg, #EF6D40, #DB281C); }
+  .budget-remaining { font-size: 14px; font-weight: 700; color: #DB281C; text-align: right; text-transform: uppercase; }
+  .totals { padding: 24px 16px; }
+  .total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .total-label { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .total-amount { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .total-amount.expense { color: #DB281C; }
+  .total-amount.income { color: #45C0CF; }
+  .balance { font-size: 28px; font-weight: 700; padding: 16px; background: rgba(239,109,64,0.06); text-align: center; margin: 0 16px; }
+  .balance.positive { color: #45C0CF; }
+  .chart-section { padding: 24px 16px; }
+  .chart-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .chart-container { display: flex; align-items: center; gap: 16px; }
+  .pie-chart { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #0A121A; flex-shrink: 0; }
+  .pie-expense { background: conic-gradient(#EF6D40 0% 49.2%, #DB281C 49.2% 87.6%, #45C0CF 87.6% 100%); }
+  .pie-income { background: conic-gradient(#45C0CF 0% 80%, #F8C519 80% 100%); }
+  .chart-legend { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+  .legend-dot { width: 10px; height: 10px; border: 2px solid #0A121A; flex-shrink: 0; }
+  .divider { height: 2px; background: #0A121A; margin: 24px 16px; }
+  .category-icon {
+    width: 32px; height: 32px; border: 2px solid #0A121A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; margin-right: 10px; flex-shrink: 0;
+  }
+  .icon-rent { background: rgba(239,109,64,0.15); color: #EF6D40; }
+  .icon-food { background: rgba(219,40,28,0.15); color: #DB281C; }
+  .icon-transport { background: rgba(69,192,207,0.15); color: #45C0CF; }
+  .icon-salary { background: rgba(69,192,207,0.15); color: #45C0CF; }
+  .icon-parttime { background: rgba(248,197,25,0.15); color: #F8C519; }
+  .section { padding: 0 16px 24px; }
+  .section-title {
+    font-size: 18px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #0A121A;
+  }
+  .category-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #E5E7EB; }
+  .category-row:last-child { border-bottom: none; }
+  .category-left { display: flex; align-items: center; }
+  .category-name { font-size: 18px; font-weight: 500; }
+  .category-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .subtotal { font-size: 16px; font-weight: 700; text-align: right; padding: 12px 0; border-top: 2px solid #0A121A; margin-top: 8px; }
+  .quick-add { display: flex; gap: 12px; padding: 24px 16px; }
+  .quick-add button {
+    flex: 1; padding: 16px; border: 3px solid #0A121A; background: #0A121A; color: #fff;
+    font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+  }
+  .quick-add button.secondary { background: #fff; color: #0A121A; }
+  .tab-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 375px; background: #FFFFFF; border-top: 3px solid #0A121A;
+    display: flex; justify-content: space-around; padding: 12px 0;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B7280; }
+  .tab.active { color: #EF6D40; }
+  .tab-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="month">August 2026</div>
+  </div>
+
+  <div class="budget-card">
+    <div class="budget-header">
+      <span class="budget-label">Budget</span>
+      <span class="budget-amount">P30,000.00</span>
+    </div>
+    <div class="budget-date">Aug 1 - 31, 2026</div>
+    <div class="budget-progress-bg">
+      <div class="budget-progress-fill"></div>
+    </div>
+    <div class="budget-remaining">Remaining: P21,567.50</div>
+  </div>
+
+  <div class="totals">
+    <div class="total-row">
+      <span class="total-label">Spent</span>
+      <span class="total-amount expense">P8,432.50</span>
+    </div>
+    <div class="total-row">
+      <span class="total-label">Earned</span>
+      <span class="total-amount income">P25,000.00</span>
+    </div>
+  </div>
+
+  <div class="balance positive">Balance: P16,567.50</div>
+
+  <div class="chart-section">
+    <div class="chart-title">Expenses by Category</div>
+    <div class="chart-container">
+      <div class="pie-chart pie-expense"></div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#EF6D40"></div>Rent 49%</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#DB281C"></div>Food 38%</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#45C0CF"></div>Transport 13%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-title">Income by Category</div>
+    <div class="chart-container">
+      <div class="pie-chart pie-income"></div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#45C0CF"></div>Salary 80%</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#F8C519"></div>Part-time 20%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-title">Expenses</div>
+    <div class="category-row">
+      <div class="category-left">
+        <div class="category-icon icon-rent">R</div>
+        <span class="category-name">Rent</span>
+      </div>
+      <span class="category-amount" style="color:#DB281C">P4,000.00</span>
+    </div>
+    <div class="category-row">
+      <div class="category-left">
+        <div class="category-icon icon-food">F</div>
+        <span class="category-name">Food</span>
+      </div>
+      <span class="category-amount" style="color:#DB281C">P3,120.00</span>
+    </div>
+    <div class="category-row">
+      <div class="category-left">
+        <div class="category-icon icon-transport">T</div>
+        <span class="category-name">Transport</span>
+      </div>
+      <span class="category-amount" style="color:#DB281C">P1,005.00</span>
+    </div>
+    <div class="subtotal">P8,125.00</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-title">Income</div>
+    <div class="category-row">
+      <div class="category-left">
+        <div class="category-icon icon-salary">$</div>
+        <span class="category-name">Salary</span>
+      </div>
+      <span class="category-amount" style="color:#45C0CF">P20,000.00</span>
+    </div>
+    <div class="category-row">
+      <div class="category-left">
+        <div class="category-icon icon-parttime">P</div>
+        <span class="category-name">Part-time</span>
+      </div>
+      <span class="category-amount" style="color:#45C0CF">P5,000.00</span>
+    </div>
+    <div class="subtotal">P25,000.00</div>
+  </div>
+
+  <div class="quick-add">
+    <button class="secondary">+ Expense</button>
+    <button>+ Income</button>
+  </div>
+
+  <div style="height: 80px;"></div>
+
+  <div class="tab-bar">
+    <div class="tab active"><span class="tab-icon">H</span>Home</div>
+    <div class="tab"><span class="tab-icon">D</span>Expenses</div>
+    <div class="tab"><span class="tab-icon">U</span>Income</div>
+    <div class="tab"><span class="tab-icon">T</span>Categories</div>
+    <div class="tab"><span class="tab-icon">E</span>Export</div>
+  </div>
+</body>
+</html>
