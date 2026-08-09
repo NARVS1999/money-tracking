@@ -15,6 +15,7 @@ import { useEntries, type Entry } from "../entries/EntriesProvider";
 import EntryRow from "../components/EntryRow";
 import DateSectionHeader from "../components/DateSectionHeader";
 import { colors, spacing, typography, radius } from "../theme/tokens";
+import { formatCents } from "../lib/money";
 
 // Group entries by date string
 function groupByDate(entries: Entry[]): { date: string; data: Entry[] }[] {
@@ -40,6 +41,11 @@ export default function ExpensesScreen() {
   const expenseEntries = useMemo(
     () => entries.filter((e) => e.type === "expense"),
     [entries],
+  );
+
+  const totalCents = useMemo(
+    () => expenseEntries.reduce((sum, e) => sum + e.amount, 0),
+    [expenseEntries],
   );
 
   const sections = useMemo(() => groupByDate(expenseEntries), [expenseEntries]);
@@ -101,6 +107,9 @@ export default function ExpensesScreen() {
         <FlatList
           data={flatData}
           keyExtractor={(item) => item.key}
+          ListHeaderComponent={
+            <Text style={styles.total}>Total: {formatCents(totalCents)}</Text>
+          }
           renderItem={({ item }) => {
             if (item.type === "header" && item.date) {
               return <DateSectionHeader date={item.date} />;
@@ -164,6 +173,15 @@ const styles = StyleSheet.create({
     lineHeight: typography.label.lineHeight,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  total: {
+    fontSize: 20,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+    color: colors.textPrimary,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   fab: {
     position: "absolute",

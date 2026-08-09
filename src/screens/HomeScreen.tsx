@@ -8,6 +8,7 @@ import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { monthRange, today } from "../lib/dates";
 import { colors, spacing, typography } from "../theme/tokens";
+import { formatCents } from "../lib/money";
 import SummaryTotals from "../components/SummaryTotals";
 import CategorySection from "../components/CategorySection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
@@ -70,6 +71,9 @@ export default function HomeScreen() {
     [monthEntries],
   );
 
+  // Balance = income - expenses
+  const balance = incomeTotal - expenseTotal;
+
   // Expense breakdown: group by categoryId, sum, sort descending
   const expenseBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -126,6 +130,14 @@ export default function HomeScreen() {
     >
       <Text style={styles.monthHeader}>{monthLabel}</Text>
       <SummaryTotals expenseCents={expenseTotal} incomeCents={incomeTotal} />
+      <Text
+        style={[
+          styles.balance,
+          { color: balance > 0 ? colors.income : balance < 0 ? colors.expense : colors.textSecondary },
+        ]}
+      >
+        Balance: {formatCents(balance)}
+      </Text>
       <View style={styles.divider} />
       {expenseBreakdown.length > 0 && (
         <CategorySection
@@ -169,5 +181,12 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.md,
+  },
+  balance: {
+    fontSize: 20,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
   },
 });
