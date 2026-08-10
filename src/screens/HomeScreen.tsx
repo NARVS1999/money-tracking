@@ -1,14 +1,12 @@
 // HomeScreen — derived summary screen. Shows gradient summary card, quick-action
-// buttons, and per-category breakdown sections. Data derived from cached entries
-// via monthRange() — no aggregation queries.
+// buttons, and per-category breakdown sections. Data derived from all cached entries.
 import { useMemo } from "react";
 import { ScrollView, Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { useAuth } from "../auth/AuthProvider";
-import { monthRange, today } from "../lib/dates";
-import { colors, spacing, typography, radius } from "../theme/tokens";
+import { colors, spacing, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
 import BudgetCard from "../components/BudgetCard";
 import DonutChart from "../components/DonutChart";
@@ -18,39 +16,20 @@ import LoadingSkeleton from "../components/LoadingSkeleton";
 import EmptyState from "../components/EmptyState";
 import { CHART_COLORS } from "../components/chartColors";
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
   const { userProfile } = useAuth();
 
-  const { start, end, monthLabel } = useMemo(() => {
-    const todayStr = today();
-    const { start, end } = monthRange(todayStr);
-    const parts = todayStr.split("-");
-    const monthIndex = parseInt(parts[1], 10) - 1;
-    const monthLabel = `${MONTH_NAMES[monthIndex]} ${parts[0]}`;
-    return { start, end, monthLabel };
-  }, []);
-
-  const monthEntries = useMemo(
-    () => entries.filter((e) => e.date >= start && e.date <= end),
-    [entries, start, end],
-  );
-
   const expenseTotal = useMemo(
-    () => monthEntries.filter((e) => e.type === "expense").reduce((sum, e) => sum + e.amount, 0),
-    [monthEntries],
+    () => entries.filter((e) => e.type === "expense").reduce((sum, e) => sum + e.amount, 0),
+    [entries],
   );
 
   const incomeTotal = useMemo(
-    () => monthEntries.filter((e) => e.type === "income").reduce((sum, e) => sum + e.amount, 0),
-    [monthEntries],
+    () => entries.filter((e) => e.type === "income").reduce((sum, e) => sum + e.amount, 0),
+    [entries],
   );
 
   const balance = incomeTotal - expenseTotal;
@@ -70,7 +49,7 @@ export default function HomeScreen() {
 
   const expenseBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    monthEntries.filter((e) => e.type === "expense").forEach((e) => {
+    entries.filter((e) => e.type === "expense").forEach((e) => {
       map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
     });
     return Array.from(map.entries())
@@ -79,11 +58,11 @@ export default function HomeScreen() {
         return { name: cat?.name || "Unknown", cents, icon: cat?.icon };
       })
       .sort((a, b) => b.cents - a.cents);
-  }, [monthEntries, expenseCategories]);
+  }, [entries, expenseCategories]);
 
   const incomeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
-    monthEntries.filter((e) => e.type === "income").forEach((e) => {
+    entries.filter((e) => e.type === "income").forEach((e) => {
       map.set(e.categoryId, (map.get(e.categoryId) || 0) + e.amount);
     });
     return Array.from(map.entries())
@@ -92,7 +71,7 @@ export default function HomeScreen() {
         return { name: cat?.name || "Unknown", cents, icon: cat?.icon };
       })
       .sort((a, b) => b.cents - a.cents);
-  }, [monthEntries, incomeCategories]);
+  }, [entries, incomeCategories]);
 
   // Chart data: group small slices into "Other" to match DonutChart behavior
   const expenseChartData = useMemo(() => {
@@ -133,7 +112,7 @@ export default function HomeScreen() {
     return <LoadingSkeleton />;
   }
 
-  if (monthEntries.length === 0) {
+  if (entries.length === 0) {
     return (
       <EmptyState
         onAddPress={() =>
@@ -150,8 +129,7 @@ export default function HomeScreen() {
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.monthHeader}>{monthLabel.split(" ")[0]}</Text>
-          <Text style={styles.monthSub}>{monthLabel.split(" ")[1]}</Text>
+          <Text style={styles.monthHeader}>All Time</Text>
         </View>
       </View>
 
@@ -256,12 +234,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.textPrimary,
     letterSpacing: -0.5,
-  },
-  monthSub: {
-    fontSize: typography.label.size,
-    color: colors.textSecondary,
-    fontWeight: "500",
-    marginTop: 2,
   },
   quickActions: {
     flexDirection: "row",
