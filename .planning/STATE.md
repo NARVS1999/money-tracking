@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: theme-budget-icons-charts
+milestone: v1.2
+milestone_name: TBD
 current_phase: 0
-status: milestone_complete
-stopped_at: Completed Phase 10 — Charts
-last_updated: "2026-08-09T15:30:00.000Z"
+status: planning_next
+stopped_at: v1.1 milestone complete
+last_updated: "2026-08-09T22:30:00.000Z"
 last_activity: 2026-08-09
-last_activity_desc: Phase 10 complete — all phases done
+last_activity_desc: v1.1 milestone archived
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-current_phase_name: none — milestone complete
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+current_phase_name: none — planning next milestone
 ---
 
 # Project State
@@ -23,64 +23,45 @@ current_phase_name: none — milestone complete
 See: .planning/PROJECT.md (updated 2026-08-09)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** v1.1 milestone complete — ready for audit/complete/cleanup
+**Current focus:** Planning v1.2 milestone
 
 ## Current Position
 
-Milestone: v1.1 — COMPLETE ✓
-All 4 phases done (7, 8, 9, 10)
-
-Progress: [████████████████████] 4/4 phases (100%)
+Milestone: v1.1 — COMPLETE ✓ (archived)
+Next: v1.2 — Planning (awaiting /gsd-new-milestone)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
-- Average duration: ~23min
-- Total execution time: ~90min
-
-**By Phase:**
-
-| Phase | Plans | Total |
-|-------|-------|-------|
-| 7. Theme Overhaul | 1 | 1 |
-| 8. Budget | 1 | 1 |
-| 9. Category Icons | 1 | 1 |
-| 10. Charts | 1 | 1 |
+- Total milestones completed: 2 (v1.0, v1.1)
+- v1.0 phases: 6
+- v1.1 phases: 4
+- Total LOC: ~8,700 TypeScript
 
 ## Accumulated Context
 
 ### Decisions
 
-- [Phase 10]: react-native-svg for donut charts — custom SVG arcs, no external charting lib
-- [Phase 10]: Slices <5% grouped into Other
-- [Phase 9]: 55 Ionicons, swipe Edit + Delete/In use actions
-- [Phase 8]: Budget on users/{uid} doc with setDoc merge:true
-- [Phase 7]: Orange/red gradient via expo-linear-gradient
+- [v1.1]: Orange/red gradient via expo-linear-gradient — Expo Go compatible
+- [v1.1]: Budget on users/{uid} doc with setDoc merge:true — no new collections
+- [v1.1]: 50+ Ionicons for categories with backward-compatible optional icon field
+- [v1.1]: Custom SVG donut charts via react-native-svg — no external charting lib
+- [v1.1]: Chart data from cached entries via memo — no Firestore aggregation
 
-### Pending Todos
-
-None yet.
-
-### Blockers/Concerns
-
-None.
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-
-## Deferred Items
+### Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
 | Offline | Durable offline via expo-sqlite sync layer (OFFL-01) | Deferred to v2 | 2026-08-06 |
 | Search | SEAR-01 search/filter over entries | Deferred to v2 | 2026-08-06 |
 
+### Blockers/Concerns
+
+None.
+
 ## Session Continuity
 
 Last session: 2026-08-09
-Stopped at: Phase 10 complete — all phases done
+Stopped at: v1.1 milestone archived
 Resume file: None
