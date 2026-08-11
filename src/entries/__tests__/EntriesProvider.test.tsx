@@ -47,6 +47,7 @@ jest.mock("../../db/entries", () => {
   return {
     ...actual,
     insertEntry: jest.fn(actual.insertEntry),
+    getAllEntries: jest.fn(actual.getAllEntries),
   };
 });
 
@@ -276,6 +277,49 @@ describe("EntriesProvider sync", () => {
 
     await entries().sync();
     expect(fullSync).not.toHaveBeenCalled();
+  });
+});
+
+describe("EntriesProvider reload (phase 13)", () => {
+  it("re-reads SQLite into state without any network sync", async () => {
+    await insertEntry(dbRow("seed-id"));
+    mountSync();
+    await flushAll();
+    (fullSync as jest.Mock).mockClear();
+
+    // A row lands in SQLite behind the provider's back — the recurring
+    // scheduler inserts generated entries directly into the entries table.
+    await insertEntry(
+      dbRow("local-gen", { id: "local-gen", date: "2026-08-12" }),
+    );
+    await entries().reload();
+    await flushAll();
+
+    expect(fullSync).not.toHaveBeenCalled();
+    const ids = entries().entries.map((e) => e.id);
+    expect(ids).toContain("local-gen");
+    expect(ids).toContain("seed-id");
+  });
+
+  it("is a no-op without a user", async () => {
+    mockUser = null;
+    mountSync();
+    await flushAll();
+
+    await entries().reload();
+
+    expect(entries().entries).toEqual([]);
+  });
+
+  it("sets lastError when the SQLite read fails", async () => {
+    mountSync();
+    await flushAll();
+    (getAllEntries as jest.Mock).mockRejectedValueOnce(new Error("db corrupt"));
+
+    await entries().reload();
+    await flushAll();
+
+    expect(entries().lastError).toBe("db corrupt");
   });
 });
 

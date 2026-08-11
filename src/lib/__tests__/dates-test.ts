@@ -183,6 +183,11 @@ describe("addMonths", () => {
   it("clamps December 31 forward", () => {
     expect(addMonths("2026-12-31", 1)).toBe("2027-01-31");
   });
+
+  it("clamping is sticky: Feb 28 + 1 -> Mar 28 (never re-lands on a 29th)", () => {
+    expect(addMonths("2026-02-28", 1)).toBe("2026-03-28");
+    expect(addMonths("2025-02-28", 1)).toBe("2025-03-28");
+  });
 });
 
 describe("addYears", () => {
@@ -197,5 +202,13 @@ describe("addYears", () => {
   it("clamps Feb 29 to Feb 28 in non-leap target years", () => {
     expect(addYears("2024-02-29", 1)).toBe("2025-02-28");
     expect(addYears("2024-02-29", 4)).toBe("2028-02-29");
+  });
+
+  it("clamps Feb 29 going backward into a non-leap year", () => {
+    expect(addYears("2024-02-29", -1)).toBe("2023-02-28");
+  });
+
+  it("lands back on Feb 29 when the target year is a leap year", () => {
+    expect(addYears("2024-02-29", -4)).toBe("2020-02-29");
   });
 });

@@ -32,6 +32,7 @@ import {
   generateEntry,
   runScheduler,
 } from "../scheduler";
+import { addDays, today } from "../../lib/dates";
 
 const now = 1_752_000_000_000;
 
@@ -147,6 +148,39 @@ describe("getDatesToGenerate", () => {
   it("returns nothing for an unknown frequency value", () => {
     const t = makeScheduled({ frequency: "fortnightly" });
     expect(getDatesToGenerate(t, "2026-08-12")).toEqual([]);
+  });
+
+  it("weekly resumes the day after lastGenerated", () => {
+    const t = makeScheduled({
+      frequency: "weekly",
+      date: "2026-08-01",
+      lastGenerated: "2026-08-15",
+    });
+    // Occurrences from the anchor: 08-01, 08-08, 08-15; the next one due is
+    // 08-22 — the scan starts after lastGenerated, never backfills.
+    expect(getDatesToGenerate(t, "2026-08-22")).toEqual(["2026-08-22"]);
+  });
+
+  it("monthly resumes from the day after lastGenerated", () => {
+    const t = makeScheduled({
+      frequency: "monthly",
+      date: "2026-05-12",
+      lastGenerated: "2026-06-12",
+    });
+    expect(getDatesToGenerate(t, "2026-08-12")).toEqual([
+      "2026-07-12",
+      "2026-08-12",
+    ]);
+  });
+
+  it("caps the day-by-day scan at MAX_SCAN_DAYS (5000) instead of spinning forever", () => {
+    // A corrupted/ancient anchor ~17 years back: the bound guarantees
+    // termination and a bounded result, never an infinite loop.
+    const t = makeScheduled({ frequency: "daily", date: "2010-01-01" });
+    const dates = getDatesToGenerate(t, "2026-08-12");
+    expect(dates).toHaveLength(5001); // 0..5000 inclusive
+    expect(dates[0]).toBe("2010-01-01");
+    expect(dates[dates.length - 1]).toBe(addDays("2010-01-01", 5000));
   });
 });
 
@@ -271,5 +305,53 @@ describe("runScheduler", () => {
     const [template] = await getAllScheduled("u1");
     expect(template.lastGenerated).toBeNull();
     expect(template.updatedAt).toBe(now);
+  });
+
+  it("materializes a once template exactly once and advances its anchor", async () => {
+    await insertScheduled(
+      makeScheduled({ frequency: "once", date: "2026-08-01" }),
+    );
+    expect(await runScheduler("u1")).toBe(1);
+    const entries = await getAllEntries("u1");
+    expect(entries.map((e) => e.date)).toEqual(["2026-08-01"]);
+    // One queued create + the queued template update (CR-01).
+    expect(await getQueue("u1")).toHaveLength(2);
+    const [template] = await getAllScheduled("u1");
+    expect(template.lastGenerated).toBe("2026-08-01");
+    // A rerun after the anchor advances is a no-op.
+    expect(await runScheduler("u1")).toBe(0);
+    expect(await getQueue("u1")).toHaveLength(2);
+  });
+
+  it("generates only dates within endDate and advances lastGenerated to it", async () => {
+    await insertScheduled(
+      makeScheduled({
+        frequency: "daily",
+        date: "2026-08-01",
+        endDate: "2026-08-03",
+      }),
+    );
+    expect(await runScheduler("u1")).toBe(3);
+    const dates = (await getAllEntries("u1")).map((e) => e.date).sort();
+    expect(dates).toEqual(["2026-08-01", "2026-08-02", "2026-08-03"]);
+    // 3 entry creates + the template update.
+    expect(await getQueue("u1")).toHaveLength(4);
+    const [template] = await getAllScheduled("u1");
+    expect(template.lastGenerated).toBe("2026-08-03");
+    // After the endDate passes, nothing further is owed.
+    expect(await runScheduler("u1")).toBe(0);
+  });
+
+  it("catches up a weekly template at 7-day intervals through today", async () => {
+    const start = addDays(today(), -21);
+    await insertScheduled(makeScheduled({ frequency: "weekly", date: start }));
+    expect(await runScheduler("u1")).toBe(4);
+    const dates = (await getAllEntries("u1")).map((e) => e.date).sort();
+    expect(dates).toEqual([
+      addDays(today(), -21),
+      addDays(today(), -14),
+      addDays(today(), -7),
+      today(),
+    ]);
   });
 });

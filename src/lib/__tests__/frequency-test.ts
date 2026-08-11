@@ -64,6 +64,19 @@ describe("matchesFrequency", () => {
   it("never matches for an unknown frequency value", () => {
     expect(matchesFrequency("2026-08-12", "fortnightly" as never, "2026-08-12")).toBe(false);
   });
+
+  it("monthly from Feb 29 matches any month's 29th (day-equality only, month ignored)", () => {
+    const start = "2024-02-29";
+    expect(matchesFrequency("2024-03-29", "monthly", start)).toBe(true);
+    expect(matchesFrequency("2026-03-29", "monthly", start)).toBe(true);
+    expect(matchesFrequency("2026-02-28", "monthly", start)).toBe(false);
+  });
+
+  it("weekly anchors across a year boundary", () => {
+    const start = "2026-12-29";
+    expect(matchesFrequency("2027-01-05", "weekly", start)).toBe(true); // +7
+    expect(matchesFrequency("2027-01-04", "weekly", start)).toBe(false); // +6
+  });
 });
 
 describe("getNextDate", () => {
@@ -101,6 +114,22 @@ describe("getNextDate", () => {
 
   it("returns null for an unknown frequency value", () => {
     expect(getNextDate("2026-08-12", "fortnightly" as never)).toBeNull();
+  });
+
+  it("monthly from Jan 29 lands on Feb 29 in a leap year", () => {
+    expect(getNextDate("2024-01-29", "monthly")).toBe("2024-02-29");
+  });
+
+  it("monthly from Jan 29 skips a non-leap February (day-equality)", () => {
+    expect(getNextDate("2026-01-29", "monthly")).toBe("2026-03-29");
+  });
+
+  it("monthly from Feb 29 (leap) advances to the next month's 29th", () => {
+    expect(getNextDate("2024-02-29", "monthly")).toBe("2024-03-29");
+  });
+
+  it("weekly advances across a year boundary", () => {
+    expect(getNextDate("2026-12-29", "weekly")).toBe("2027-01-05");
   });
 });
 

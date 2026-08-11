@@ -46,6 +46,7 @@ jest.mock("../../db/scheduled", () => {
   return {
     ...actual,
     insertScheduled: jest.fn(actual.insertScheduled),
+    getAllScheduled: jest.fn(actual.getAllScheduled),
   };
 });
 
@@ -188,6 +189,24 @@ describe("ScheduledEntriesProvider load", () => {
     await flushAll();
     expect(ctx().scheduledEntries).toEqual([]);
   });
+
+  it("coerces an unknown stored frequency to 'once' on load (IN-01 current behavior)", async () => {
+    await insertScheduled(dbRow("t1", { frequency: "fortnightly" }));
+    mountSync();
+    await flushAll();
+    expect(ctx().scheduledEntries[0].frequency).toBe("once");
+  });
+
+  it("sets lastError and clears isLoading when the SQLite load fails", async () => {
+    (getAllScheduled as jest.Mock).mockRejectedValueOnce(
+      new Error("db corrupt"),
+    );
+    mountSync();
+    await flushAll();
+    expect(ctx().lastError).toBe("db corrupt");
+    expect(ctx().isLoading).toBe(false);
+    expect(ctx().scheduledEntries).toEqual([]);
+  });
 });
 
 describe("ScheduledEntriesProvider write contract", () => {
@@ -235,6 +254,26 @@ describe("ScheduledEntriesProvider write contract", () => {
     expect(enqueue).not.toHaveBeenCalled();
   });
 
+  it("persists an explicit endDate on addScheduled (db payload + state mirror)", async () => {
+    mountSync();
+    await flushAll();
+    (insertScheduled as jest.Mock).mockClear();
+    (enqueue as jest.Mock).mockClear();
+
+    const pending = ctx().addScheduled({
+      ...sampleInput,
+      endDate: "2026-12-31",
+    });
+    await flushAll();
+    await pending;
+
+    const payload = (insertScheduled as jest.Mock).mock.calls[0][0];
+    expect(payload.endDate).toBe("2026-12-31");
+    const [row] = await getAllScheduled("user-1");
+    expect(row.endDate).toBe("2026-12-31");
+    expect(ctx().scheduledEntries[0].endDate).toBe("2026-12-31");
+  });
+
   it("updates a template and queues an update (bumps updatedAt, synced forced 0)", async () => {
     await insertScheduled(dbRow("t1", { updatedAt: 1000, synced: 1 }));
     mountSync();
@@ -265,6 +304,43 @@ describe("ScheduledEntriesProvider write contract", () => {
 
     expect(enqueue).not.toHaveBeenCalled();
     expect(ctx().scheduledEntries[0].description).toBe("Daily coffee");
+  });
+
+  it("rejects an unknown frequency on updateScheduled without touching the db", async () => {
+    await insertScheduled(dbRow("t1"));
+    mountSync();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    await expect(
+      ctx().updateScheduled("t1", { frequency: "fortnightly" as never }),
+    ).rejects.toThrow("Invalid frequency");
+    expect(enqueue).not.toHaveBeenCalled();
+    const [row] = await getAllScheduled("user-1");
+    expect(row.frequency).toBe("daily");
+  });
+
+  it("clears endDate with null and leaves it untouched when undefined (state mirrors the db)", async () => {
+    await insertScheduled(dbRow("t1", { endDate: "2026-12-31" }));
+    mountSync();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    await ctx().updateScheduled("t1", { endDate: null });
+    await flushAll();
+    const [row] = await getAllScheduled("user-1");
+    expect(row.endDate).toBeNull();
+    expect(ctx().scheduledEntries[0].endDate).toBeNull();
+
+    // endDate: undefined carries no change — the db update is skipped and
+    // nothing is enqueued (the value stays null in both db and state).
+    (enqueue as jest.Mock).mockClear();
+    await ctx().updateScheduled("t1", { endDate: undefined });
+    await flushAll();
+    expect(enqueue).not.toHaveBeenCalled();
+    const [row2] = await getAllScheduled("user-1");
+    expect(row2.endDate).toBeNull();
+    expect(ctx().scheduledEntries[0].endDate).toBeNull();
   });
 
   it("resets lastGenerated when date or frequency changes so the engine re-anchors (WR-03)", async () => {
@@ -488,6 +564,20 @@ describe("ScheduledEntriesProvider startup scheduler wiring", () => {
 });
 
 describe("ScheduledEntriesProvider auth guards", () => {
+  it("useScheduledEntries throws when used outside the provider", () => {
+    function NoProviderCapture() {
+      useScheduledEntries();
+      return <Text>ok</Text>;
+    }
+    expect(() => {
+      act(() => {
+        renderer.create(<NoProviderCapture />);
+      });
+    }).toThrow(
+      "useScheduledEntries must be used within ScheduledEntriesProvider",
+    );
+  });
+
   it("throws 'Not authenticated' on every write without a user", async () => {
     mockUser = null;
     mountSync();
