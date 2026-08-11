@@ -8,6 +8,8 @@ import {
   formatFrequency,
   isFrequency,
   FREQUENCIES,
+  getNextOccurrence,
+  formatNextDate,
 } from "../frequency";
 
 describe("matchesFrequency", () => {
@@ -152,5 +154,30 @@ describe("formatFrequency / isFrequency", () => {
     expect(["once", "daily", "weekly", "monthly", "yearly"].every(isFrequency)).toBe(true);
     expect(isFrequency("fortnightly")).toBe(false);
     expect(isFrequency("")).toBe(false);
+  });
+});
+
+describe("getNextOccurrence", () => {
+  it("anchors at lastGenerated when it is set", () => {
+    expect(getNextOccurrence("2026-08-01", "daily", "2026-08-10")).toBe("2026-08-11");
+    expect(getNextOccurrence("2026-08-01", "weekly", "2026-08-05")).toBe("2026-08-12");
+  });
+
+  it("falls back to the start date when never generated", () => {
+    expect(getNextOccurrence("2026-08-12", "daily", null)).toBe("2026-08-13");
+    expect(getNextOccurrence("2026-08-12", "monthly", null)).toBe("2026-09-12");
+  });
+
+  it("once never has a next occurrence", () => {
+    expect(getNextOccurrence("2026-08-12", "once", null)).toBeNull();
+    expect(getNextOccurrence("2026-08-12", "once", "2026-08-12")).toBeNull();
+  });
+});
+
+describe("formatNextDate", () => {
+  it("formats YYYY-MM-DD as a short month + day", () => {
+    expect(formatNextDate("2026-08-15")).toBe("Aug 15");
+    expect(formatNextDate("2026-12-01")).toBe("Dec 1");
+    expect(formatNextDate("2027-01-31")).toBe("Jan 31");
   });
 });

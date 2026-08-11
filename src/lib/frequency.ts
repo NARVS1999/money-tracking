@@ -39,6 +39,28 @@ export function formatFrequency(frequency: string): string {
   return FREQUENCY_LABELS[frequency as Frequency] ?? frequency;
 }
 
+// Next occurrence date for a scheduled template (Phase 14 UI). The engine
+// advances lastGenerated after each generation, so the next occurrence is
+// derived from lastGenerated when set, else from the start date. "once" has
+// no next occurrence -> null (the UI shows the start date instead of "Next:").
+export function getNextOccurrence(
+  startDate: string,
+  frequency: Frequency,
+  lastGenerated: string | null,
+): string | null {
+  return getNextDate(lastGenerated ?? startDate, frequency);
+}
+
+// Short "Mon D" label for a YYYY-MM-DD date ("Aug 15"), matching the
+// DateSectionHeader convention — UI code must not re-implement date formatting.
+export function formatNextDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function dayOfMonth(s: string): number {
   return Number(s.slice(8, 10));
 }
