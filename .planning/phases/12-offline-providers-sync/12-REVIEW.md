@@ -31,7 +31,12 @@ findings:
   warning: 5
   info: 5
   total: 10
-status: issues_found
+status: fixed
+fix_status:
+  fixed: 5
+  skipped: 0
+  fixed_at: 2026-08-12T00:00:00Z
+  fix_report: 12-REVIEW-FIX.md
 ---
 
 # Phase 12: Code Review Report
@@ -39,7 +44,7 @@ status: issues_found
 **Reviewed:** 2026-08-12T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 22
-**Status:** issues_found
+**Status:** issues_found → fixed (all 5 Warning findings resolved; see [12-REVIEW-FIX.md](12-REVIEW-FIX.md))
 
 ## Summary
 
@@ -54,6 +59,8 @@ The main concerns are all in the sync **conflict and lifecycle edges** rather th
 1. **Push overwrites newer cloud state** — a full-doc `setDoc` push of a stale offline edit regresses the cloud doc's `updatedAt`, and the pull-side `>=` tie-break then keeps the stale local copy. A concurrent edit on another device is silently destroyed (WR-01).
 2. **Queued offline deletes can be discarded** — a pull merge resurrects a cloud doc that a pending delete op targets, and `removeByDocId` drops the delete op itself (WR-02).
 3. **The seed fast-path ignores the syncQueue** — deleting all entries/categories offline, then reopening the app online, re-seeds the deleted rows from the cloud with `synced = 1` (WR-03).
+
+All three (plus the stale badge WR-04 and the mock fidelity gap WR-05) are fixed as of 2026-08-12 — see [12-REVIEW-FIX.md](12-REVIEW-FIX.md). WR-01's approach: the push now fetches the cloud copy before an update and only writes when `local.updatedAt >= cloud updatedAt`; a stale op is dropped and the pull converges the local row to the cloud copy.
 
 ## Warnings
 
