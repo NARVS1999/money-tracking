@@ -9,10 +9,12 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import { EntriesProvider } from "./src/entries/EntriesProvider";
+import { seedFromFirestore } from "./src/db/seed";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -20,6 +22,35 @@ import MainTabs from "./src/screens/MainTabs";
 import EntryForm from "./src/components/EntryForm";
 
 const Stack = createNativeStackNavigator();
+
+// SQLite bootstrap (OFFL-01): on every sign-in, make sure the local ledger
+// exists. seedFromFirestore is idempotent — it checks whether SQLite already
+// holds this uid's data and skips when populated (offline-ready). Failures
+// are swallowed on purpose: first-run offline means providers still read
+// from Firestore, and the seed retries on the next sign-in.
+function SeedOnSignIn() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    seedFromFirestore(user.uid)
+      .then((result) => {
+        if (!cancelled && result.seeded) {
+          console.log(`[sqlite] seeded ${result.entries} entries, ${result.categories} categories`);
+        }
+      })
+      .catch(() => {
+        // Offline or transient error — providers fall back to Firestore
+        // reads; seed runs again on the next sign-in.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  return null;
+}
 
 function RootNavigator() {
   const { user, initializing } = useAuth();
@@ -59,6 +90,7 @@ export default function App() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
           <AuthProvider>
+            <SeedOnSignIn />
             <EntriesProvider>
               <CategoriesProvider>
                 <StatusBar style="dark" />
