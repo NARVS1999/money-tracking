@@ -1,13 +1,12 @@
-// CategoriesProvider — single source of truth for category data (manual-sync
-// model, mirrors EntriesProvider). Loads both category lists once via getDocs
-// when user.uid becomes available; there are NO real-time data listeners —
-// remote changes reach the UI only through the user's own writes (mirrored
-// into local state) or an explicit sync() call (wired to the header Sync
-// button). usageMap derives from EntriesProvider's entries (no third network
-// listener): EntriesProvider MUST stay an ancestor of CategoriesProvider —
-// App.tsx already nests it so, do not reorder. Exposes addCategory
-// (duplicate-checked addDoc), deleteCategory (in-use guarded deleteDoc),
-// usageMap, sync, and useCategories() hook.
+// CategoriesProvider — single source of truth for category data
+// (offline-first, mirrors EntriesProvider). Reads and writes go to SQLite
+// (src/db/categories); every local write is mirrored into the syncQueue for
+// the sync service (OFFL-03/04). usageMap derives from EntriesProvider's
+// entries (no third network listener): EntriesProvider MUST stay an ancestor
+// of CategoriesProvider — App.tsx already nests it so, do not reorder.
+// Exposes addCategory (duplicate-checked insert), deleteCategory (in-use
+// guarded delete), updateCategory, usageMap, sync, and useCategories() hook —
+// same external API as before the SQLite migration, so screens are untouched.
 import {
   createContext,
   useCallback,
@@ -16,21 +15,21 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  query,
-  Timestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-import { db } from "../firebase/app";
-import { categoriesOf, categoryInUse } from "../firebase/queries";
+import { Timestamp } from "firebase/firestore";
 import { useAuth } from "../auth/AuthProvider";
 import { useEntries } from "../entries/EntriesProvider";
+import { seedFromFirestore } from "../db/seed";
+import {
+  getAllCategories,
+  insertCategory,
+  updateCategory as updateCategoryDb,
+  deleteCategory as deleteCategoryDb,
+  type DbCategory,
+  type CategoryType,
+} from "../db/categories";
+import { enqueue } from "../db/syncQueue";
+import { fullSync } from "../sync/syncService";
+import { generateTempId } from "../sync/idMapping";
 
 export type Category = { id: string; name: string; createdAt: Timestamp; icon?: string };
 export type CategoryKind = "expenseCategories" | "incomeCategories";
@@ -50,32 +49,23 @@ export type CategoriesContextValue = {
 // Default null so useCategories() can detect "outside provider" usage.
 const CategoriesContext = createContext<CategoriesContextValue | null>(null);
 
-// One-time fetch of both category lists for uid. Shared code path for the
-// initial load and the manual sync() action so both behave identically.
-async function fetchCategories(
-  uid: string,
-): Promise<[Category[], Category[]]> {
-  const [expenseSnap, incomeSnap] = await Promise.all([
-    getDocs(categoriesOf(uid, "expenseCategories")),
-    getDocs(categoriesOf(uid, "incomeCategories")),
-  ]);
+// The Firestore collection name carries the type; SQLite normalizes it into
+// the `type` column. The syncQueue stores the collection name verbatim, so
+// providers enqueue with the kind and the sync service maps it back.
+const kindToType = (kind: CategoryKind): CategoryType =>
+  kind === "expenseCategories" ? "expense" : "income";
 
-  const toCategory = (d: {
-    id: string;
-    data: () => Record<string, unknown>;
-  }): Category => {
-    const data = d.data();
-    const name = typeof data.name === "string" ? data.name : "";
-    const createdAt =
-      data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now();
-    const icon = typeof data.icon === "string" ? data.icon : undefined;
-    return { id: d.id, name, createdAt, icon };
+function toTimestamp(ms: number): Timestamp {
+  return new Timestamp(Math.floor(ms / 1000), (ms % 1000) * 1e6);
+}
+
+function fromDb(row: DbCategory): Category {
+  return {
+    id: row.id,
+    name: row.name,
+    createdAt: toTimestamp(row.createdAt),
+    icon: row.icon || undefined,
   };
-
-  return [
-    expenseSnap.docs.map(toCategory),
-    incomeSnap.docs.map(toCategory),
-  ];
 }
 
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
@@ -96,8 +86,19 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     return map;
   }, [entries]);
 
-  // One-time load on sign-in (no listeners). The cancelled flag makes state
-  // updates no-ops after a user change or unmount.
+  // One-time load on sign-in (no listeners). seedFromFirestore first, so a
+  // fresh sign-in's cloud ledger is already local before the first read.
+  const load = useCallback(async (uid: string) => {
+    await seedFromFirestore(uid);
+    const rows = await getAllCategories(uid);
+    const expense: Category[] = [];
+    const income: Category[] = [];
+    rows.forEach((row) => {
+      (row.type === "expense" ? expense : income).push(fromDb(row));
+    });
+    return { expense, income };
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setExpenseCategories([]);
@@ -106,8 +107,8 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     }
     const uid = user.uid;
     let cancelled = false;
-    fetchCategories(uid)
-      .then(([expense, income]) => {
+    load(uid)
+      .then(({ expense, income }) => {
         if (!cancelled) {
           setExpenseCategories(expense);
           setIncomeCategories(income);
@@ -123,16 +124,17 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, load]);
 
-  // Manual sync — pulls the latest categories from Firestore on demand.
-  // Rethrows so the Sync button can surface the failure.
+  // Manual sync — full push+pull cycle through the sync service, then reload
+  // from SQLite. Rethrows so the Sync button can surface the failure.
   const sync = useCallback(async () => {
     if (!user) return;
     const uid = user.uid;
     setIsSyncing(true);
     try {
-      const [expense, income] = await fetchCategories(uid);
+      await fullSync(uid);
+      const { expense, income } = await load(uid);
       setExpenseCategories(expense);
       setIncomeCategories(income);
     } catch (e) {
@@ -142,7 +144,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setIsSyncing(false);
     }
-  }, [user]);
+  }, [user, load]);
 
   const addCategory = useCallback(
     async (kind: CategoryKind, name: string, icon?: string) => {
@@ -158,19 +160,26 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       ) {
         throw new Error("Already exists");
       }
+      const id = generateTempId();
+      const now = Date.now();
       try {
-        const docData: Record<string, unknown> = {
+        // SQLite write first (works offline), then queue for Firestore.
+        await insertCategory({
+          id,
           uid: user.uid,
+          type: kindToType(kind),
           name: trimmed,
-          createdAt: Timestamp.now(),
-        };
-        if (icon) docData.icon = icon;
-        const docRef = await addDoc(collection(db, kind), docData);
+          icon: icon ?? "",
+          createdAt: now,
+          updatedAt: now,
+          synced: 0,
+        });
+        await enqueue(user.uid, kind, id, "create");
         // Mirror the write into local state (visible immediately)
         const local: Category = {
-          id: docRef.id,
+          id,
           name: trimmed,
-          createdAt: Timestamp.now(),
+          createdAt: toTimestamp(now),
           icon,
         };
         if (kind === "expenseCategories") {
@@ -201,12 +210,16 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         }
       }
 
+      const changes: Partial<Pick<DbCategory, "name" | "icon" | "updatedAt">> = {};
+      if (updates.name !== undefined) changes.name = updates.name.trim();
+      if (updates.icon !== undefined) changes.icon = updates.icon;
+      if (Object.keys(changes).length === 0) return;
+      // Bump updatedAt for last-write-wins; db layer forces synced = 0 (WR-03).
+      changes.updatedAt = Date.now();
+
       try {
-        const docRef = doc(db, kind, categoryId);
-        const firestoreUpdates: Record<string, unknown> = {};
-        if (updates.name !== undefined) firestoreUpdates.name = updates.name.trim();
-        if (updates.icon !== undefined) firestoreUpdates.icon = updates.icon;
-        await updateDoc(docRef, firestoreUpdates);
+        await updateCategoryDb(user.uid, categoryId, changes);
+        await enqueue(user.uid, kind, categoryId, "update");
 
         // Mirror into local state
         const setter = kind === "expenseCategories" ? setExpenseCategories : setIncomeCategories;
@@ -229,17 +242,14 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   const deleteCategory = useCallback(
     async (kind: CategoryKind, categoryId: string) => {
       if (!user) throw new Error("Not authenticated");
+      // In-use guard derives from local entries (usageMap) — no Firestore
+      // query needed. SQLite deletes are uid-scoped at the SQL layer.
+      if ((usageMap.get(categoryId) ?? 0) > 0) {
+        throw new Error("Category is in use");
+      }
       try {
-        // Defense-in-depth: verify the category document belongs to this user
-        const categorySnap = await getDocs(
-          query(collection(db, kind), where("uid", "==", user.uid)),
-        );
-        if (!categorySnap.docs.some((d) => d.id === categoryId)) {
-          throw new Error("Category not found");
-        }
-        const inUseSnap = await getDocs(categoryInUse(user.uid, categoryId));
-        if (!inUseSnap.empty) throw new Error("Category is in use");
-        await deleteDoc(doc(db, kind, categoryId));
+        await deleteCategoryDb(user.uid, categoryId);
+        await enqueue(user.uid, kind, categoryId, "delete");
         // Mirror the delete into local state
         if (kind === "expenseCategories") {
           setExpenseCategories((prev) =>
@@ -256,7 +266,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         throw e;
       }
     },
-    [user],
+    [user, usageMap],
   );
 
   return (
