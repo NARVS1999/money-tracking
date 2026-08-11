@@ -1,5 +1,8 @@
 // ExportScreen — export financial data to PDF, Excel, or CSV for any date range.
 // Date pickers with "This Month" quick-select, format buttons, loading/empty/toast states.
+// Also hosts the "Scheduled Entries" section (14-UI-SPEC §3): Expenses/Income
+// sub-sections of recurring templates with swipe edit/pause/delete, an
+// "Add Scheduled" CTA, a whole-section empty state, and loading/error states.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
@@ -10,10 +13,14 @@ import {
   StyleSheet,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
+import { useScheduledEntries } from "../scheduled/ScheduledEntriesProvider";
+import ScheduledEntryRow from "../components/ScheduledEntryRow";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import { monthRange, today, compare } from "../lib/dates";
-import { colors, spacing, typography, radius } from "../theme/tokens";
+import { colors, spacing, typography, radius, shadow } from "../theme/tokens";
 import { exportPDF, exportExcel, exportCSV } from "../lib/exportPipeline";
 
 const SHORT_MONTHS = [
@@ -40,8 +47,18 @@ function toDateObj(yyyyMmDd: string): Date {
 }
 
 export default function ExportScreen() {
+  const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
+  const {
+    scheduledEntries,
+    deleteScheduled,
+    pauseScheduled,
+    resumeScheduled,
+    sync: syncScheduled,
+    isLoading: scheduledLoading,
+    lastError: scheduledError,
+  } = useScheduledEntries();
 
   const initialRange = useMemo(() => monthRange(today()), []);
 
@@ -157,6 +174,72 @@ export default function ExportScreen() {
     setToast(null);
     handleExport();
   }, [handleExport]);
+
+  // ── Scheduled entries section ──────────────────────────────────────
+  // Fixed order: Expenses, then Income (app-wide expenses-first convention).
+  const expenseScheduled = useMemo(
+    () => scheduledEntries.filter((s) => s.type === "expense"),
+    [scheduledEntries],
+  );
+  const incomeScheduled = useMemo(
+    () => scheduledEntries.filter((s) => s.type === "income"),
+    [scheduledEntries],
+  );
+
+  // "Add Scheduled" gets its type from the sub-section context — expenses
+  // first by convention, income when only income templates exist.
+  const addType: "expense" | "income" =
+    expenseScheduled.length === 0 && incomeScheduled.length > 0
+      ? "income"
+      : "expense";
+
+  const openAdd = useCallback(() => {
+    navigation.navigate("ScheduledEntryForm", { mode: "add", type: addType });
+  }, [navigation, addType]);
+
+  const openEdit = useCallback(
+    (id: string) => {
+      navigation.navigate("ScheduledEntryForm", { mode: "edit", id });
+    },
+    [navigation],
+  );
+
+  // Provider failures surface through lastError (auto-clears after 5s) — the
+  // section shows the inline load-error block; never an unhandled rejection.
+  const handleDeleteScheduled = useCallback(
+    async (id: string) => {
+      try {
+        await deleteScheduled(id);
+      } catch {
+        // Surfaced via scheduledError.
+      }
+    },
+    [deleteScheduled],
+  );
+
+  const handleTogglePause = useCallback(
+    async (entry: {
+      id: string;
+      isActive: boolean;
+    }) => {
+      try {
+        if (entry.isActive) {
+          await pauseScheduled(entry.id);
+        } else {
+          await resumeScheduled(entry.id);
+        }
+      } catch {
+        // Surfaced via scheduledError.
+      }
+    },
+    [pauseScheduled, resumeScheduled],
+  );
+
+  const handleScheduledRetry = useCallback(() => {
+    syncScheduled().catch(() => {
+      // Surfaced via scheduledError.
+    });
+  }, [syncScheduled]);
 
   const fromMaxDate = useMemo(() => {
     const toD = toDateObj(toDate);
@@ -285,6 +368,69 @@ export default function ExportScreen() {
         {/* Empty state */}
         {!isExporting && rangeEntries.length === 0 && (
           <Text style={styles.emptyText}>No entries in this range</Text>
+        )}
+
+        {/* ── Scheduled Entries section (14-UI-SPEC §3) ─────────────── */}
+        <View style={styles.separator} />
+        <View style={styles.scheduledHeader}>
+          <Text style={styles.scheduledTitle}>Scheduled Entries</Text>
+          <TouchableOpacity
+            style={styles.addScheduledBtn}
+            onPress={openAdd}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.addScheduledText}>Add Scheduled</Text>
+          </TouchableOpacity>
+        </View>
+
+        {scheduledLoading ? (
+          <LoadingSkeleton />
+        ) : scheduledError ? (
+          <View style={styles.scheduledErrorBlock}>
+            <Text style={styles.scheduledErrorText}>
+              Couldn't load scheduled entries.
+            </Text>
+            <TouchableOpacity onPress={handleScheduledRetry}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {expenseScheduled.length > 0 && (
+              <View style={styles.scheduledGroup}>
+                <Text style={styles.subHeading}>Expenses</Text>
+                <View style={styles.scheduledCard}>
+                  {expenseScheduled.map((s, index) => (
+                    <ScheduledEntryRow
+                      key={s.id}
+                      entry={s}
+                      isLast={index === expenseScheduled.length - 1}
+                      onEdit={() => openEdit(s.id)}
+                      onDelete={handleDeleteScheduled}
+                      onTogglePause={handleTogglePause}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+            {incomeScheduled.length > 0 && (
+              <View style={styles.scheduledGroup}>
+                <Text style={styles.subHeading}>Income</Text>
+                <View style={styles.scheduledCard}>
+                  {incomeScheduled.map((s, index) => (
+                    <ScheduledEntryRow
+                      key={s.id}
+                      entry={s}
+                      isLast={index === incomeScheduled.length - 1}
+                      onEdit={() => openEdit(s.id)}
+                      onDelete={handleDeleteScheduled}
+                      onTogglePause={handleTogglePause}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -458,6 +604,65 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     marginTop: spacing.md,
+  },
+  // ── Scheduled Entries section ─────────────────────────────────────
+  scheduledHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  scheduledTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  addScheduledBtn: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  addScheduledText: {
+    fontSize: typography.body.size,
+    fontWeight: "700",
+    color: colors.onAccent,
+  },
+  scheduledGroup: {
+    marginBottom: spacing.md,
+  },
+  subHeading: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  scheduledCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    overflow: "hidden",
+    ...shadow.surface,
+  },
+  scheduledErrorBlock: {
+    alignItems: "flex-start",
+    paddingVertical: spacing.md,
+  },
+  scheduledErrorText: {
+    fontSize: typography.label.size,
+    fontWeight: typography.label.weight as "400",
+    lineHeight: typography.label.lineHeight,
+    color: colors.danger,
+    marginBottom: spacing.sm,
+  },
+  retryText: {
+    fontSize: typography.body.size,
+    fontWeight: "700",
+    color: colors.accent,
   },
   // Toast
   toastOverlay: {

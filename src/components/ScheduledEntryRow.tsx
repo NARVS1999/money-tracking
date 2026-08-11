@@ -23,6 +23,9 @@ type ScheduledEntryRowProps = {
   onEdit: (entry: ScheduledEntry) => void;
   onDelete: (id: string) => void;
   onTogglePause: (entry: ScheduledEntry) => void;
+  // Last row inside a card drops its hairline separator (CategorySection
+  // rowLast pattern).
+  isLast?: boolean;
 };
 
 export default function ScheduledEntryRow({
@@ -30,6 +33,7 @@ export default function ScheduledEntryRow({
   onEdit,
   onDelete,
   onTogglePause,
+  isLast = false,
 }: ScheduledEntryRowProps) {
   const { expenseCategories, incomeCategories } = useCategories();
 
@@ -103,7 +107,7 @@ export default function ScheduledEntryRow({
   return (
     <Swipeable renderRightActions={renderRightActions}>
       <TouchableOpacity
-        style={styles.container}
+        style={[styles.container, isLast && styles.containerLast]}
         activeOpacity={0.7}
         onPress={() => onEdit(entry)}
       >
@@ -145,6 +149,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     gap: spacing.sm,
+  },
+  containerLast: {
+    borderBottomWidth: 0,
   },
   middle: {
     flex: 1,
