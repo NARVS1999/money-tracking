@@ -82,6 +82,7 @@ export async function insertScheduled(entry: DbScheduledInput): Promise<void> {
 }
 
 export async function updateScheduled(
+  uid: string,
   id: string,
   changes: Partial<Pick<DbScheduledEntry, (typeof UPDATABLE_COLUMNS)[number]>>,
 ): Promise<void> {
@@ -94,16 +95,20 @@ export async function updateScheduled(
   const params: SQLiteBindValue[] = columns.map(
     (col) => (changes as Record<string, SQLiteBindValue>)[col],
   );
-  params.push(id);
+  params.push(id, uid);
   await db.runAsync(
-    `UPDATE scheduledEntries SET ${setClause} WHERE id = ?`,
+    `UPDATE scheduledEntries SET ${setClause} WHERE id = ? AND uid = ?`,
     params,
   );
 }
 
-export async function deleteScheduled(id: string): Promise<void> {
+export async function deleteScheduled(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("DELETE FROM scheduledEntries WHERE id = ?", id);
+  await db.runAsync(
+    "DELETE FROM scheduledEntries WHERE id = ? AND uid = ?",
+    id,
+    uid,
+  );
 }
 
 export async function getUnsyncedScheduled(uid: string): Promise<DbScheduledEntry[]> {
@@ -114,9 +119,13 @@ export async function getUnsyncedScheduled(uid: string): Promise<DbScheduledEntr
   );
 }
 
-export async function markSynced(id: string): Promise<void> {
+export async function markSynced(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("UPDATE scheduledEntries SET synced = 1 WHERE id = ?", id);
+  await db.runAsync(
+    "UPDATE scheduledEntries SET synced = 1 WHERE id = ? AND uid = ?",
+    id,
+    uid,
+  );
 }
 
 export async function hasScheduled(uid: string): Promise<boolean> {

@@ -76,6 +76,7 @@ export async function insertEntry(entry: DbEntryInput): Promise<void> {
 }
 
 export async function updateEntry(
+  uid: string,
   id: string,
   changes: Partial<Pick<DbEntry, (typeof UPDATABLE_COLUMNS)[number]>>,
 ): Promise<void> {
@@ -88,13 +89,16 @@ export async function updateEntry(
   const params: SQLiteBindValue[] = columns.map(
     (col) => (changes as Record<string, SQLiteBindValue>)[col],
   );
-  params.push(id);
-  await db.runAsync(`UPDATE entries SET ${setClause} WHERE id = ?`, params);
+  params.push(id, uid);
+  await db.runAsync(
+    `UPDATE entries SET ${setClause} WHERE id = ? AND uid = ?`,
+    params,
+  );
 }
 
-export async function deleteEntry(id: string): Promise<void> {
+export async function deleteEntry(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("DELETE FROM entries WHERE id = ?", id);
+  await db.runAsync("DELETE FROM entries WHERE id = ? AND uid = ?", id, uid);
 }
 
 export async function getUnsyncedEntries(uid: string): Promise<DbEntry[]> {
@@ -105,9 +109,13 @@ export async function getUnsyncedEntries(uid: string): Promise<DbEntry[]> {
   );
 }
 
-export async function markSynced(id: string): Promise<void> {
+export async function markSynced(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("UPDATE entries SET synced = 1 WHERE id = ?", id);
+  await db.runAsync(
+    "UPDATE entries SET synced = 1 WHERE id = ? AND uid = ?",
+    id,
+    uid,
+  );
 }
 
 // True when the uid has any rows — used by seedFromFirestore for the

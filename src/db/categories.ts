@@ -58,6 +58,7 @@ export async function insertCategory(cat: DbCategoryInput): Promise<void> {
 }
 
 export async function updateCategory(
+  uid: string,
   id: string,
   changes: Partial<Pick<DbCategory, (typeof UPDATABLE_COLUMNS)[number]>>,
 ): Promise<void> {
@@ -70,13 +71,20 @@ export async function updateCategory(
   const params: SQLiteBindValue[] = columns.map(
     (col) => (changes as Record<string, SQLiteBindValue>)[col],
   );
-  params.push(id);
-  await db.runAsync(`UPDATE categories SET ${setClause} WHERE id = ?`, params);
+  params.push(id, uid);
+  await db.runAsync(
+    `UPDATE categories SET ${setClause} WHERE id = ? AND uid = ?`,
+    params,
+  );
 }
 
-export async function deleteCategory(id: string): Promise<void> {
+export async function deleteCategory(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("DELETE FROM categories WHERE id = ?", id);
+  await db.runAsync(
+    "DELETE FROM categories WHERE id = ? AND uid = ?",
+    id,
+    uid,
+  );
 }
 
 export async function getUnsyncedCategories(uid: string): Promise<DbCategory[]> {
@@ -87,9 +95,13 @@ export async function getUnsyncedCategories(uid: string): Promise<DbCategory[]> 
   );
 }
 
-export async function markSynced(id: string): Promise<void> {
+export async function markSynced(uid: string, id: string): Promise<void> {
   const db = await getDb();
-  await db.runAsync("UPDATE categories SET synced = 1 WHERE id = ?", id);
+  await db.runAsync(
+    "UPDATE categories SET synced = 1 WHERE id = ? AND uid = ?",
+    id,
+    uid,
+  );
 }
 
 export async function hasCategories(uid: string): Promise<boolean> {
