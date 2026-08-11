@@ -22,6 +22,7 @@ import SignInScreen from "./src/screens/SignInScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
 import MainTabs from "./src/screens/MainTabs";
 import EntryForm from "./src/components/EntryForm";
+import ScheduledEntryForm from "./src/scheduled/ScheduledEntryForm";
 
 const Stack = createNativeStackNavigator();
 
@@ -72,6 +73,11 @@ function RootNavigator() {
             <Stack.Screen
               name="EntryForm"
               component={EntryForm}
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="ScheduledEntryForm"
+              component={ScheduledEntryForm}
               options={{ presentation: "modal", headerShown: false }}
             />
           </>
