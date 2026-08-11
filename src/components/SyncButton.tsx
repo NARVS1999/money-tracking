@@ -34,8 +34,13 @@ function timeAgo(ms: number): string {
 
 export default function SyncButton() {
   const { user } = useAuth();
-  const { sync: entriesSync, isSyncing: entriesSyncing } = useEntries();
-  const { sync: categoriesSync, isSyncing: categoriesSyncing } = useCategories();
+  const { entries, sync: entriesSync, isSyncing: entriesSyncing } = useEntries();
+  const {
+    expenseCategories,
+    incomeCategories,
+    sync: categoriesSync,
+    isSyncing: categoriesSyncing,
+  } = useCategories();
   const [pending, setPending] = useState(0);
   const [lastSync, setLastSync] = useState<number | null>(null);
   const syncing = entriesSyncing || categoriesSyncing;
@@ -52,10 +57,13 @@ export default function SyncButton() {
     getLastSync(user.uid).then(setLastSync).catch(() => {});
   }, [user]);
 
-  // Refresh on mount and whenever a sync run starts/finishes.
+  // Refresh on mount, when a sync run starts/finishes, and whenever the
+  // providers' state changes — every local write mutates entries/categories
+  // (and enqueues a sync op), so the pending badge must update immediately
+  // even while offline (WR-04).
   useEffect(() => {
     refreshStatus();
-  }, [refreshStatus, syncing]);
+  }, [refreshStatus, syncing, entries, expenseCategories, incomeCategories]);
 
   const onPress = async () => {
     if (syncing || !user) return;
