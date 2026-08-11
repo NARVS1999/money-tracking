@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import { EntriesProvider } from "./src/entries/EntriesProvider";
+import { ScheduledEntriesProvider } from "./src/scheduled/ScheduledEntriesProvider";
 import { seedFromFirestore } from "./src/db/seed";
 import AutoSync from "./src/sync/AutoSync";
 import LoadingScreen from "./src/screens/LoadingScreen";
@@ -93,11 +94,13 @@ export default function App() {
           <AuthProvider>
             <SeedOnSignIn />
             <EntriesProvider>
-              <CategoriesProvider>
-                <AutoSync />
-                <StatusBar style="dark" />
-                <RootNavigator />
-              </CategoriesProvider>
+              <ScheduledEntriesProvider>
+                <CategoriesProvider>
+                  <AutoSync />
+                  <StatusBar style="dark" />
+                  <RootNavigator />
+                </CategoriesProvider>
+              </ScheduledEntriesProvider>
             </EntriesProvider>
           </AuthProvider>
         </KeyboardProvider>
