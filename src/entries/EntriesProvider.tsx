@@ -60,6 +60,7 @@ export type EntriesContextValue = {
   deleteEntry: (id: string) => Promise<void>;
   copyEntry: (id: string) => Promise<void>;
   sync: () => Promise<void>;
+  reload: () => Promise<void>;
   isLoading: boolean;
   isSyncing: boolean;
   lastError: string | null;
@@ -150,6 +151,21 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
       throw e;
     } finally {
       setIsSyncing(false);
+    }
+  }, [user]);
+
+  // Reload the list straight from SQLite — no network. The recurring-entry
+  // scheduler (Phase 13) inserts generated entries directly into the entries
+  // table, so the provider needs a cheap re-read for them to appear without
+  // an app restart or a full sync().
+  const reload = useCallback(async () => {
+    if (!user) return;
+    try {
+      const rows = await getAllEntries(user.uid);
+      setEntries(rows.map(fromDb));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to reload entries";
+      setLastError(msg);
     }
   }, [user]);
 
@@ -308,6 +324,7 @@ export function EntriesProvider({ children }: { children: React.ReactNode }) {
         deleteEntry,
         copyEntry,
         sync,
+        reload,
         isLoading,
         isSyncing,
         lastError,

@@ -12,10 +12,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "../auth/AuthProvider";
+import { useEntries } from "../entries/EntriesProvider";
 import {
   getAllScheduled,
   insertScheduled,
@@ -26,6 +28,7 @@ import {
 import { enqueue } from "../db/syncQueue";
 import { fullSync } from "../sync/syncService";
 import { generateTempId } from "../sync/idMapping";
+import { runScheduler } from "./scheduler";
 import { isFrequency, type Frequency } from "../lib/frequency";
 import type { EntryType } from "../db/entries";
 
@@ -105,10 +108,36 @@ export function ScheduledEntriesProvider({
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
+  const { isLoading: entriesLoading, reload: reloadEntries } = useEntries();
   const [scheduledEntries, setScheduledEntries] = useState<ScheduledEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+
+  // Startup wiring for the auto-generation engine (Task 6): once the entries
+  // list has loaded, run the scheduler ONCE per sign-in in the background
+  // (fire-and-forget — never blocks the UI). runScheduler writes generated
+  // entries into SQLite + the sync queue; reloadEntries re-reads SQLite so
+  // they appear in the entries list immediately. Failures are swallowed —
+  // startup must never break over a generation hiccup; the next sign-in
+  // retries (generation is idempotent thanks to lastGenerated).
+  const schedulerRanFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || entriesLoading || schedulerRanFor.current === user.uid) return;
+    schedulerRanFor.current = user.uid;
+    let cancelled = false;
+    (async () => {
+      try {
+        const generated = await runScheduler(user.uid);
+        if (generated > 0 && !cancelled) await reloadEntries();
+      } catch (e) {
+        // Generation is best-effort at startup — the next sign-in retries.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, entriesLoading, reloadEntries]);
 
   // Auto-clear error after 5 seconds (same pattern as the other providers).
   const clearError = useCallback(() => setLastError(null), []);

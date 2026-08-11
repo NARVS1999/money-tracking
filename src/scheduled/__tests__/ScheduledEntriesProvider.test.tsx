@@ -65,9 +65,12 @@ import {
   ScheduledEntriesProvider,
   useScheduledEntries,
 } from "../ScheduledEntriesProvider";
+import { EntriesProvider, useEntries } from "../../entries/EntriesProvider";
 import { insertScheduled, getAllScheduled } from "../../db/scheduled";
+import { getAllEntries } from "../../db/entries";
 import { enqueue } from "../../db/syncQueue";
 import { fullSync } from "../../sync/syncService";
+import { today } from "../../lib/dates";
 import { resetSqliteMock } from "../../../jest/sqlite-mock";
 import { resetFsMock } from "../../../jest/firestore-mock";
 import { resetDbForTesting } from "../../db/database";
@@ -79,6 +82,7 @@ import type { DbScheduledInput } from "../../db/scheduled";
 
 const captured = {
   latest: null as ReturnType<typeof useScheduledEntries> | null,
+  entries: null as ReturnType<typeof useEntries> | null,
 };
 
 function Capture() {
@@ -86,6 +90,8 @@ function Capture() {
   // render is intentional in tests.
   // eslint-disable-next-line react-hooks/immutability
   captured.latest = useScheduledEntries();
+  // eslint-disable-next-line react-hooks/immutability
+  captured.entries = useEntries();
   return <Text>ok</Text>;
 }
 
@@ -97,14 +103,18 @@ function ctx(): NonNullable<typeof captured.latest> {
 // NOTE: async act() hangs in this jest-expo/React-19 environment when a
 // mounted provider has an in-flight effect promise chain (documented in
 // EntriesProvider.test.tsx). Mount with sync act and flush promise chains
-// with macrotask + sync act cycles instead.
+// with macrotask + sync act cycles instead. The real EntriesProvider is
+// mounted as the ancestor (as in App.tsx) because the startup scheduler
+// wiring consumes useEntries.
 function mountSync() {
   let root: any;
   act(() => {
     root = renderer.create(
-      <ScheduledEntriesProvider>
-        <Capture />
-      </ScheduledEntriesProvider>,
+      <EntriesProvider>
+        <ScheduledEntriesProvider>
+          <Capture />
+        </ScheduledEntriesProvider>
+      </EntriesProvider>,
     );
   });
   return root;
@@ -115,7 +125,7 @@ async function flush() {
   act(() => {});
 }
 
-async function flushAll(times = 6) {
+async function flushAll(times = 10) {
   for (let i = 0; i < times; i++) await flush();
 }
 
@@ -154,6 +164,7 @@ beforeEach(() => {
   resetDbForTesting();
   mockUser = { uid: "user-1" };
   captured.latest = null;
+  captured.entries = null;
 });
 
 describe("ScheduledEntriesProvider load", () => {
@@ -328,6 +339,57 @@ describe("ScheduledEntriesProvider sync", () => {
 
     expect(ctx().lastError).toBe("network down");
     expect(ctx().isSyncing).toBe(false);
+  });
+});
+
+describe("ScheduledEntriesProvider startup scheduler wiring", () => {
+  it("runs the auto-generation engine after entries load and reloads the entries list", async () => {
+    // Daily template starting today: the scheduler owes exactly [today].
+    const t = today();
+    await insertScheduled(
+      dbRow("t1", { frequency: "daily", date: t, synced: 1 }),
+    );
+    mountSync();
+    await flushAll();
+
+    // Generated entry landed in SQLite (offline, uid-scoped).
+    const rows = await getAllEntries("user-1");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].date).toBe(t);
+    expect(rows[0].amountCents).toBe(100_00);
+    expect(rows[0].categoryId).toBe("cat-1");
+
+    // Queued as a create on the entries collection (temp id).
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    const [, collection, docId, operation] = (enqueue as jest.Mock).mock.calls[0];
+    expect(collection).toBe("entries");
+    expect(operation).toBe("create");
+    expect(docId).toMatch(/^local-/);
+
+    // reloadEntries re-read SQLite: the entry is visible in the entries list.
+    expect(captured.entries?.entries.map((e) => e.id)).toContain(docId);
+
+    // Template advanced lastGenerated — a remount generates nothing new.
+    const [template] = await getAllScheduled("user-1");
+    expect(template.lastGenerated).toBe(t);
+  });
+
+  it("does not generate anything when no active template is due", async () => {
+    await insertScheduled(dbRow("t1", { date: "2099-01-01" })); // future start
+    mountSync();
+    await flushAll();
+
+    expect(await getAllEntries("user-1")).toHaveLength(0);
+    const [template] = await getAllScheduled("user-1");
+    expect(template.lastGenerated).toBeNull();
+  });
+
+  it("skips inactive templates at startup", async () => {
+    await insertScheduled(dbRow("t1", { isActive: 0, date: today() }));
+    mountSync();
+    await flushAll();
+
+    expect(await getAllEntries("user-1")).toHaveLength(0);
   });
 });
 
