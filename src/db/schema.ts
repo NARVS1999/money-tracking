@@ -66,9 +66,12 @@ CREATE INDEX IF NOT EXISTS idx_scheduled_uid ON scheduledEntries (uid);
 
 CREATE TABLE IF NOT EXISTS syncQueue (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL,
   collection TEXT NOT NULL,
   docId TEXT NOT NULL,
   operation TEXT NOT NULL,
   timestamp INTEGER NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_syncQueue_uid ON syncQueue (uid, id);
 `;
