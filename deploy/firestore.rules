@@ -38,5 +38,11 @@ match /incomeCategories/{id} {
   allow create: if request.auth != null
                  && request.resource.data.uid == request.auth.uid;
 }
+
+match /scheduledEntries/{id} {
+  allow read, update, delete: if resource.data.uid == request.auth.uid;
+  allow create: if request.auth != null
+                 && request.resource.data.uid == request.auth.uid;
+}
   }
 }
