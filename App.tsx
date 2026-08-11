@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { CategoriesProvider } from "./src/categories/CategoriesProvider";
 import { EntriesProvider } from "./src/entries/EntriesProvider";
 import { seedFromFirestore } from "./src/db/seed";
+import AutoSync from "./src/sync/AutoSync";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import SignInScreen from "./src/screens/SignInScreen";
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -93,6 +94,7 @@ export default function App() {
             <SeedOnSignIn />
             <EntriesProvider>
               <CategoriesProvider>
+                <AutoSync />
                 <StatusBar style="dark" />
                 <RootNavigator />
               </CategoriesProvider>
