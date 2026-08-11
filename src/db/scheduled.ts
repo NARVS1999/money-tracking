@@ -106,10 +106,11 @@ export async function deleteScheduled(id: string): Promise<void> {
   await db.runAsync("DELETE FROM scheduledEntries WHERE id = ?", id);
 }
 
-export async function getUnsyncedScheduled(): Promise<DbScheduledEntry[]> {
+export async function getUnsyncedScheduled(uid: string): Promise<DbScheduledEntry[]> {
   const db = await getDb();
   return db.getAllAsync<DbScheduledEntry>(
-    "SELECT * FROM scheduledEntries WHERE synced = 0 ORDER BY createdAt ASC",
+    "SELECT * FROM scheduledEntries WHERE uid = ? AND synced = 0 ORDER BY createdAt ASC",
+    uid,
   );
 }
 

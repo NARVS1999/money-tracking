@@ -97,10 +97,11 @@ export async function deleteEntry(id: string): Promise<void> {
   await db.runAsync("DELETE FROM entries WHERE id = ?", id);
 }
 
-export async function getUnsyncedEntries(): Promise<DbEntry[]> {
+export async function getUnsyncedEntries(uid: string): Promise<DbEntry[]> {
   const db = await getDb();
   return db.getAllAsync<DbEntry>(
-    "SELECT * FROM entries WHERE synced = 0 ORDER BY updatedAt ASC",
+    "SELECT * FROM entries WHERE uid = ? AND synced = 0 ORDER BY updatedAt ASC",
+    uid,
   );
 }
 

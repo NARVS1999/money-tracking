@@ -79,10 +79,11 @@ export async function deleteCategory(id: string): Promise<void> {
   await db.runAsync("DELETE FROM categories WHERE id = ?", id);
 }
 
-export async function getUnsyncedCategories(): Promise<DbCategory[]> {
+export async function getUnsyncedCategories(uid: string): Promise<DbCategory[]> {
   const db = await getDb();
   return db.getAllAsync<DbCategory>(
-    "SELECT * FROM categories WHERE synced = 0 ORDER BY createdAt ASC",
+    "SELECT * FROM categories WHERE uid = ? AND synced = 0 ORDER BY createdAt ASC",
+    uid,
   );
 }
 
