@@ -5,6 +5,16 @@
 // firebase modules, so no firestore mock is needed.
 jest.mock("expo-sqlite", () => require("../../../jest/sqlite-mock"));
 
+// Wrap the real syncQueue so a test can inject a mid-run failure and assert
+// the transaction rolls everything back (WR-01).
+jest.mock("../../db/syncQueue", () => {
+  const actual = jest.requireActual("../../db/syncQueue");
+  return {
+    ...actual,
+    enqueue: jest.fn(actual.enqueue),
+  };
+});
+
 import { resetDbForTesting } from "../../db/database";
 import { resetSqliteMock } from "../../../jest/sqlite-mock";
 import {
@@ -16,7 +26,7 @@ import {
   getAllScheduled,
   type DbScheduledInput,
 } from "../../db/scheduled";
-import { getQueue } from "../../db/syncQueue";
+import { enqueue, getQueue } from "../../db/syncQueue";
 import {
   getDatesToGenerate,
   generateEntry,
@@ -45,6 +55,11 @@ const makeScheduled = (
 beforeEach(() => {
   resetSqliteMock();
   resetDbForTesting();
+  // Restore the real implementation between tests (a WR-01 test injects a
+  // mid-run failure into the queue op).
+  (enqueue as jest.Mock).mockImplementation(
+    jest.requireActual("../../db/syncQueue").enqueue,
+  );
 });
 
 describe("getDatesToGenerate", () => {
@@ -228,5 +243,33 @@ describe("runScheduler", () => {
     expect(rows).toHaveLength(2);
     expect(rows.every((r: DbEntryInput) => r.uid === "u2")).toBe(true);
     expect(await getAllEntries("u1")).toHaveLength(0);
+  });
+
+  it("rolls a template's generation back atomically when a write fails mid-run (WR-01)", async () => {
+    // A kill/failure between the first insert and the lastGenerated advance
+    // must not leave a half-generated template: nothing persists, the anchor
+    // stays put, and the restart regenerates cleanly (no duplicates).
+    await insertScheduled(makeScheduled({ frequency: "daily" })); // 2 dates due
+    const realEnqueue = jest.requireActual<typeof import("../../db/syncQueue")>(
+      "../../db/syncQueue",
+    ).enqueue;
+    let calls = 0;
+    (enqueue as jest.Mock).mockImplementation(
+      async (...args: Parameters<typeof enqueue>) => {
+        calls += 1;
+        if (calls === 2) throw new Error("disk full"); // mid-generation
+        return realEnqueue(...args);
+      },
+    );
+
+    await expect(runScheduler("u1")).rejects.toThrow("disk full");
+
+    // The whole template's generation rolled back: no entries, no queue ops,
+    // anchor un-advanced.
+    expect(await getAllEntries("u1")).toHaveLength(0);
+    expect(await getQueue("u1")).toHaveLength(0);
+    const [template] = await getAllScheduled("u1");
+    expect(template.lastGenerated).toBeNull();
+    expect(template.updatedAt).toBe(now);
   });
 });

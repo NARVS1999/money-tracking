@@ -14,6 +14,7 @@
 // Generated entries use temp ids (src/sync/idMapping) exactly like
 // user-created offline entries; the sync service remaps them after push.
 import { insertEntry, type EntryType } from "../db/entries";
+import { getDb } from "../db/database";
 import {
   getActiveScheduled,
   updateScheduled,
@@ -94,45 +95,55 @@ export function generateEntry(
 // advances to its last generated date and that advancement is enqueued as a
 // "scheduledEntries" update — push is strictly queue-driven, so this op is
 // what propagates the advancement to Firestore (SCHD-05, CR-01).
+//
+// WR-01: each template's generation commits in a single SQLite transaction —
+// the entry inserts, their queue ops, and the lastGenerated advancement
+// (with its queue op) roll back together on any failure. A kill mid-run
+// leaves the template at its old un-advanced anchor, so the next startup
+// regenerates exactly the same dates instead of duplicating entries from a
+// half-advanced state.
 export async function runScheduler(uid: string): Promise<number> {
   const templates = await getActiveScheduled(uid);
   const todayStr = today();
+  const db = await getDb();
   let generated = 0;
   for (const template of templates) {
     const dates = getDatesToGenerate(template, todayStr);
     if (dates.length === 0) continue;
-    for (const date of dates) {
-      const input = generateEntry(template, date);
-      const id = generateTempId();
-      const now = Date.now();
-      await insertEntry({
-        id,
-        uid,
-        type: input.type,
-        amountCents: input.amount,
-        categoryId: input.categoryId,
-        date: input.date,
-        description: input.description,
-        createdAt: now,
-        updatedAt: now,
-        synced: 0,
+    await db.withTransactionAsync(async () => {
+      for (const date of dates) {
+        const input = generateEntry(template, date);
+        const id = generateTempId();
+        const now = Date.now();
+        await insertEntry({
+          id,
+          uid,
+          type: input.type,
+          amountCents: input.amount,
+          categoryId: input.categoryId,
+          date: input.date,
+          description: input.description,
+          createdAt: now,
+          updatedAt: now,
+          synced: 0,
+        });
+        await enqueue(uid, "entries", id, "create");
+      }
+      await updateScheduled(uid, template.id, {
+        lastGenerated: dates[dates.length - 1],
+        // Bump updatedAt like the provider's own updateScheduled: the cloud
+        // copy must lose last-write-wins to this advancement on other devices
+        // (CR-01), and the push-time gate (syncService WR-01) must see the
+        // local copy as at-least-as-new before it will setDoc it.
+        updatedAt: Date.now(),
       });
-      await enqueue(uid, "entries", id, "create");
-      generated++;
-    }
-    await updateScheduled(uid, template.id, {
-      lastGenerated: dates[dates.length - 1],
-      // Bump updatedAt like the provider's own updateScheduled: the cloud
-      // copy must lose last-write-wins to this advancement on other devices
-      // (CR-01), and the push-time gate (syncService WR-01) must see the
-      // local copy as at-least-as-new before it will setDoc it.
-      updatedAt: Date.now(),
+      // CR-01: the advancement must reach Firestore or a fresh pull of this
+      // template (second device, reinstall, DB wipe + reseed) regenerates the
+      // whole history — duplicate entries in the ledger. Without this op the
+      // cloud copy keeps its old lastGenerated forever.
+      await enqueue(uid, "scheduledEntries", template.id, "update");
     });
-    // CR-01: the advancement must reach Firestore or a fresh pull of this
-    // template (second device, reinstall, DB wipe + reseed) regenerates the
-    // whole history — duplicate entries in the ledger. Without this op the
-    // cloud copy keeps its old lastGenerated forever.
-    await enqueue(uid, "scheduledEntries", template.id, "update");
+    generated += dates.length;
   }
   return generated;
 }

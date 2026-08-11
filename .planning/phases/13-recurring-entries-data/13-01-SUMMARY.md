@@ -48,6 +48,8 @@ key-decisions:
   - "getNextDate is engine-consistent: monthly scans day-by-day so a start on the 31st skips months without a 31st (Jan 31 -> Mar 31), yearly re-anchors from the ORIGINAL date (Feb 29 -> next leap year) because addYears sticky-clamps Feb 29 to Feb 28"
   - "monthly matching is literal day-of-month equality per the plan spec (a 31st start skips Feb/Apr/Jun/...); getNextDate's skip semantics match, avoiding UI/engine desync"
   - "Generated entries reuse the temp-id offline-create path (local-* ids, remapped on push by the sync service) — no special-casing in sync"
+  - "WR-01 crash-safety (review fix): each template's generation runs inside one SQLite transaction (db.withTransactionAsync) — entry inserts, their queue ops, and the lastGenerated advancement (+ its queued scheduledEntries update) commit atomically. Chosen over advancing-before-inserts: advancing first would lose the lastGenerated update if an insert fails, and inserting first without a transaction is exactly the mid-run-kill window that duplicates entries; a transaction gives restart-convergence (rollback → old anchor → regenerate identical dates) at zero extra SQL"
+  - "CR-01 propagation (review fix): the lastGenerated advancement bumps the template's updatedAt (provider-matching LWW semantics) and is enqueued as a scheduledEntries update so push (queue-driven) converges the cloud copy"
 
 requirements-completed: [SCHD-01, SCHD-02, SCHD-03, SCHD-04, SCHD-05, SCHD-06, SCHD-07, SCHD-08, SCHD-09, SCHD-10, NFR-15]
 
