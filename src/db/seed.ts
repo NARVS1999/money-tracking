@@ -29,6 +29,7 @@ import {
   type CategoryType,
 } from "./categories";
 import { getDb } from "./database";
+import { getQueue } from "./syncQueue";
 
 export type SeedResult = {
   seeded: boolean;
@@ -79,6 +80,16 @@ async function fetchCategoriesForType(
 }
 
 export async function seedFromFirestore(uid: string): Promise<SeedResult> {
+  // WR-03: a uid with pending queue ops is not in a seedable state — the
+  // local ledger holds authoritative offline changes (e.g. the user deleted
+  // every row) that the cloud copies have not caught up with yet. Seeding
+  // from Firestore would resurrect those deleted rows with synced = 1 (and
+  // disconnect the queued delete ops from the rows). Let the next sync
+  // reconcile instead.
+  if ((await getQueue(uid)).length > 0) {
+    return { seeded: false, entries: 0, categories: 0 };
+  }
+
   // Fast path: uid is fully populated in both tables — nothing to seed.
   const [alreadyHasEntries, alreadyHasCategories] = await Promise.all([
     hasEntries(uid),

@@ -45,6 +45,10 @@ jest.mock("../categories", () => ({
   insertCategory: jest.fn(),
 }));
 
+jest.mock("../syncQueue", () => ({
+  getQueue: jest.fn(),
+}));
+
 const Fs = require("firebase/firestore") as {
   Timestamp: new (ms: number) => { toMillis(): number };
   collection: jest.Mock;
@@ -61,6 +65,7 @@ const { hasCategories, insertCategory } = require("../categories") as {
   hasCategories: jest.Mock;
   insertCategory: jest.Mock;
 };
+const { getQueue } = require("../syncQueue") as { getQueue: jest.Mock };
 
 const UID = "u1";
 
@@ -77,6 +82,7 @@ beforeEach(() => {
   hasCategories.mockResolvedValue(false);
   insertEntry.mockResolvedValue(undefined);
   insertCategory.mockResolvedValue(undefined);
+  getQueue.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -139,6 +145,21 @@ describe("seedFromFirestore — idempotent fast path", () => {
     expect(result.categories).toBe(2);
     expect(insertEntry).not.toHaveBeenCalled();
     expect(insertCategory).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips seeding entirely when the uid has pending queue ops (WR-03)", async () => {
+    // Empty tables + a queued offline delete = the user deleted everything
+    // offline; seeding would resurrect the still-existing cloud docs.
+    hasEntries.mockResolvedValue(false);
+    hasCategories.mockResolvedValue(false);
+    getQueue.mockResolvedValue([
+      { id: 1, uid: UID, collection: "entries", docId: "e1", operation: "delete", timestamp: 1 },
+    ]);
+    const result = await seedFromFirestore(UID);
+    expect(result).toEqual({ seeded: false, entries: 0, categories: 0 });
+    expect(Fs.getDocs).not.toHaveBeenCalled();
+    expect(insertEntry).not.toHaveBeenCalled();
+    expect(insertCategory).not.toHaveBeenCalled();
   });
 });
 
