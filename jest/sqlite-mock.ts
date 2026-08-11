@@ -2,7 +2,8 @@
 // Real SQLite native module is unavailable under jest-expo in Node, so this
 // mock emulates the small SQL surface the src/db modules use:
 //   - execAsync: no-op (schema DDL)
-//   - runAsync: INSERT / UPDATE / DELETE with "col = ?" predicates
+//   - runAsync: INSERT / INSERT ... ON CONFLICT(...) DO UPDATE SET (upsert) /
+//     UPDATE / DELETE with "col = ?" predicates
 //   - getAllAsync / getFirstAsync: SELECT with WHERE (AND "col = ?") and
 //     ORDER BY key[, key] [DESC]
 //   - withTransactionAsync: snapshot/restore rollback on error
@@ -120,7 +121,10 @@ function runSql(sql: string, rawParams: unknown[]): { lastInsertRowId: number; c
   const params =
     rawParams.length === 1 && Array.isArray(rawParams[0]) ? (rawParams[0] as unknown[]) : rawParams;
 
-  const insert = /INSERT INTO (\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]*)\)/i.exec(sql);
+  // INSERT [ ... ] [ON CONFLICT(<cols>) DO UPDATE SET col = <expr>[, ...]]
+  // The upsert clause is used by syncMetadata.setLastSync; on a primary-key
+  // conflict it updates the existing row instead of throwing (WR-05).
+  const insert = /INSERT INTO (\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]*)\)(?:\s+ON CONFLICT\(([^)]+)\)\s+DO UPDATE SET\s+(.+))?$/i.exec(sql);
   if (insert) {
     const table = tables[insert[1]];
     if (!table) throw new Error(`sqlite-mock: unknown table ${insert[1]}`);
@@ -143,6 +147,37 @@ function runSql(sql: string, rawParams: unknown[]): { lastInsertRowId: number; c
       }
       row[col] = value;
     });
+
+    // ON CONFLICT upsert: find the row whose conflict columns already match
+    // the new values and apply the DO UPDATE SET expressions to it in place.
+    if (insert[4] && insert[5]) {
+      const conflictCols = insert[4].split(",").map((s) => s.trim());
+      const existing = table.rows.find((r) =>
+        conflictCols.every((col) => r[col] === row[col]),
+      );
+      if (existing) {
+        let index = cols.length;
+        for (const clause of insert[5].split(",")) {
+          const m = /^(\w+)\s*=\s*(.+)$/.exec(clause.trim());
+          if (!m) {
+            throw new Error(`sqlite-mock: unsupported ON CONFLICT SET "${clause.trim()}"`);
+          }
+          const col = m[1];
+          const expr = m[2].trim();
+          const excluded = /^excluded\.(\w+)$/.exec(expr);
+          if (excluded) {
+            existing[col] = row[excluded[1]];
+          } else {
+            const { value, consumed } = parseValue(expr, params, index);
+            index += consumed;
+            existing[col] = value;
+          }
+        }
+        return { lastInsertRowId: existing[table.pk] as number, changes: 1 };
+      }
+      // No conflicting row — fall through to a plain insert below.
+    }
+
     if (!(table.pk in row)) {
       if (!table.autoincrement) {
         throw new Error(

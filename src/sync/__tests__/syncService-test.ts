@@ -411,4 +411,17 @@ describe("fullSync", () => {
     expect(Fs.addDoc as jest.Mock).toHaveBeenCalledTimes(1);
     expect(await getQueue(UID)).toHaveLength(0);
   });
+
+  it("advances the lastSync watermark monotonically across repeated runs (WR-05)", async () => {
+    // The second run's setLastSync goes through the syncMeta ON CONFLICT
+    // upsert — the mock must update the row instead of throwing a PK error.
+    await fullSync(UID);
+    const first = await getLastSync(UID);
+    await fullSync(UID);
+    const second = await getLastSync(UID);
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second as number).toBeGreaterThanOrEqual(first as number);
+  });
 });
