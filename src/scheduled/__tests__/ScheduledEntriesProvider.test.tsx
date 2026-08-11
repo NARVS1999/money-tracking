@@ -267,6 +267,37 @@ describe("ScheduledEntriesProvider write contract", () => {
     expect(ctx().scheduledEntries[0].description).toBe("Daily coffee");
   });
 
+  it("resets lastGenerated when date or frequency changes so the engine re-anchors (WR-03)", async () => {
+    await insertScheduled(
+      dbRow("t1", { lastGenerated: "2026-08-11", updatedAt: 1000, synced: 1 }),
+    );
+    mountSync();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    // Changing the start date must clear the anchor in the db AND in state —
+    // otherwise the engine would match the new pattern only after the old
+    // anchor and silently skip occurrences.
+    await ctx().updateScheduled("t1", { date: "2026-09-01" });
+    await flushAll();
+
+    const [row] = await getAllScheduled("user-1");
+    expect(row.date).toBe("2026-09-01");
+    expect(row.lastGenerated).toBeNull();
+    expect(row.updatedAt).toBeGreaterThan(1000);
+    expect(ctx().scheduledEntries[0].lastGenerated).toBeNull();
+    expect((enqueue as jest.Mock).mock.calls[0][3]).toBe("update");
+
+    // A frequency change re-anchors the same way.
+    await ctx().updateScheduled("t1", { frequency: "weekly" });
+    await flushAll();
+
+    const [row2] = await getAllScheduled("user-1");
+    expect(row2.frequency).toBe("weekly");
+    expect(row2.lastGenerated).toBeNull();
+    expect(ctx().scheduledEntries[0].lastGenerated).toBeNull();
+  });
+
   it("deletes a template and queues a delete", async () => {
     await insertScheduled(dbRow("t1"));
     mountSync();

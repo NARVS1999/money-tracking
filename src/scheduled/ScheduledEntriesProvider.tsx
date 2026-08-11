@@ -271,6 +271,7 @@ export function ScheduledEntriesProvider({
           | "description"
           | "frequency"
           | "endDate"
+          | "lastGenerated"
           | "updatedAt"
         >
       > = {};
@@ -281,6 +282,15 @@ export function ScheduledEntriesProvider({
       if (input.description !== undefined) changes.description = input.description;
       if (input.frequency !== undefined) changes.frequency = input.frequency;
       if (input.endDate !== undefined) changes.endDate = input.endDate ?? null;
+      // WR-03: a new start date or frequency changes the generation pattern.
+      // Keeping the old lastGenerated anchor would make the engine match the
+      // new pattern only after the old anchor (skipping the occurrences
+      // between the new start and the old anchor — or, worse, never matching
+      // again after a daily→weekly switch). Reset the anchor so the engine
+      // re-derives occurrences from the new start date.
+      if (input.date !== undefined || input.frequency !== undefined) {
+        changes.lastGenerated = null;
+      }
       if (Object.keys(changes).length === 0) return;
       // Bumping updatedAt drives last-write-wins on the next pull; the db
       // layer forces synced = 0 so the change is pushed (WR-03).
@@ -290,7 +300,18 @@ export function ScheduledEntriesProvider({
         await enqueue(user.uid, "scheduledEntries", id, "update");
         // Mirror the update into local state.
         setScheduledEntries((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, ...input } : s)),
+          prev.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  ...input,
+                  lastGenerated:
+                    input.date !== undefined || input.frequency !== undefined
+                      ? null
+                      : s.lastGenerated,
+                }
+              : s,
+          ),
         );
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Update failed — retry?";
