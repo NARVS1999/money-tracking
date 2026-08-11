@@ -145,7 +145,7 @@ function dbRow(id: string, overrides: Partial<DbScheduledInput> = {}): DbSchedul
     updatedAt: now,
     synced: 1,
     ...overrides,
-  };
+  } as DbScheduledInput;
 }
 
 const sampleInput = {

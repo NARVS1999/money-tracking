@@ -130,7 +130,7 @@ export function ScheduledEntriesProvider({
       try {
         const generated = await runScheduler(user.uid);
         if (generated > 0 && !cancelled) await reloadEntries();
-      } catch (e) {
+      } catch {
         // Generation is best-effort at startup — the next sign-in retries.
       }
     })();
@@ -212,6 +212,7 @@ export function ScheduledEntriesProvider({
           description: input.description,
           frequency: input.frequency,
           endDate: input.endDate ?? null,
+          lastGenerated: null,
           isActive: 1,
           createdAt: now,
           updatedAt: now,
