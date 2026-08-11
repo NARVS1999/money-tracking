@@ -1,11 +1,14 @@
 // seedFromFirestore — one-time bootstrap of the local SQLite ledger from
 // Firestore (OFFL-01). Runs on first sign-in on a device (wired in App.tsx).
 //
-// Idempotency: skips entirely when the uid already has local rows (either
-// table), so repeated sign-ins / restarts never duplicate data and a device
-// that has gone fully local keeps its local edits authoritative. Seeding
-// happens inside a transaction — a mid-run failure rolls back so a retry
-// can run cleanly instead of leaving a partial ledger.
+// Idempotency: each table is seeded independently, so a uid that has rows in
+// one table but not the other still gets the missing table populated (a
+// partial ledger never blocks seeding the rest). The count checks and the
+// inserts run inside a transaction (serialized on the single connection), so
+// two concurrent seed calls (React StrictMode double-effects, fast
+// sign-in/sign-out) cannot both insert the same rows: the second transaction
+// re-checks and skips, and a row that still races in is caught per-row as a
+// PK conflict and ignored, leaving the existing local row authoritative.
 import {
   collection,
   getDocs,
@@ -37,6 +40,16 @@ function toMillis(value: unknown): number {
   return value instanceof Timestamp ? value.toMillis() : Date.now();
 }
 
+// True when the error is a primary-key/unique constraint failure — the row
+// already exists locally (a concurrent seed won the race), so the insert is
+// safely skipped. Any other error propagates.
+function isPkConflict(e: unknown): boolean {
+  return (
+    e instanceof Error &&
+    /(primary key|unique) constraint failed/i.test(e.message)
+  );
+}
+
 // Firestore categories live in two collections without a type field; the
 // collection name carries the type (expenseCategories / incomeCategories).
 async function fetchCategoriesForType(
@@ -61,11 +74,12 @@ async function fetchCategoriesForType(
 }
 
 export async function seedFromFirestore(uid: string): Promise<SeedResult> {
+  // Fast path: uid is fully populated in both tables — nothing to seed.
   const [alreadyHasEntries, alreadyHasCategories] = await Promise.all([
     hasEntries(uid),
     hasCategories(uid),
   ]);
-  if (alreadyHasEntries || alreadyHasCategories) {
+  if (alreadyHasEntries && alreadyHasCategories) {
     return { seeded: false, entries: 0, categories: 0 };
   }
 
@@ -96,11 +110,43 @@ export async function seedFromFirestore(uid: string): Promise<SeedResult> {
 
   const categories = [...expenseCats, ...incomeCats];
 
+  let entriesSeeded = 0;
+  let categoriesSeeded = 0;
+
   const sqlite = await getDb();
   await sqlite.withTransactionAsync(async () => {
-    for (const entry of entries) await insertEntry(entry);
-    for (const cat of categories) await insertCategory(cat);
+    // Per-table check + insert inside the transaction: a uid that has rows
+    // in one table but not the other still seeds the missing table, and the
+    // check is re-run under the serialized transaction so two concurrent
+    // seeds cannot both insert the same rows.
+    if (!(await hasEntries(uid))) {
+      for (const entry of entries) {
+        try {
+          await insertEntry(entry);
+          entriesSeeded += 1;
+        } catch (e) {
+          // Row already exists (concurrent seed won the race) — keep the
+          // existing local row authoritative; any other error propagates
+          // and rolls back the transaction.
+          if (!isPkConflict(e)) throw e;
+        }
+      }
+    }
+    if (!(await hasCategories(uid))) {
+      for (const cat of categories) {
+        try {
+          await insertCategory(cat);
+          categoriesSeeded += 1;
+        } catch (e) {
+          if (!isPkConflict(e)) throw e;
+        }
+      }
+    }
   });
 
-  return { seeded: true, entries: entries.length, categories: categories.length };
+  return {
+    seeded: entriesSeeded > 0 || categoriesSeeded > 0,
+    entries: entriesSeeded,
+    categories: categoriesSeeded,
+  };
 }
