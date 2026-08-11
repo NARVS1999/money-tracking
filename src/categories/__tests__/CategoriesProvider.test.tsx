@@ -1,11 +1,9 @@
 /**
- * CategoriesProvider unit tests — mocks firebase/firestore, AuthProvider,
- * EntriesProvider, and queries to assert behavior of the manual-sync model:
- * one-time getDocs load, sync(), usageMap derived from EntriesProvider,
- * addCategory, deleteCategory, and the useCategories hook guard.
- *
- * React 19 + react-test-renderer: initial renderer.create MUST be wrapped in
- * act() or child components never execute.
+ * CategoriesProvider unit tests (phase 12 refactor) — reads/writes now go to
+ * SQLite (insertCategory/updateCategory/deleteCategory + syncQueue enqueue)
+ * instead of Firestore. usageMap still derives from EntriesProvider entries.
+ * The load effect's seed path runs against the in-memory Firestore mock
+ * (empty cloud -> no-op seed).
  */
 import React from "react";
 import { View, Text } from "react-native";
@@ -15,37 +13,16 @@ import renderer, { act } from "react-test-renderer";
 // Mocks — must be BEFORE any imports of the modules under test
 // ---------------------------------------------------------------------------
 
-const mockAddDoc = jest.fn().mockResolvedValue({ id: "new-cat-1" });
-const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
-const mockGetDocs = jest.fn();
-const mockTimestampNow = jest.fn(() => {
-  // Lazy-require the real Timestamp so instanceof works in fetchCategories
-  const realTs = (jest.requireActual("firebase/firestore") as any).Timestamp;
-  return new realTs(0, 0);
-});
-
-jest.mock("firebase/firestore", () => {
-  const actual = jest.requireActual("firebase/firestore") as any;
-  const TimestampMock = actual.Timestamp;
-  TimestampMock.now = () => mockTimestampNow();
-  return {
-    addDoc: (...args: any[]) => mockAddDoc(...args),
-    deleteDoc: (...args: any[]) => mockDeleteDoc(...args),
-    getDocs: (...args: any[]) => mockGetDocs(...args),
-    Timestamp: TimestampMock,
-    collection: (_db: any, path: string) => ({ _tag: path }),
-    doc: function (_db: any, ...segments: string[]) { return { _tag: segments.join("/") }; },
-    query: (...args: any[]) => ((args[0] as any)?._tag ? { _tag: `query(${(args[0] as any)._tag})` } : { _tag: "query" }),
-    where: (_field: string, _op: string, _value: any) => ({ _op: "where" }),
-    initializeFirestore: jest.fn(() => ({ _tag: "db" })),
-  };
-});
-
-jest.mock("../../firebase/config", () => ({ firebaseConfig: {} }));
+jest.mock("expo-sqlite", () => require("../../../jest/sqlite-mock"));
+jest.mock("firebase/firestore", () => require("../../../jest/firestore-mock"));
 
 jest.mock("firebase/app", () => ({
   initializeApp: jest.fn(() => ({ name: "mock" })),
 }));
+
+jest.mock("../../firebase/app", () => ({ db: { mockDb: true } }));
+
+jest.mock("../../firebase/config", () => ({ firebaseConfig: {} }));
 
 jest.mock("@firebase/auth", () => ({
   initializeAuth: jest.fn(() => ({ _tag: "auth" })),
@@ -66,25 +43,50 @@ jest.mock("../../entries/EntriesProvider", () => ({
   useEntries: () => ({ entries: mockEntries }),
 }));
 
-jest.mock("../../firebase/queries", () => ({
-  categoriesOf: (_uid: string, kind: string) => ({ _tag: kind }),
-  categoryInUse: (_uid: string, _categoryId: string) => ({ _tag: "categoryInUse" }),
+// The provider's sync() delegates to fullSync — mocked so sync timing is
+// controllable and no cloud calls are needed.
+jest.mock("../../sync/syncService", () => ({
+  fullSync: jest.fn(),
 }));
+
+// Wrap the real db modules so write payloads are assertable while the real
+// implementations still run against the sqlite mock.
+jest.mock("../../db/categories", () => {
+  const actual = jest.requireActual("../../db/categories");
+  return {
+    ...actual,
+    insertCategory: jest.fn(actual.insertCategory),
+    deleteCategory: jest.fn(actual.deleteCategory),
+  };
+});
+
+jest.mock("../../db/syncQueue", () => {
+  const actual = jest.requireActual("../../db/syncQueue");
+  return {
+    ...actual,
+    enqueue: jest.fn(actual.enqueue),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Module under test
 // ---------------------------------------------------------------------------
 import { CategoriesProvider, useCategories } from "../CategoriesProvider";
 import type { CategoriesContextValue } from "../CategoriesProvider";
+import { insertCategory } from "../../db/categories";
+import { enqueue } from "../../db/syncQueue";
+import { fullSync } from "../../sync/syncService";
+import { resetSqliteMock } from "../../../jest/sqlite-mock";
+import { resetFsMock } from "../../../jest/firestore-mock";
+import { resetDbForTesting } from "../../db/database";
+import type { DbCategoryInput } from "../../db/categories";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Module-level slot so child components can stash the context value. */
 let latestContext: CategoriesContextValue | null = null;
 
-/** Renders as a child of CategoriesProvider and stashes the context value. */
 function ContextCapture() {
   latestContext = useCategories();
   return <Text>ok</Text>;
@@ -95,25 +97,31 @@ function ctx(): CategoriesContextValue {
   return latestContext;
 }
 
-/** Shape of a getDocs QuerySnapshot stub consumed by fetchCategories. */
-function catSnap(docs: Array<{ id: string; name: string }>) {
+const now = 1_752_000_000_000;
+
+function dbCat(
+  id: string,
+  overrides: Partial<DbCategoryInput> = {},
+): DbCategoryInput {
   return {
-    docs: docs.map((d) => ({
-      id: d.id,
-      data: () => ({ name: d.name, createdAt: mockTimestampNow() }),
-    })),
+    id,
+    uid: "user-1",
+    type: "expense",
+    name: "Food",
+    icon: "",
+    createdAt: now,
+    updatedAt: now,
+    synced: 1,
+    ...overrides,
   };
 }
 
-/**
- * Mount CategoriesProvider + ContextCapture inside act() and flush the
- * one-time load effect's getDocs promises. The load effect fires on mount
- * (two getDocs calls: expenseCategories, incomeCategories), so tests that
- * care about load behavior must prime mockGetDocs BEFORE mounting.
- */
-async function mountProvider() {
+// The load effect's promise chain (seed -> read) hangs async act in this
+// jest-expo/React-19 env (same note as EntriesProvider.test) — use sync act
+// + macrotask flush.
+function mountProvider() {
   let root: any;
-  await act(async () => {
+  act(() => {
     root = renderer.create(
       <CategoriesProvider>
         <ContextCapture />
@@ -123,12 +131,20 @@ async function mountProvider() {
   return root;
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
+async function flush() {
+  await new Promise((r) => setTimeout(r, 0));
+  act(() => {});
+}
+
+async function flushAll(times = 6) {
+  for (let i = 0; i < times; i++) await flush();
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetSqliteMock();
+  resetFsMock();
+  resetDbForTesting();
   mockUser = { uid: "user-1", email: "a@b.com" };
   mockEntries = [];
   latestContext = null;
@@ -139,37 +155,31 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("initial load", () => {
-  it("fetches both category lists once via uid-scoped queries", async () => {
-    mockGetDocs
-      .mockResolvedValueOnce(
-        catSnap([{ id: "cat-1", name: "Food" }, { id: "cat-2", name: "Transport" }]),
-      )
-      .mockResolvedValueOnce(catSnap([{ id: "cat-3", name: "Salary" }]));
-    await mountProvider();
+  it("loads both category lists from SQLite split by type column", async () => {
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    await insertCategory(dbCat("cat-2", { name: "Transport" }));
+    await insertCategory(dbCat("cat-3", { type: "income", name: "Salary" }));
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(2);
-    const [expenseRef, incomeRef] = mockGetDocs.mock.calls.map((c) => c[0]);
-    expect(expenseRef._tag).toBe("expenseCategories");
-    expect(incomeRef._tag).toBe("incomeCategories");
+    mountProvider();
+    await flushAll();
 
-    expect(ctx().expenseCategories).toHaveLength(2);
     expect(ctx().expenseCategories.map((c) => c.name)).toEqual(["Food", "Transport"]);
     expect(ctx().incomeCategories.map((c) => c.name)).toEqual(["Salary"]);
   });
 });
 
 describe("sync", () => {
-  it("refetches both lists, replaces state, and flips isSyncing", async () => {
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+  it("runs fullSync, reloads from SQLite, and flips isSyncing", async () => {
+    mountProvider();
+    await flushAll();
     expect(ctx().isSyncing).toBe(false);
 
-    // Hold the first sync getDocs promise open so we can observe isSyncing.
+    // Hold the fullSync promise open so we can observe isSyncing.
     let release!: () => void;
     const gate = new Promise<void>((res) => { release = res; });
-    mockGetDocs
-      .mockReturnValueOnce(gate.then(() => catSnap([{ id: "new-1", name: "New" }])))
-      .mockReturnValueOnce(Promise.resolve(catSnap([{ id: "new-2", name: "Other" }])));
+    (fullSync as jest.Mock).mockReturnValueOnce(gate);
+
+    await insertCategory(dbCat("new-1", { name: "New" }));
 
     let syncPromise: Promise<void>;
     act(() => { syncPromise = ctx().sync(); });
@@ -182,7 +192,6 @@ describe("sync", () => {
 
     expect(ctx().isSyncing).toBe(false);
     expect(ctx().expenseCategories.map((c) => c.name)).toEqual(["New"]);
-    expect(ctx().incomeCategories.map((c) => c.name)).toEqual(["Other"]);
   });
 });
 
@@ -193,8 +202,8 @@ describe("usageMap", () => {
       { categoryId: "B" },
       { categoryId: "A" },
     ];
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
     expect(ctx().usageMap).toBeInstanceOf(Map);
     expect(ctx().usageMap.get("A")).toBe(2);
@@ -203,8 +212,8 @@ describe("usageMap", () => {
   });
 
   it("is empty when there are no entries", async () => {
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
     expect(ctx().usageMap).toBeInstanceOf(Map);
     expect(ctx().usageMap.size).toBe(0);
@@ -212,37 +221,40 @@ describe("usageMap", () => {
 });
 
 describe("addCategory", () => {
-  it("calls addDoc with uid, trimmed name, createdAt and appends to state", async () => {
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+  it("inserts into SQLite with uid, trimmed name, type column and queues a create", async () => {
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await ctx().addCategory("expenseCategories", "  Food  ");
-    });
+    const pending = ctx().addCategory("expenseCategories", "  Food  ");
+    await flushAll();
+    await pending;
 
-    expect(mockAddDoc).toHaveBeenCalledTimes(1);
-    const [ref, data] = mockAddDoc.mock.calls[0];
-    expect(ref._tag).toBe("expenseCategories");
-    expect(data.uid).toBe("user-1");
-    expect(data.name).toBe("Food");
-    expect(data.createdAt).toBeDefined();
+    expect(insertCategory).toHaveBeenCalledTimes(1);
+    const payload = (insertCategory as jest.Mock).mock.calls[0][0];
+    expect(payload.uid).toBe("user-1");
+    expect(payload.name).toBe("Food");
+    expect(payload.type).toBe("expense");
+    expect(payload.createdAt).toBeDefined();
+
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    const [, collection, docId, operation] = (enqueue as jest.Mock).mock.calls[0];
+    expect(collection).toBe("expenseCategories");
+    expect(operation).toBe("create");
+    expect(docId).toMatch(/^local-/);
 
     // Mirrored into state immediately (visible without a sync)
     expect(ctx().expenseCategories).toHaveLength(1);
-    expect(ctx().expenseCategories[0]).toEqual({
-      id: "new-cat-1",
-      name: "Food",
-      createdAt: mockTimestampNow(),
-    });
+    expect(ctx().expenseCategories[0].id).toBe(docId);
+    expect(ctx().expenseCategories[0].name).toBe("Food");
   });
 
   it("appends income categories to the income list", async () => {
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await ctx().addCategory("incomeCategories", "Salary");
-    });
+    const pending = ctx().addCategory("incomeCategories", "Salary");
+    await flushAll();
+    await pending;
 
     expect(ctx().incomeCategories).toHaveLength(1);
     expect(ctx().incomeCategories[0].name).toBe("Salary");
@@ -250,114 +262,91 @@ describe("addCategory", () => {
   });
 
   it("silently no-ops on blank input (whitespace only)", async () => {
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await ctx().addCategory("expenseCategories", "   ");
-    });
+    await ctx().addCategory("expenseCategories", "   ");
 
-    expect(mockAddDoc).not.toHaveBeenCalled();
+    expect(insertCategory).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
   });
 
   it("throws 'Already exists' on case-insensitive trimmed duplicate", async () => {
-    mockGetDocs
-      .mockResolvedValueOnce(catSnap([{ id: "cat-1", name: "Food" }]))
-      .mockResolvedValueOnce(catSnap([]));
-    await mountProvider();
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await expect(
-        ctx().addCategory("expenseCategories", "  food  "),
-      ).rejects.toThrow("Already exists");
-    });
-    expect(mockAddDoc).not.toHaveBeenCalled();
+    await expect(
+      ctx().addCategory("expenseCategories", "  food  "),
+    ).rejects.toThrow("Already exists");
+    expect(insertCategory).toHaveBeenCalledTimes(1); // only the seed row
   });
 
   it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await expect(
-        ctx().addCategory("expenseCategories", "Food"),
-      ).rejects.toThrow("Not authenticated");
-    });
+    await expect(
+      ctx().addCategory("expenseCategories", "Food"),
+    ).rejects.toThrow("Not authenticated");
 
-    expect(mockAddDoc).not.toHaveBeenCalled();
+    expect(insertCategory).not.toHaveBeenCalled();
   });
 });
 
 describe("deleteCategory", () => {
-  it("deletes unused category and removes it from state", async () => {
-    mockGetDocs
-      .mockResolvedValueOnce(catSnap([{ id: "cat-to-delete", name: "Food" }]))
-      .mockResolvedValueOnce(catSnap([]));
-    await mountProvider();
+  it("deletes an unused category from SQLite, queues a delete, and removes it from state", async () => {
+    await insertCategory(dbCat("cat-to-delete", { name: "Food" }));
+    mountProvider();
+    await flushAll();
 
-    // Load consumed 2 getDocs calls; guard sequence: uid ownership check
-    // passes, inUse returns empty.
-    mockGetDocs
-      .mockResolvedValueOnce({ empty: false, docs: [{ id: "cat-to-delete" }] })
-      .mockResolvedValueOnce({ empty: true });
-    await act(async () => {
-      await ctx().deleteCategory("expenseCategories", "cat-to-delete");
-    });
+    const pending = ctx().deleteCategory("expenseCategories", "cat-to-delete");
+    await flushAll();
+    await pending;
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(4);
-    expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
-    const [ref] = mockDeleteDoc.mock.calls[0];
-    expect(ref._tag).toBe("expenseCategories/cat-to-delete");
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    const [, collection, docId, operation] = (enqueue as jest.Mock).mock.calls[0];
+    expect(collection).toBe("expenseCategories");
+    expect(docId).toBe("cat-to-delete");
+    expect(operation).toBe("delete");
     expect(ctx().expenseCategories).toHaveLength(0);
   });
 
   it("throws 'Category is in use' and does NOT delete", async () => {
-    mockGetDocs
-      .mockResolvedValueOnce(catSnap([]))
-      .mockResolvedValueOnce(catSnap([{ id: "in-use-cat", name: "X" }]));
-    await mountProvider();
+    mockEntries = [{ categoryId: "in-use-cat" }];
+    await insertCategory(dbCat("in-use-cat", { type: "income", name: "X" }));
+    mountProvider();
+    await flushAll();
 
-    mockGetDocs
-      .mockResolvedValueOnce({ empty: false, docs: [{ id: "in-use-cat" }] })
-      .mockResolvedValueOnce({ empty: false });
-    await act(async () => {
-      await expect(
-        ctx().deleteCategory("incomeCategories", "in-use-cat"),
-      ).rejects.toThrow("Category is in use");
-    });
+    await expect(
+      ctx().deleteCategory("incomeCategories", "in-use-cat"),
+    ).rejects.toThrow("Category is in use");
 
-    expect(mockGetDocs).toHaveBeenCalledTimes(4);
-    expect(mockDeleteDoc).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
     expect(ctx().incomeCategories).toHaveLength(1);
   });
 
   it("throws 'Not authenticated' when user is null", async () => {
     mockUser = null;
-    mockGetDocs.mockResolvedValue(catSnap([]));
-    await mountProvider();
+    mountProvider();
+    await flushAll();
 
-    await act(async () => {
-      await expect(
-        ctx().deleteCategory("expenseCategories", "any-cat"),
-      ).rejects.toThrow("Not authenticated");
-    });
+    await expect(
+      ctx().deleteCategory("expenseCategories", "any-cat"),
+    ).rejects.toThrow("Not authenticated");
 
-    expect(mockGetDocs).not.toHaveBeenCalled();
-    expect(mockDeleteDoc).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
   });
 });
 
 describe("useCategories guard", () => {
   it("throws when called outside CategoriesProvider", () => {
-    // React 19: render-phase errors propagate through act(), not
-    // renderer.create directly. Assert on the act() boundary.
     function BrokenComponent() {
       useCategories();
       return <View />;
     }
 
-    // Suppress the expected console.error from React error boundary
     const prev = console.error;
     console.error = jest.fn();
 

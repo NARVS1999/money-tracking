@@ -35,12 +35,14 @@ import {
   getAllEntries,
   insertEntry,
   deleteEntry as deleteEntryDb,
+  markSynced as markEntrySynced,
   type DbEntry,
 } from "../db/entries";
 import {
   getAllCategories,
   insertCategory,
   deleteCategory as deleteCategoryDb,
+  markSynced as markCategorySynced,
   type DbCategory,
   type CategoryType,
 } from "../db/categories";
@@ -48,6 +50,7 @@ import {
   getAllScheduled,
   insertScheduled,
   deleteScheduled as deleteScheduledDb,
+  markSynced as markScheduledSynced,
   type DbScheduledEntry,
 } from "../db/scheduled";
 import {
@@ -157,6 +160,20 @@ export async function pushChanges(uid: string): Promise<number> {
   const resolveId = (item: SyncQueueItem): string =>
     tempToReal.get(item.docId) ?? item.docId;
 
+  // Flip the local row to synced = 1 after the cloud write landed — without
+  // this the flag would stay 0 forever and remote-delete reconciliation would
+  // never clean a row deleted on another device (WR-03 contract).
+  const confirmSynced = async (
+    collectionName: string,
+    docId: string,
+  ): Promise<void> => {
+    if (collectionName === ENTRY_COLLECTION) await markEntrySynced(uid, docId);
+    else if (isCategoryCollection(collectionName))
+      await markCategorySynced(uid, docId);
+    else if (collectionName === SCHEDULED_COLLECTION)
+      await markScheduledSynced(uid, docId);
+  };
+
   for (const item of queue) {
     try {
       const docId = resolveId(item);
@@ -177,12 +194,14 @@ export async function pushChanges(uid: string): Promise<number> {
             if (ref.id !== item.docId) {
               await mapTempId(ENTRY_COLLECTION, item.docId, ref.id, uid);
               entryRows.delete(item.docId);
-              entryRows.set(ref.id, { ...row, id: ref.id });
+              entryRows.set(ref.id, { ...row, id: ref.id, synced: 1 });
               tempToReal.set(item.docId, ref.id);
             }
+            await confirmSynced(ENTRY_COLLECTION, ref.id);
           } else {
             // Non-temp create (defensive): upsert so the doc id is preserved.
             await setDoc(doc(db, ENTRY_COLLECTION, docId), entryToCloud(row));
+            await confirmSynced(ENTRY_COLLECTION, docId);
           }
         } else if (isCategoryCollection(item.collection)) {
           const row = categoryRows.get(item.docId);
@@ -198,14 +217,16 @@ export async function pushChanges(uid: string): Promise<number> {
             if (ref.id !== item.docId) {
               await mapTempId(item.collection, item.docId, ref.id, uid);
               categoryRows.delete(item.docId);
-              categoryRows.set(ref.id, { ...row, id: ref.id });
+              categoryRows.set(ref.id, { ...row, id: ref.id, synced: 1 });
               tempToReal.set(item.docId, ref.id);
             }
+            await confirmSynced(item.collection, ref.id);
           } else {
             await setDoc(
               doc(db, item.collection, docId),
               categoryToCloud(row),
             );
+            await confirmSynced(item.collection, docId);
           }
         } else if (item.collection === SCHEDULED_COLLECTION) {
           const row = scheduledRows.get(item.docId);
@@ -221,14 +242,16 @@ export async function pushChanges(uid: string): Promise<number> {
             if (ref.id !== item.docId) {
               await mapTempId(SCHEDULED_COLLECTION, item.docId, ref.id, uid);
               scheduledRows.delete(item.docId);
-              scheduledRows.set(ref.id, { ...row, id: ref.id });
+              scheduledRows.set(ref.id, { ...row, id: ref.id, synced: 1 });
               tempToReal.set(item.docId, ref.id);
             }
+            await confirmSynced(SCHEDULED_COLLECTION, ref.id);
           } else {
             await setDoc(
               doc(db, SCHEDULED_COLLECTION, docId),
               scheduledToCloud(row),
             );
+            await confirmSynced(SCHEDULED_COLLECTION, docId);
           }
         } else {
           // Unknown collection — nothing to push; drop the op.
@@ -264,7 +287,10 @@ export async function pushChanges(uid: string): Promise<number> {
           }
         }
         // Row deleted locally before this update was pushed → nothing to push.
-        if (handled) pushed += 1;
+        if (handled) {
+          pushed += 1;
+          await confirmSynced(item.collection, docId);
+        }
         await dequeue(uid, item.id);
       } else if (item.operation === "delete") {
         // deleteDoc on a doc that was never created is a no-op success.
@@ -428,15 +454,20 @@ export async function pullChanges(
     const localCategories = new Map(
       (await getAllCategories(uid)).map((r) => [r.id, r]),
     );
+    const kindType = categoryTypeOf(kind);
     for (const [docId, data] of cloudCategories) {
       const cloudUpdatedAt = toMillis(data.updatedAt);
       const local = localCategories.get(docId);
-      if (local && local.updatedAt >= cloudUpdatedAt) continue; // local wins
+      // Only the matching type participates in LWW — a local row of the other
+      // type sharing an id would be wrongly overwritten by this kind's merge.
+      if (local && local.type === kindType && local.updatedAt >= cloudUpdatedAt) {
+        continue; // local wins
+      }
       await replaceCategoryFromCloud(uid, kind, docId, data);
       localCategories.set(docId, {
         id: docId,
         uid,
-        type: categoryTypeOf(kind),
+        type: kindType,
         name: typeof data.name === "string" ? data.name : "",
         icon: typeof data.icon === "string" ? data.icon : "",
         createdAt: toMillis(data.createdAt) || Date.now(),
@@ -444,8 +475,15 @@ export async function pullChanges(
         synced: 1,
       });
     }
+    // Remote-delete reconciliation must only consider rows of THIS kind's
+    // type — otherwise the income pass would delete every local expense
+    // category (absent from the income collection) and vice versa.
     for (const row of localCategories.values()) {
-      if (row.synced === 1 && !cloudCategories.has(row.id)) {
+      if (
+        row.type === kindType &&
+        row.synced === 1 &&
+        !cloudCategories.has(row.id)
+      ) {
         await deleteCategoryDb(uid, row.id);
       }
     }

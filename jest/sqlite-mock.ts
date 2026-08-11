@@ -20,14 +20,16 @@ import type { SQLiteDatabase } from "expo-sqlite";
 
 type Row = Record<string, unknown>;
 
-type Table = { autoincrement: boolean; rows: Row[] };
+type Table = { autoincrement: boolean; pk: string; rows: Row[] };
 
 const tables: Record<string, Table> = {
-  entries: { autoincrement: false, rows: [] },
-  categories: { autoincrement: false, rows: [] },
-  scheduledEntries: { autoincrement: false, rows: [] },
-  syncQueue: { autoincrement: true, rows: [] },
-  syncMeta: { autoincrement: false, rows: [] },
+  entries: { autoincrement: false, pk: "id", rows: [] },
+  categories: { autoincrement: false, pk: "id", rows: [] },
+  scheduledEntries: { autoincrement: false, pk: "id", rows: [] },
+  syncQueue: { autoincrement: true, pk: "id", rows: [] },
+  // syncMeta's primary key is uid (not id) — the insert handler must not
+  // demand an `id` column for it.
+  syncMeta: { autoincrement: false, pk: "uid", rows: [] },
 };
 
 function nextAutoincrement(table: Table): number {
@@ -141,13 +143,15 @@ function runSql(sql: string, rawParams: unknown[]): { lastInsertRowId: number; c
       }
       row[col] = value;
     });
-    if (!("id" in row)) {
+    if (!(table.pk in row)) {
       if (!table.autoincrement) {
-        throw new Error(`sqlite-mock: ${insert[1]} requires an id column`);
+        throw new Error(
+          `sqlite-mock: ${insert[1]} requires a ${table.pk} column`,
+        );
       }
       autoId = nextAutoincrement(table);
       row.id = autoId;
-    } else if (table.rows.some((r) => r.id === row.id)) {
+    } else if (table.rows.some((r) => r[table.pk] === row[table.pk])) {
       throw pkConflict(insert[1]);
     }
     table.rows.push(row);
@@ -240,7 +244,12 @@ function openDatabaseAsyncImpl(name: string): Promise<SQLiteDatabase> {
         const restored = JSON.parse(snapshot) as Record<string, Row[]>;
         for (const key of Object.keys(restored)) {
           if (tables[key]) tables[key].rows = restored[key];
-          else tables[key] = { autoincrement: key === "syncQueue", rows: restored[key] };
+          else
+            tables[key] = {
+              autoincrement: key === "syncQueue",
+              pk: key === "syncMeta" ? "uid" : "id",
+              rows: restored[key],
+            };
         }
         throw e;
       }
