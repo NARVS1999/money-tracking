@@ -1,0 +1,127 @@
+// frequency-test.ts — unit tests for the recurring-frequency matching
+// utilities (phase 13, SCHD-01). Verifies occurrence anchoring for every
+// frequency, next-occurrence math (including month-end and leap-year edge
+// cases), and the human-readable labels.
+import {
+  matchesFrequency,
+  getNextDate,
+  formatFrequency,
+  isFrequency,
+  FREQUENCIES,
+} from "../frequency";
+
+describe("matchesFrequency", () => {
+  it("once matches only the start date itself", () => {
+    expect(matchesFrequency("2026-08-12", "once", "2026-08-12")).toBe(true);
+    expect(matchesFrequency("2026-08-13", "once", "2026-08-12")).toBe(false);
+    expect(matchesFrequency("2026-08-11", "once", "2026-08-12")).toBe(false);
+  });
+
+  it("daily matches every date", () => {
+    expect(matchesFrequency("2026-08-12", "daily", "2026-08-11")).toBe(true);
+    expect(matchesFrequency("2030-01-01", "daily", "2026-08-11")).toBe(true);
+  });
+
+  it("weekly matches multiples of 7 days from the anchor", () => {
+    const start = "2026-08-12";
+    expect(matchesFrequency("2026-08-12", "weekly", start)).toBe(true); // +0
+    expect(matchesFrequency("2026-08-19", "weekly", start)).toBe(true); // +7
+    expect(matchesFrequency("2026-08-26", "weekly", start)).toBe(true); // +14
+    expect(matchesFrequency("2026-08-13", "weekly", start)).toBe(false); // +1
+    expect(matchesFrequency("2026-08-20", "weekly", start)).toBe(false); // +8
+    // Backward multiples also anchor (engine only iterates forward).
+    expect(matchesFrequency("2026-08-05", "weekly", start)).toBe(true); // -7
+  });
+
+  it("monthly matches the start date's day-of-month", () => {
+    const start = "2026-08-12";
+    expect(matchesFrequency("2026-08-12", "monthly", start)).toBe(true);
+    expect(matchesFrequency("2026-09-12", "monthly", start)).toBe(true);
+    expect(matchesFrequency("2027-08-12", "monthly", start)).toBe(true);
+    expect(matchesFrequency("2026-09-11", "monthly", start)).toBe(false);
+  });
+
+  it("monthly on the 31st skips months without a 31st (day-equality)", () => {
+    const start = "2026-01-31";
+    expect(matchesFrequency("2026-02-28", "monthly", start)).toBe(false);
+    expect(matchesFrequency("2026-03-31", "monthly", start)).toBe(true);
+  });
+
+  it("yearly matches the start date's month and day", () => {
+    const start = "2026-08-12";
+    expect(matchesFrequency("2026-08-12", "yearly", start)).toBe(true);
+    expect(matchesFrequency("2027-08-12", "yearly", start)).toBe(true);
+    expect(matchesFrequency("2027-08-13", "yearly", start)).toBe(false);
+    expect(matchesFrequency("2027-09-12", "yearly", start)).toBe(false);
+  });
+
+  it("yearly on Feb 29 only matches leap years", () => {
+    const start = "2024-02-29";
+    expect(matchesFrequency("2028-02-29", "yearly", start)).toBe(true);
+    expect(matchesFrequency("2025-02-28", "yearly", start)).toBe(false);
+  });
+
+  it("never matches for an unknown frequency value", () => {
+    expect(matchesFrequency("2026-08-12", "fortnightly" as never, "2026-08-12")).toBe(false);
+  });
+});
+
+describe("getNextDate", () => {
+  it("once has no next occurrence", () => {
+    expect(getNextDate("2026-08-12", "once")).toBeNull();
+  });
+
+  it("daily advances one day", () => {
+    expect(getNextDate("2026-08-12", "daily")).toBe("2026-08-13");
+    expect(getNextDate("2026-12-31", "daily")).toBe("2027-01-01");
+  });
+
+  it("weekly advances seven days", () => {
+    expect(getNextDate("2026-08-12", "weekly")).toBe("2026-08-19");
+  });
+
+  it("monthly lands on the same day-of-month next month", () => {
+    expect(getNextDate("2026-08-12", "monthly")).toBe("2026-09-12");
+    expect(getNextDate("2026-12-12", "monthly")).toBe("2027-01-12");
+  });
+
+  it("monthly from a clamped day skips months lacking that day", () => {
+    // Jan 31: Feb has no 31st -> next occurrence is Mar 31 (engine-consistent
+    // day-equality, not month-step clamping).
+    expect(getNextDate("2026-01-31", "monthly")).toBe("2026-03-31");
+  });
+
+  it("yearly lands on the same month/day next year", () => {
+    expect(getNextDate("2026-08-12", "yearly")).toBe("2027-08-12");
+  });
+
+  it("yearly from Feb 29 waits for the next leap year", () => {
+    expect(getNextDate("2024-02-29", "yearly")).toBe("2028-02-29");
+  });
+
+  it("returns null for an unknown frequency value", () => {
+    expect(getNextDate("2026-08-12", "fortnightly" as never)).toBeNull();
+  });
+});
+
+describe("formatFrequency / isFrequency", () => {
+  it("maps every frequency to its human-readable label", () => {
+    expect(FREQUENCIES.map((f) => formatFrequency(f))).toEqual([
+      "Once",
+      "Daily",
+      "Weekly",
+      "Monthly",
+      "Yearly",
+    ]);
+  });
+
+  it("passes through unknown frequency strings", () => {
+    expect(formatFrequency("fortnightly")).toBe("fortnightly");
+  });
+
+  it("isFrequency recognizes exactly the five frequencies", () => {
+    expect(["once", "daily", "weekly", "monthly", "yearly"].every(isFrequency)).toBe(true);
+    expect(isFrequency("fortnightly")).toBe(false);
+    expect(isFrequency("")).toBe(false);
+  });
+});
