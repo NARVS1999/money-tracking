@@ -359,12 +359,23 @@ describe("ScheduledEntriesProvider startup scheduler wiring", () => {
     expect(rows[0].amountCents).toBe(100_00);
     expect(rows[0].categoryId).toBe("cat-1");
 
-    // Queued as a create on the entries collection (temp id).
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    const [, collection, docId, operation] = (enqueue as jest.Mock).mock.calls[0];
+    // Queued as a create on the entries collection (temp id) — and the
+    // template's lastGenerated advancement is also queued as a
+    // scheduledEntries update (CR-01) so the cloud copy converges on push.
+    expect(enqueue).toHaveBeenCalledTimes(2);
+    const createCall = (enqueue as jest.Mock).mock.calls.find(
+      (c: unknown[]) => c[1] === "entries",
+    );
+    const [, collection, docId, operation] = createCall!;
     expect(collection).toBe("entries");
     expect(operation).toBe("create");
     expect(docId).toMatch(/^local-/);
+    expect(
+      (enqueue as jest.Mock).mock.calls.some(
+        (c: unknown[]) =>
+          c[1] === "scheduledEntries" && c[2] === "t1" && c[3] === "update",
+      ),
+    ).toBe(true);
 
     // reloadEntries re-read SQLite: the entry is visible in the entries list.
     expect(captured.entries?.entries.map((e) => e.id)).toContain(docId);

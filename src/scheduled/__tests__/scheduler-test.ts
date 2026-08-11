@@ -170,15 +170,30 @@ describe("runScheduler", () => {
     expect(entries[0].description).toBe("Daily coffee");
     expect(entries[0].synced).toBe(0); // pending push
 
-    // One queued create per generated entry, temp ids (SYNC-04 path).
+    // One queued create per generated entry (temp ids, SYNC-04 path) plus
+    // the queued template update that carries lastGenerated to Firestore
+    // (CR-01 — the cloud copy must converge or a fresh pull would
+    // regenerate the whole history as duplicates).
     const queue = await getQueue("u1");
-    expect(queue).toHaveLength(2);
-    expect(queue.every((q) => q.collection === "entries" && q.operation === "create")).toBe(true);
-    expect(queue.every((q) => q.docId.startsWith("local-"))).toBe(true);
+    expect(queue).toHaveLength(3);
+    const creates = queue.filter(
+      (q) => q.collection === "entries" && q.operation === "create",
+    );
+    expect(creates).toHaveLength(2);
+    expect(creates.every((q) => q.docId.startsWith("local-"))).toBe(true);
 
-    // lastGenerated advanced — a second run generates nothing.
+    // lastGenerated advanced (and updatedAt bumped so the cloud copy loses
+    // LWW to this advancement) — a second run generates nothing.
     const [template] = await getAllScheduled("u1");
     expect(template.lastGenerated).toBe("2026-08-12");
+    expect(template.updatedAt).toBeGreaterThan(now);
+    const templateUpdate = queue.find(
+      (q) => q.collection === "scheduledEntries",
+    );
+    expect(templateUpdate).toBeDefined();
+    expect(templateUpdate?.uid).toBe("u1");
+    expect(templateUpdate?.docId).toBe("s1");
+    expect(templateUpdate?.operation).toBe("update");
     expect(await runScheduler("u1")).toBe(0);
   });
 

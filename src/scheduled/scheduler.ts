@@ -91,8 +91,9 @@ export function generateEntry(
 // Returns the number of entries generated (0 = nothing due). Each generated
 // entry is inserted into SQLite and queued as a create on the "entries"
 // collection; after a template's dates are all materialized, lastGenerated
-// advances to its last generated date — a data change that also pushes to
-// Firestore through the queue on the next sync (SCHD-05).
+// advances to its last generated date and that advancement is enqueued as a
+// "scheduledEntries" update — push is strictly queue-driven, so this op is
+// what propagates the advancement to Firestore (SCHD-05, CR-01).
 export async function runScheduler(uid: string): Promise<number> {
   const templates = await getActiveScheduled(uid);
   const todayStr = today();
@@ -121,7 +122,17 @@ export async function runScheduler(uid: string): Promise<number> {
     }
     await updateScheduled(uid, template.id, {
       lastGenerated: dates[dates.length - 1],
+      // Bump updatedAt like the provider's own updateScheduled: the cloud
+      // copy must lose last-write-wins to this advancement on other devices
+      // (CR-01), and the push-time gate (syncService WR-01) must see the
+      // local copy as at-least-as-new before it will setDoc it.
+      updatedAt: Date.now(),
     });
+    // CR-01: the advancement must reach Firestore or a fresh pull of this
+    // template (second device, reinstall, DB wipe + reseed) regenerates the
+    // whole history — duplicate entries in the ledger. Without this op the
+    // cloud copy keeps its old lastGenerated forever.
+    await enqueue(uid, "scheduledEntries", template.id, "update");
   }
   return generated;
 }
