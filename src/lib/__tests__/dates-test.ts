@@ -3,7 +3,11 @@
 // (getFullYear/getMonth/getDate, never toISOString slicing).
 import {
   addDays,
+  addMonths,
+  addYears,
   compare,
+  daysBetween,
+  isSameDay,
   isValid,
   monthRange,
   toDateString,
@@ -122,5 +126,76 @@ describe("compare", () => {
 describe("today", () => {
   it("matches toDateString(new Date()) — local calendar math only", () => {
     expect(today()).toBe(toDateString(new Date()));
+  });
+});
+
+describe("isSameDay", () => {
+  it("is true for identical date strings", () => {
+    expect(isSameDay("2026-08-12", "2026-08-12")).toBe(true);
+  });
+
+  it("is false for different days", () => {
+    expect(isSameDay("2026-08-12", "2026-08-13")).toBe(false);
+  });
+});
+
+describe("daysBetween", () => {
+  it("is 0 for the same day", () => {
+    expect(daysBetween("2026-08-12", "2026-08-12")).toBe(0);
+  });
+
+  it("counts consecutive days", () => {
+    expect(daysBetween("2026-08-11", "2026-08-12")).toBe(1);
+  });
+
+  it("crosses a month boundary", () => {
+    expect(daysBetween("2026-07-31", "2026-08-12")).toBe(12);
+  });
+
+  it("crosses a year boundary", () => {
+    expect(daysBetween("2025-12-31", "2026-01-02")).toBe(2);
+  });
+
+  it("is negative when b precedes a", () => {
+    expect(daysBetween("2026-08-12", "2026-08-10")).toBe(-2);
+  });
+});
+
+describe("addMonths", () => {
+  it("adds months within the same year", () => {
+    expect(addMonths("2026-08-12", 1)).toBe("2026-09-12");
+  });
+
+  it("rolls over the year boundary", () => {
+    expect(addMonths("2026-11-12", 3)).toBe("2027-02-12");
+  });
+
+  it("clamps to the last day of a shorter month", () => {
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2024-01-31", 1)).toBe("2024-02-29"); // leap year
+  });
+
+  it("subtracts months", () => {
+    expect(addMonths("2026-03-12", -1)).toBe("2026-02-12");
+    expect(addMonths("2026-02-12", -2)).toBe("2025-12-12");
+  });
+
+  it("clamps December 31 forward", () => {
+    expect(addMonths("2026-12-31", 1)).toBe("2027-01-31");
+  });
+});
+
+describe("addYears", () => {
+  it("adds years", () => {
+    expect(addYears("2026-08-12", 1)).toBe("2027-08-12");
+  });
+
+  it("subtracts years", () => {
+    expect(addYears("2026-08-12", -1)).toBe("2025-08-12");
+  });
+
+  it("clamps Feb 29 to Feb 28 in non-leap target years", () => {
+    expect(addYears("2024-02-29", 1)).toBe("2025-02-28");
+    expect(addYears("2024-02-29", 4)).toBe("2028-02-29");
   });
 });
