@@ -200,6 +200,37 @@ describe("pushChanges — updates and deletes", () => {
     expect(await getQueue(UID)).toHaveLength(0);
   });
 
+  it("drops a stale offline update instead of overwriting a newer cloud edit (WR-01)", async () => {
+    // Cloud copy was edited at `now`; the offline edit is older (stale).
+    await insertEntry(makeEntry("e1", { updatedAt: now - 5000 }));
+    await enqueue(UID, "entries", "e1", "update");
+    seedCloudEntry("e1", cloudEntry("e1", now, { description: "Newer cloud edit" }));
+
+    await fullSync(UID);
+
+    // Nothing pushed — the cloud copy is newer.
+    expect(Fs.setDoc as jest.Mock).not.toHaveBeenCalled();
+    // Pull converges the local row to the cloud copy; queue drained.
+    const [row] = await getAllEntries(UID);
+    expect(row.description).toBe("Newer cloud edit");
+    expect(row.updatedAt).toBe(now);
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("pushes a local update when the local edit is at least as new as the cloud copy (WR-01)", async () => {
+    await insertEntry(makeEntry("e1", { updatedAt: now }));
+    await enqueue(UID, "entries", "e1", "update");
+    seedCloudEntry("e1", cloudEntry("e1", now - 5000, { description: "Stale cloud" }));
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(1);
+    expect(Fs.setDoc as jest.Mock).toHaveBeenCalledTimes(1);
+    const [, payload] = (Fs.setDoc as jest.Mock).mock.calls[0];
+    expect(payload.description).toBe("Coffee");
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
   it("pushes a delete for a real id", async () => {
     await insertEntry(makeEntry("real-1"));
     await enqueue(UID, "entries", "real-1", "delete");

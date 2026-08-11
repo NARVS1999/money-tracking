@@ -23,6 +23,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -135,6 +136,19 @@ const categoryTypeOf = (c: string): CategoryType =>
   c === EXPENSE_CATEGORY_COLLECTION ? "expense" : "income";
 
 // ---- Push -------------------------------------------------------------------
+
+// updatedAt of the cloud copy of a doc, or 0 when the doc does not exist.
+// Used by the update push (WR-01) to decide whether a local edit may be
+// written without regressing the cloud timestamp: an update op is only
+// pushed when local.updatedAt >= cloud updatedAt, otherwise the op is
+// dropped and pullChanges converges the local row to the newer cloud copy.
+async function cloudUpdatedAtOf(
+  collectionName: string,
+  docId: string,
+): Promise<number> {
+  const snap = await getDoc(doc(db, collectionName, docId));
+  return snap.exists() ? toMillis(snap.data()?.updatedAt) : 0;
+}
 
 export async function pushChanges(uid: string): Promise<number> {
   const queue = await getQueue(uid);
@@ -263,27 +277,39 @@ export async function pushChanges(uid: string): Promise<number> {
       } else if (item.operation === "update") {
         // Updates push the row's full current state via setDoc — idempotent,
         // and immune to "doc missing on cloud" races (setDoc creates it).
+        // WR-01: before pushing, compare against the cloud copy. A full-doc
+        // setDoc carries the LOCAL updatedAt (client clock), so an unsynced
+        // stale edit would regress a newer cloud edit — and the pull-side
+        // `>=` tie-break would then keep the stale copy forever. Push only
+        // when local.updatedAt >= cloud updatedAt; when the cloud is newer,
+        // drop the op and let pullChanges converge the local row to it.
         let handled = false;
         if (item.collection === ENTRY_COLLECTION) {
           const row = entryRows.get(docId);
           if (row) {
-            await setDoc(doc(db, ENTRY_COLLECTION, docId), entryToCloud(row));
-            handled = true;
+            if (row.updatedAt >= await cloudUpdatedAtOf(ENTRY_COLLECTION, docId)) {
+              await setDoc(doc(db, ENTRY_COLLECTION, docId), entryToCloud(row));
+              handled = true;
+            }
           }
         } else if (isCategoryCollection(item.collection)) {
           const row = categoryRows.get(docId);
           if (row) {
-            await setDoc(doc(db, item.collection, docId), categoryToCloud(row));
-            handled = true;
+            if (row.updatedAt >= await cloudUpdatedAtOf(item.collection, docId)) {
+              await setDoc(doc(db, item.collection, docId), categoryToCloud(row));
+              handled = true;
+            }
           }
         } else if (item.collection === SCHEDULED_COLLECTION) {
           const row = scheduledRows.get(docId);
           if (row) {
-            await setDoc(
-              doc(db, SCHEDULED_COLLECTION, docId),
-              scheduledToCloud(row),
-            );
-            handled = true;
+            if (row.updatedAt >= await cloudUpdatedAtOf(SCHEDULED_COLLECTION, docId)) {
+              await setDoc(
+                doc(db, SCHEDULED_COLLECTION, docId),
+                scheduledToCloud(row),
+              );
+              handled = true;
+            }
           }
         }
         // Row deleted locally before this update was pushed → nothing to push.

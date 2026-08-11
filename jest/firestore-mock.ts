@@ -127,6 +127,13 @@ export const deleteDoc = jest.fn(
   },
 );
 
+export const getDoc = jest.fn(async (ref: { _coll: string; id: string }) => {
+  const data = coll(ref._coll).get(ref.id);
+  return data
+    ? { id: ref.id, exists: () => true, data: () => data }
+    : { id: ref.id, exists: () => false, data: () => undefined };
+});
+
 export const getDocs = jest.fn(async (q: FsQuery) => {
   const rows = [...coll(q._coll).entries()]
     .filter(([, data]) => matches(data, q.filters ?? []))
