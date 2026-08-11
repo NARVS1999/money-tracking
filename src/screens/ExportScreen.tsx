@@ -394,6 +394,15 @@ export default function ExportScreen() {
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
+        ) : expenseScheduled.length === 0 && incomeScheduled.length === 0 ? (
+          <View style={styles.scheduledEmpty}>
+            <Text style={styles.scheduledEmptyHeading}>
+              No scheduled entries yet
+            </Text>
+            <Text style={styles.scheduledEmptyBody}>
+              Add one to auto-generate recurring expenses or income.
+            </Text>
+          </View>
         ) : (
           <>
             {expenseScheduled.length > 0 && (
@@ -663,6 +672,28 @@ const styles = StyleSheet.create({
     fontSize: typography.body.size,
     fontWeight: "700",
     color: colors.accent,
+  },
+  // Whole-section empty state (both types zero) — centered block; the header
+  // Add Scheduled button is the CTA.
+  scheduledEmpty: {
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
+  },
+  scheduledEmptyHeading: {
+    fontSize: typography.heading.size,
+    fontWeight: typography.heading.weight as "700",
+    lineHeight: typography.heading.lineHeight,
+    color: colors.textPrimary,
+    textAlign: "center",
+  },
+  scheduledEmptyBody: {
+    fontSize: typography.label.size,
+    fontWeight: typography.label.weight as "400",
+    lineHeight: typography.label.lineHeight,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginTop: spacing.sm,
   },
   // Toast
   toastOverlay: {
