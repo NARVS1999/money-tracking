@@ -8,6 +8,8 @@ with an error that self-links to the index creation page.
 |-----------|--------|---------|---------------|
 | `entries` | `uid ASC, type ASC, date DESC` | Tab lists (type filter + date order) | `entriesByType(uid, type)` |
 | `entries` | `uid ASC, date ASC` | Range export/summary | `entriesInRange(uid, start, end)` |
+| `entries` | `uid ASC, updatedAt ASC` | Incremental pull since last sync | `pullChanges` (Phase 12, `src/sync/syncService.ts`) |
+| `scheduledEntries` | `uid ASC, isActive ASC, date ASC` | Active scheduled templates by date | Phase 13 recurring engine (cloud side) |
 
 Source of truth: [backend-schema.md](../backend-schema.md) → Indexes table.
 
@@ -101,3 +103,20 @@ Deployment of these indexes (and the rules + default-account seed) is part of
 01-03 Task 3's one-way console deployment. The user deferred it (option-c):
 **do not create these indexes until the user re-opens that decision.** When
 deploying, update the Status block above.
+
+## Phase 12 indexes (12-01 Task 9)
+
+Two more one-time console operations, added by the offline-first sync layer.
+The console steps are identical to the tab-list flow above (Collection ID +
+fields table), and `firebase deploy` targets `firestore.indexes.json` at the
+repo root (gitignored — the JSON there is authoritative for deploy; this doc
+is the tracked record of why each index exists).
+
+| Collection | Fields | Purpose | Required by |
+|-----------|--------|---------|-------------|
+| `entries` | `uid ASC, updatedAt ASC` | Incremental pull: `where uid == uid AND updatedAt > lastSync` — equality + range across two fields is not served by automatic indexes; without it `pullChanges` throws `The query requires an index.` | `pullChanges(uid, lastSync)` in `src/sync/syncService.ts` (SYNC-02) |
+| `scheduledEntries` | `uid ASC, isActive ASC, date ASC` | Cloud queries over active scheduled templates ordered by date | Phase 13 recurring-engine cloud queries (and `firestore.indexes.json` completeness — the collection block was added to the rules in 12-01 Task 8) |
+
+> The `uid` column must come first for both — same rule as the Phase 1
+> indexes: Firestore serves a query from a composite index that covers all
+> equality fields ahead of the orderBy/range field.
