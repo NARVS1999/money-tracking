@@ -385,6 +385,58 @@ describe("ScheduledEntriesProvider startup scheduler wiring", () => {
     expect(template.lastGenerated).toBe(t);
   });
 
+  it("re-runs the scheduler after sign-out and re-sign-in as the same uid (WR-02)", async () => {
+    // Sign-out must reset the once-per-sign-in marker, or the same-uid
+    // re-login below would skip generation for the rest of the session.
+    const t = today();
+    await insertScheduled(dbRow("t1", { frequency: "daily", date: t, synced: 1 }));
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <EntriesProvider>
+          <ScheduledEntriesProvider>
+            <Capture />
+          </ScheduledEntriesProvider>
+        </EntriesProvider>,
+      );
+    });
+    await flushAll();
+    expect(await getAllEntries("user-1")).toHaveLength(1);
+
+    mockUser = null; // sign out
+    act(() => {
+      root.update(
+        <EntriesProvider>
+          <ScheduledEntriesProvider>
+            <Capture />
+          </ScheduledEntriesProvider>
+        </EntriesProvider>,
+      );
+    });
+    await flushAll();
+    expect(ctx().scheduledEntries).toHaveLength(0);
+
+    // A template that came due while signed out (created on another device
+    // and pulled on the next sign-in):
+    await insertScheduled(
+      dbRow("t2", { id: "t2", frequency: "daily", date: t, synced: 1 }),
+    );
+    mockUser = { uid: "user-1" }; // sign back in as the SAME uid
+    act(() => {
+      root.update(
+        <EntriesProvider>
+          <ScheduledEntriesProvider>
+            <Capture />
+          </ScheduledEntriesProvider>
+        </EntriesProvider>,
+      );
+    });
+    await flushAll();
+
+    const rows = await getAllEntries("user-1");
+    expect(rows).toHaveLength(2); // first run's entry + the new template's
+  });
+
   it("does not generate anything when no active template is due", async () => {
     await insertScheduled(dbRow("t1", { date: "2099-01-01" })); // future start
     mountSync();

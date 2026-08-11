@@ -123,7 +123,15 @@ export function ScheduledEntriesProvider({
   // retries (generation is idempotent thanks to lastGenerated).
   const schedulerRanFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!user || entriesLoading || schedulerRanFor.current === user.uid) return;
+    if (!user) {
+      // WR-02: reset the once-per-sign-in marker on sign-out, or a same-uid
+      // sign-out → sign-in cycle within one app session would skip generation
+      // (occurrences that came due while signed out would wait for the next
+      // app restart).
+      schedulerRanFor.current = null;
+      return;
+    }
+    if (entriesLoading || schedulerRanFor.current === user.uid) return;
     schedulerRanFor.current = user.uid;
     let cancelled = false;
     (async () => {
