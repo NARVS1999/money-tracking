@@ -31,6 +31,7 @@ const makeScheduled = (overrides: Partial<DbScheduledInput> = {}): DbScheduledIn
     description: "Rent",
     frequency: "monthly",
     createdAt: now,
+    updatedAt: now,
     ...overrides,
   }) as DbScheduledInput;
 

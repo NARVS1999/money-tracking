@@ -4,17 +4,18 @@
 import { SCHEMA_VERSION, SCHEMA_SQL } from "../schema";
 
 describe("SCHEMA_VERSION", () => {
-  it("is version 1", () => {
-    expect(SCHEMA_VERSION).toBe(1);
+  it("is version 2 (v2: updatedAt columns + syncMeta)", () => {
+    expect(SCHEMA_VERSION).toBe(2);
   });
 });
 
 describe("SCHEMA_SQL", () => {
-  it("defines all four tables with IF NOT EXISTS (idempotent)", () => {
+  it("defines all five tables with IF NOT EXISTS (idempotent)", () => {
     expect(SCHEMA_SQL).toContain("CREATE TABLE IF NOT EXISTS entries");
     expect(SCHEMA_SQL).toContain("CREATE TABLE IF NOT EXISTS categories");
     expect(SCHEMA_SQL).toContain("CREATE TABLE IF NOT EXISTS scheduledEntries");
     expect(SCHEMA_SQL).toContain("CREATE TABLE IF NOT EXISTS syncQueue");
+    expect(SCHEMA_SQL).toContain("CREATE TABLE IF NOT EXISTS syncMeta");
   });
 
   it("gives entries TEXT-PK id, uid, integer-cents amount and synced flag", () => {

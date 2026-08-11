@@ -27,6 +27,7 @@ const tables: Record<string, Table> = {
   categories: { autoincrement: false, rows: [] },
   scheduledEntries: { autoincrement: false, rows: [] },
   syncQueue: { autoincrement: true, rows: [] },
+  syncMeta: { autoincrement: false, rows: [] },
 };
 
 function nextAutoincrement(table: Table): number {
@@ -188,6 +189,15 @@ function runSql(sql: string, rawParams: unknown[]): { lastInsertRowId: number; c
 }
 
 function selectSql(sql: string, params: unknown[], firstOnly: boolean): unknown {
+  // database.ts migration queries (schema v2). The mock pretends the store is
+  // always at v1 with no updatedAt columns, so every fresh connection runs
+  // the ALTER path — which execAsync no-ops — exercising the migration code.
+  if (/^PRAGMA user_version/i.test(sql)) {
+    return firstOnly ? { user_version: 0 } : [{ user_version: 0 }];
+  }
+  if (/^PRAGMA table_info\((\w+)\)/i.test(sql)) {
+    return firstOnly ? { name: "id" } : [{ name: "id" }];
+  }
   const m =
     /SELECT (COUNT\(\*\) AS \w+|\*|[\w.]+) FROM (\w+)(?:\s+WHERE (.+?))?(?:\s+ORDER BY (.+))?$/i.exec(
       sql,

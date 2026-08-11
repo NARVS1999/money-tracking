@@ -26,6 +26,7 @@ const makeCategory = (overrides: Partial<DbCategoryInput> = {}): DbCategoryInput
   name: "Food",
   icon: "🍔",
   createdAt: now,
+  updatedAt: now,
   ...overrides,
 });
 

@@ -15,8 +15,14 @@
 //   (Phase 12 sync service drains these).
 // - amounts are INTEGER cents (ADR-0003) — never floats.
 // - dates are "YYYY-MM-DD" local calendar strings (NFR-04).
+//
+// Schema v2 (Phase 12): added `updatedAt` to categories and scheduledEntries
+// (entries already had it) so pull-side last-write-wins (SYNC-02) works for
+// every collection, and added the syncMeta table that stores the per-uid
+// lastSyncTimestamp pull watermark (syncMetadata.ts). Existing v1 installs
+// are migrated in database.ts via PRAGMA user_version + ALTER TABLE.
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS entries (
@@ -41,6 +47,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   icon TEXT NOT NULL DEFAULT '',
   createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL DEFAULT 0,
   synced INTEGER NOT NULL DEFAULT 0
 );
 
@@ -59,6 +66,7 @@ CREATE TABLE IF NOT EXISTS scheduledEntries (
   lastGenerated TEXT,
   isActive INTEGER NOT NULL DEFAULT 1,
   createdAt INTEGER NOT NULL,
+  updatedAt INTEGER NOT NULL DEFAULT 0,
   synced INTEGER NOT NULL DEFAULT 0
 );
 
@@ -74,4 +82,30 @@ CREATE TABLE IF NOT EXISTS syncQueue (
 );
 
 CREATE INDEX IF NOT EXISTS idx_syncQueue_uid ON syncQueue (uid, id);
+
+CREATE TABLE IF NOT EXISTS syncMeta (
+  uid TEXT PRIMARY KEY NOT NULL,
+  lastSync INTEGER NOT NULL
+);
 `;
+
+// v1 -> v2 column additions for existing installs. SQLite has no
+// "ADD COLUMN IF NOT EXISTS", so database.ts checks PRAGMA table_info before
+// running each ALTER (guarded by PRAGMA user_version). Fresh installs get the
+// columns from SCHEMA_SQL above and skip these.
+export const SCHEMA_V2_ALTERS: ReadonlyArray<{
+  table: string;
+  column: string;
+  ddl: string;
+}> = [
+  {
+    table: "categories",
+    column: "updatedAt",
+    ddl: "ALTER TABLE categories ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0",
+  },
+  {
+    table: "scheduledEntries",
+    column: "updatedAt",
+    ddl: "ALTER TABLE scheduledEntries ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0",
+  },
+];

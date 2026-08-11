@@ -182,6 +182,8 @@ describe("seedFromFirestore — full seed", () => {
       name: "Food",
       icon: "🍔",
       createdAt: 1_728_000_000_000,
+      // Cloud doc has no updatedAt (pre-v1.2) — falls back to createdAt.
+      updatedAt: 1_728_000_000_000,
       synced: 1,
     });
     expect(insertCategory).toHaveBeenNthCalledWith(2, expect.objectContaining({ type: "income" }));

@@ -15,12 +15,20 @@ export type DbCategory = {
   name: string;
   icon: string;
   createdAt: number;
+  updatedAt: number;
   synced: 0 | 1;
 };
 
 export type DbCategoryInput = Omit<DbCategory, "synced"> & { synced?: 0 | 1 };
 
-const UPDATABLE_COLUMNS = ["type", "name", "icon", "createdAt", "synced"] as const;
+const UPDATABLE_COLUMNS = [
+  "type",
+  "name",
+  "icon",
+  "createdAt",
+  "updatedAt",
+  "synced",
+] as const;
 
 export async function getAllCategories(uid: string): Promise<DbCategory[]> {
   const db = await getDb();
@@ -45,14 +53,15 @@ export async function getCategoriesByType(
 export async function insertCategory(cat: DbCategoryInput): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `INSERT INTO categories (id, uid, type, name, icon, createdAt, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO categories (id, uid, type, name, icon, createdAt, updatedAt, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     cat.id,
     cat.uid,
     cat.type,
     cat.name,
     cat.icon,
     cat.createdAt,
+    cat.updatedAt ?? cat.createdAt,
     cat.synced ?? 0,
   );
 }

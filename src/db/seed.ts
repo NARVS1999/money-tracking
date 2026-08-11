@@ -61,13 +61,18 @@ async function fetchCategoriesForType(
   );
   return snap.docs.map((d) => {
     const data = d.data();
+    const createdAt = toMillis(data.createdAt);
     return {
       id: d.id,
       uid,
       type,
       name: typeof data.name === "string" ? data.name : "",
       icon: typeof data.icon === "string" ? data.icon : "",
-      createdAt: toMillis(data.createdAt),
+      createdAt,
+      // Pre-v1.2 cloud docs have no updatedAt — fall back to createdAt so
+      // last-write-wins compares against a meaningful timestamp.
+      updatedAt:
+        data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : createdAt,
       synced: 1,
     };
   });
@@ -103,7 +108,10 @@ export async function seedFromFirestore(uid: string): Promise<SeedResult> {
       description:
         typeof data.description === "string" ? data.description : "",
       createdAt,
-      updatedAt: createdAt,
+      // Pre-v1.2 cloud docs have no updatedAt — fall back to createdAt so
+      // last-write-wins compares against a meaningful timestamp.
+      updatedAt:
+        data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : createdAt,
       synced: 1,
     };
   });

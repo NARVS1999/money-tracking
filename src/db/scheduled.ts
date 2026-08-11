@@ -21,6 +21,7 @@ export type DbScheduledEntry = {
   lastGenerated: string | null;
   isActive: 0 | 1;
   createdAt: number;
+  updatedAt: number;
   synced: 0 | 1;
 };
 
@@ -39,6 +40,7 @@ const UPDATABLE_COLUMNS = [
   "lastGenerated",
   "isActive",
   "createdAt",
+  "updatedAt",
   "synced",
 ] as const;
 
@@ -63,8 +65,8 @@ export async function insertScheduled(entry: DbScheduledInput): Promise<void> {
   await db.runAsync(
     `INSERT INTO scheduledEntries
        (id, uid, type, amountCents, categoryId, date, description,
-        frequency, endDate, lastGenerated, isActive, createdAt, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        frequency, endDate, lastGenerated, isActive, createdAt, updatedAt, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     entry.id,
     entry.uid,
     entry.type,
@@ -77,6 +79,7 @@ export async function insertScheduled(entry: DbScheduledInput): Promise<void> {
     entry.lastGenerated ?? null,
     entry.isActive ?? 1,
     entry.createdAt,
+    entry.updatedAt ?? entry.createdAt,
     entry.synced ?? 0,
   );
 }
