@@ -80,14 +80,25 @@ export async function updateEntry(
   id: string,
   changes: Partial<Pick<DbEntry, (typeof UPDATABLE_COLUMNS)[number]>>,
 ): Promise<void> {
-  const columns = Object.keys(changes).filter((key) =>
-    (UPDATABLE_COLUMNS as readonly string[]).includes(key),
+  const raw = changes as Record<string, unknown>;
+  // WR-03: `synced` is reserved for the sync service — callers may only pass
+  // synced: 1 (the sync-confirmation path); any other value is dropped. Any
+  // data-column change forces synced = 0 so an edit is never silently left
+  // marked as already pushed (which would lose the edit in Phase 12).
+  const columns = Object.keys(changes).filter(
+    (key) =>
+      (UPDATABLE_COLUMNS as readonly string[]).includes(key) &&
+      (key !== "synced" || raw.synced === 1),
   );
-  if (columns.length === 0) return;
+  const hasDataChange = columns.some((c) => c !== "synced");
+  const setColumns = hasDataChange
+    ? columns.filter((c) => c !== "synced").concat("synced")
+    : columns;
+  if (setColumns.length === 0) return;
   const db = await getDb();
-  const setClause = columns.map((col) => `${col} = ?`).join(", ");
-  const params: SQLiteBindValue[] = columns.map(
-    (col) => (changes as Record<string, SQLiteBindValue>)[col],
+  const setClause = setColumns.map((col) => `${col} = ?`).join(", ");
+  const params: SQLiteBindValue[] = setColumns.map((col) =>
+    col === "synced" && hasDataChange ? 0 : (raw[col] as SQLiteBindValue),
   );
   params.push(id, uid);
   await db.runAsync(
