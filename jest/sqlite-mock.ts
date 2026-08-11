@@ -276,14 +276,17 @@ function openDatabaseAsyncImpl(name: string): Promise<SQLiteDatabase> {
         for (const key of Object.keys(tables)) {
           tables[key].rows = [];
         }
-        const restored = JSON.parse(snapshot) as Record<string, Row[]>;
+        const restored = JSON.parse(snapshot) as Record<
+          string,
+          { autoincrement: boolean; pk: string; rows: Row[] }
+        >;
         for (const key of Object.keys(restored)) {
-          if (tables[key]) tables[key].rows = restored[key];
+          if (tables[key]) tables[key].rows = restored[key].rows;
           else
             tables[key] = {
-              autoincrement: key === "syncQueue",
-              pk: key === "syncMeta" ? "uid" : "id",
-              rows: restored[key],
+              autoincrement: restored[key].autoincrement,
+              pk: restored[key].pk,
+              rows: restored[key].rows,
             };
         }
         throw e;

@@ -29,8 +29,16 @@ jest.mock("../../firebase/app", () => ({ db: { mockDb: true } }));
 
 jest.mock("../../firebase/config", () => ({ firebaseConfig: {} }));
 
+let mockUser: any = { uid: "user-1" };
+
 jest.mock("../../auth/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user-1" } }),
+  useAuth: () => ({ user: mockUser }),
+}));
+
+// The provider's sync() delegates to fullSync — mocked so sync timing is
+// controllable and no cloud calls are needed.
+jest.mock("../../sync/syncService", () => ({
+  fullSync: jest.fn(),
 }));
 
 // Wrap the real db modules so the write payloads are assertable.
@@ -55,8 +63,9 @@ jest.mock("../../db/syncQueue", () => {
 // ---------------------------------------------------------------------------
 // eslint-disable-next-line import/first
 import { EntriesProvider, useEntries } from "../EntriesProvider";
-import { insertEntry } from "../../db/entries";
+import { insertEntry, getAllEntries } from "../../db/entries";
 import { enqueue } from "../../db/syncQueue";
+import { fullSync } from "../../sync/syncService";
 import { resetSqliteMock } from "../../../jest/sqlite-mock";
 import { resetFsMock } from "../../../jest/firestore-mock";
 import { resetDbForTesting } from "../../db/database";
@@ -139,6 +148,7 @@ beforeEach(() => {
   resetSqliteMock();
   resetFsMock();
   resetDbForTesting();
+  mockUser = { uid: "user-1" };
   captured.latestEntries = null;
 });
 
@@ -217,5 +227,118 @@ describe("EntriesProvider offline-first write contract", () => {
     const last = (enqueue as jest.Mock).mock.calls.at(-1);
     expect(last?.[2]).toBe("seed-id");
     expect(last?.[3]).toBe("delete");
+  });
+});
+
+describe("EntriesProvider sync", () => {
+  it("runs fullSync, reloads from SQLite, and flips isSyncing", async () => {
+    await insertEntry(dbRow("seed-id"));
+    mountSync();
+    await flushAll();
+    expect(entries().isSyncing).toBe(false);
+
+    let release!: () => void;
+    const gate = new Promise<void>((res) => { release = res; });
+    (fullSync as jest.Mock).mockReturnValueOnce(gate);
+
+    let syncPromise: Promise<void>;
+    act(() => { syncPromise = entries().sync(); });
+    expect(entries().isSyncing).toBe(true);
+
+    await act(async () => {
+      release();
+      await syncPromise;
+    });
+
+    expect(fullSync).toHaveBeenCalledTimes(1);
+    expect(entries().isSyncing).toBe(false);
+    // Reload from SQLite after the sync: the row is still there.
+    expect(entries().entries.map((e) => e.id)).toEqual(["seed-id"]);
+  });
+
+  it("sets lastError and rethrows when fullSync fails", async () => {
+    mountSync();
+    await flushAll();
+    (fullSync as jest.Mock).mockRejectedValueOnce(new Error("network down"));
+
+    await expect(entries().sync()).rejects.toThrow("network down");
+    await flushAll();
+
+    expect(entries().lastError).toBe("network down");
+    expect(entries().isSyncing).toBe(false);
+  });
+
+  it("is a no-op without a user", async () => {
+    mockUser = null;
+    mountSync();
+    await flushAll();
+    (fullSync as jest.Mock).mockClear();
+
+    await entries().sync();
+    expect(fullSync).not.toHaveBeenCalled();
+  });
+});
+
+describe("EntriesProvider auth guards and write edges", () => {
+  it("throws 'Not authenticated' on addEntry/updateEntry/deleteEntry/copyEntry without a user", async () => {
+    mockUser = null;
+    mountSync();
+    await flushAll();
+    (insertEntry as jest.Mock).mockClear();
+    (enqueue as jest.Mock).mockClear();
+
+    await expect(entries().addEntry(sampleInput)).rejects.toThrow("Not authenticated");
+    await expect(entries().updateEntry("seed-id", { description: "x" })).rejects.toThrow("Not authenticated");
+    await expect(entries().deleteEntry("seed-id")).rejects.toThrow("Not authenticated");
+    await expect(entries().copyEntry("seed-id")).rejects.toThrow("Not authenticated");
+
+    expect(insertEntry).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("no-ops updateEntry when no fields are provided", async () => {
+    await insertEntry(dbRow("seed-id"));
+    mountSync();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    await entries().updateEntry("seed-id", {});
+
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(entries().entries[0].description).toBe("Coffee");
+  });
+
+  it("bumps updatedAt and forces synced = 0 on updateEntry", async () => {
+    await insertEntry(dbRow("seed-id", { updatedAt: 1000, synced: 1 }));
+    mountSync();
+    await flushAll();
+
+    await entries().updateEntry("seed-id", { description: "Renamed" });
+
+    const rows = await getAllEntries("user-1");
+    const row = rows.find((r) => r.id === "seed-id");
+    expect(row?.updatedAt).toBeGreaterThan(1000);
+    expect(row?.synced).toBe(0);
+    expect(row?.description).toBe("Renamed");
+  });
+
+  it("throws 'Entry not found' on copyEntry of an unknown id", async () => {
+    mountSync();
+    await flushAll();
+
+    await expect(entries().copyEntry("nope")).rejects.toThrow("Entry not found");
+    expect(insertEntry).not.toHaveBeenCalled();
+  });
+
+  it("clears lastError via clearError", async () => {
+    mountSync();
+    await flushAll();
+    (fullSync as jest.Mock).mockRejectedValueOnce(new Error("boom"));
+    await expect(entries().sync()).rejects.toThrow("boom");
+    await flushAll();
+    expect(entries().lastError).toBe("boom");
+
+    act(() => entries().clearError());
+    expect(entries().lastError).toBeNull();
   });
 });

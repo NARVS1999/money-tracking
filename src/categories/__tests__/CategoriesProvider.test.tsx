@@ -74,6 +74,7 @@ jest.mock("../../db/syncQueue", () => {
 import { CategoriesProvider, useCategories } from "../CategoriesProvider";
 import type { CategoriesContextValue } from "../CategoriesProvider";
 import { insertCategory } from "../../db/categories";
+import { getAllCategories } from "../../db/categories";
 import { enqueue } from "../../db/syncQueue";
 import { fullSync } from "../../sync/syncService";
 import { resetSqliteMock } from "../../../jest/sqlite-mock";
@@ -336,6 +337,95 @@ describe("deleteCategory", () => {
       ctx().deleteCategory("expenseCategories", "any-cat"),
     ).rejects.toThrow("Not authenticated");
 
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateCategory", () => {
+  it("renames a category (trimmed), queues an update, and mirrors state", async () => {
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    mountProvider();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    const pending = ctx().updateCategory("expenseCategories", "cat-1", {
+      name: "  Groceries  ",
+    });
+    await flushAll();
+    await pending;
+
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    const [, collection, docId, operation] = (enqueue as jest.Mock).mock.calls[0];
+    expect(collection).toBe("expenseCategories");
+    expect(docId).toBe("cat-1");
+    expect(operation).toBe("update");
+    // Db row holds the trimmed name; state mirror matches.
+    expect(ctx().expenseCategories[0].name).toBe("Groceries");
+    const rows = await getAllCategories("user-1");
+    expect(rows.find((r) => r.id === "cat-1")?.name).toBe("Groceries");
+  });
+
+  it("updates only the icon when no name is supplied", async () => {
+    await insertCategory(dbCat("cat-1"));
+    mountProvider();
+    await flushAll();
+
+    const pending = ctx().updateCategory("expenseCategories", "cat-1", {
+      icon: "car",
+    });
+    await flushAll();
+    await pending;
+
+    expect(ctx().expenseCategories[0].icon).toBe("car");
+    expect(ctx().expenseCategories[0].name).toBe("Food");
+    const [, , , operation] = (enqueue as jest.Mock).mock.calls[0];
+    expect(operation).toBe("update");
+  });
+
+  it("throws 'Already exists' on a case-insensitive trimmed duplicate rename", async () => {
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    await insertCategory(dbCat("cat-2", { name: "Transport" }));
+    mountProvider();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    await expect(
+      ctx().updateCategory("expenseCategories", "cat-1", { name: "  transport  " }),
+    ).rejects.toThrow("Already exists");
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("throws 'Name cannot be empty' on a whitespace-only rename", async () => {
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    mountProvider();
+    await flushAll();
+
+    await expect(
+      ctx().updateCategory("expenseCategories", "cat-1", { name: "   " }),
+    ).rejects.toThrow("Name cannot be empty");
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when no update fields are provided", async () => {
+    await insertCategory(dbCat("cat-1", { name: "Food" }));
+    mountProvider();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    await ctx().updateCategory("expenseCategories", "cat-1", {});
+
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(ctx().expenseCategories[0].name).toBe("Food");
+  });
+
+  it("throws 'Not authenticated' without a user", async () => {
+    mockUser = null;
+    mountProvider();
+    await flushAll();
+
+    await expect(
+      ctx().updateCategory("expenseCategories", "cat-1", { name: "New" }),
+    ).rejects.toThrow("Not authenticated");
     expect(enqueue).not.toHaveBeenCalled();
   });
 });

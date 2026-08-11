@@ -12,6 +12,7 @@ jest.mock("../../firebase/app", () => ({ db: { mockDb: true } }));
 import { resetDbForTesting } from "../../db/database";
 import { resetSqliteMock } from "../../../jest/sqlite-mock";
 import { resetFsMock, fsStore } from "../../../jest/firestore-mock";
+import type { FsQuery } from "../../../jest/firestore-mock";
 import * as Fs from "firebase/firestore";
 import {
   insertEntry,
@@ -25,6 +26,12 @@ import {
   getAllCategories,
   type DbCategoryInput,
 } from "../../db/categories";
+import {
+  insertScheduled,
+  getAllScheduled,
+  deleteScheduled as deleteScheduledDb,
+  type DbScheduledInput,
+} from "../../db/scheduled";
 import { enqueue, getQueue } from "../../db/syncQueue";
 import { pushChanges, pullChanges, fullSync } from "../syncService";
 import { getLastSync } from "../syncMetadata";
@@ -56,6 +63,29 @@ function makeCategory(id: string, overrides: Partial<DbCategoryInput> = {}): DbC
     type: "expense",
     name: "Food",
     icon: "",
+    createdAt: now,
+    updatedAt: now,
+    synced: 0,
+    ...overrides,
+  };
+}
+
+function makeScheduled(
+  id: string,
+  overrides: Partial<DbScheduledInput> = {},
+): DbScheduledInput {
+  return {
+    id,
+    uid: UID,
+    type: "expense",
+    amountCents: 1000,
+    categoryId: "cat-1",
+    date: "2026-09-01",
+    description: "Rent",
+    frequency: "monthly",
+    endDate: null,
+    lastGenerated: null,
+    isActive: 1,
     createdAt: now,
     updatedAt: now,
     synced: 0,
@@ -169,6 +199,57 @@ describe("pushChanges — creates (SYNC-01, SYNC-04)", () => {
     expect(await getAllEntries(UID)).toHaveLength(0);
     expect(await getQueue(UID)).toHaveLength(0);
   });
+
+  it("pushes a scheduled entry create to scheduledEntries and remaps the temp id", async () => {
+    const tempId = generateTempId();
+    await insertScheduled(makeScheduled(tempId, { frequency: "weekly" }));
+    await enqueue(UID, "scheduledEntries", tempId, "create");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(1);
+    const [ref, payload] = (Fs.addDoc as jest.Mock).mock.calls[0];
+    expect(ref._coll).toBe("scheduledEntries");
+    expect(payload.frequency).toBe("weekly");
+    expect(payload.endDate).toBeNull();
+    const rows = await getAllScheduled(UID);
+    expect(rows[0].id).toMatch(/^fs-/);
+    expect(rows[0].synced).toBe(1);
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("pushes a non-temp create via setDoc upsert (defensive path), preserving the id", async () => {
+    await insertEntry(makeEntry("plain-1", { amountCents: 300 }));
+    await enqueue(UID, "entries", "plain-1", "create");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(1);
+    expect(Fs.addDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.setDoc as jest.Mock).toHaveBeenCalledTimes(1);
+    const [ref] = (Fs.setDoc as jest.Mock).mock.calls[0];
+    expect(ref.id).toBe("plain-1");
+    expect((await getAllEntries(UID))[0].synced).toBe(1);
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("drops a create op for an unknown collection without touching the cloud", async () => {
+    await enqueue(UID, "unknownCollection", "x1", "create");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(0);
+    expect(Fs.addDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.setDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("returns 0 without cloud calls when the queue is empty", async () => {
+    expect(await pushChanges(UID)).toBe(0);
+    expect(Fs.addDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.setDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.deleteDoc as jest.Mock).not.toHaveBeenCalled();
+  });
 });
 
 describe("pushChanges — updates and deletes", () => {
@@ -240,6 +321,67 @@ describe("pushChanges — updates and deletes", () => {
     expect(pushed).toBe(1);
     expect(Fs.deleteDoc as jest.Mock).toHaveBeenCalledTimes(1);
     expect((Fs.deleteDoc as jest.Mock).mock.calls[0][0].id).toBe("real-1");
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("pushes a scheduled entry update as a full-doc setDoc and marks it synced", async () => {
+    await insertScheduled(makeScheduled("sched-1", { isActive: 1 }));
+    await enqueue(UID, "scheduledEntries", "sched-1", "update");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(1);
+    const [ref, payload] = (Fs.setDoc as jest.Mock).mock.calls[0];
+    expect(ref._coll).toBe("scheduledEntries");
+    expect(ref.id).toBe("sched-1");
+    expect(payload.frequency).toBe("monthly");
+    expect((await getAllScheduled(UID))[0].synced).toBe(1);
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("pushes a scheduled entry delete via deleteDoc", async () => {
+    await enqueue(UID, "scheduledEntries", "sched-1", "delete");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(1);
+    const [ref] = (Fs.deleteDoc as jest.Mock).mock.calls[0];
+    expect(ref._coll).toBe("scheduledEntries");
+    expect(ref.id).toBe("sched-1");
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("drops a sync marker op without any cloud call", async () => {
+    await enqueue(UID, "entries", "any-id", "sync");
+
+    const pushed = await pushChanges(UID);
+
+    expect(pushed).toBe(0);
+    expect(Fs.addDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.setDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(Fs.deleteDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(await getQueue(UID)).toHaveLength(0);
+  });
+
+  it("drops a stale category update when the cloud copy is newer (WR-01 for categories)", async () => {
+    await insertCategory(makeCategory("c1", { updatedAt: now - 5000 }));
+    await enqueue(UID, "expenseCategories", "c1", "update");
+    if (!fsStore["expenseCategories"]) fsStore["expenseCategories"] = new Map();
+    fsStore["expenseCategories"].set("c1", {
+      uid: UID,
+      type: "expense",
+      name: "Newer cloud name",
+      icon: "",
+      createdAt: ts(now),
+      updatedAt: ts(now),
+    });
+
+    await fullSync(UID);
+
+    expect(Fs.setDoc as jest.Mock).not.toHaveBeenCalled();
+    const [row] = await getAllCategories(UID);
+    expect(row.name).toBe("Newer cloud name");
+    expect(row.updatedAt).toBe(now);
     expect(await getQueue(UID)).toHaveLength(0);
   });
 });
@@ -377,6 +519,92 @@ describe("pullChanges — categories", () => {
   });
 });
 
+describe("pullChanges — scheduledEntries", () => {
+  it("merges a newer remote scheduled entry over the local row", async () => {
+    await insertScheduled(makeScheduled("s1", { updatedAt: now - 5000, synced: 1 }));
+    if (!fsStore["scheduledEntries"]) fsStore["scheduledEntries"] = new Map();
+    fsStore["scheduledEntries"].set("s1", {
+      uid: UID,
+      type: "expense",
+      amountCents: 1500,
+      categoryId: "cat-1",
+      date: "2026-09-01",
+      description: "Rent (raised)",
+      frequency: "monthly",
+      endDate: null,
+      lastGenerated: null,
+      isActive: 1,
+      createdAt: ts(now),
+      updatedAt: ts(now),
+    });
+
+    await pullChanges(UID, now - 10_000);
+
+    const [row] = await getAllScheduled(UID);
+    expect(row.description).toBe("Rent (raised)");
+    expect(row.amountCents).toBe(1500);
+    expect(row.updatedAt).toBe(now);
+    expect(row.synced).toBe(1);
+  });
+
+  it("deletes a clean local scheduled row absent from the cloud", async () => {
+    await insertScheduled(makeScheduled("gone", { synced: 1 }));
+
+    await pullChanges(UID, now - 10_000);
+
+    expect(await getAllScheduled(UID)).toHaveLength(0);
+  });
+
+  it("does not resurrect a scheduled doc targeted by a queued offline delete (WR-02)", async () => {
+    await insertScheduled(makeScheduled("s1", { synced: 1 }));
+    await enqueue(UID, "scheduledEntries", "s1", "delete");
+    await deleteScheduledDb(UID, "s1");
+    if (!fsStore["scheduledEntries"]) fsStore["scheduledEntries"] = new Map();
+    fsStore["scheduledEntries"].set("s1", {
+      uid: UID,
+      type: "expense",
+      amountCents: 1000,
+      categoryId: "cat-1",
+      date: "2026-09-01",
+      description: "Rent",
+      frequency: "monthly",
+      endDate: null,
+      lastGenerated: null,
+      isActive: 1,
+      createdAt: ts(now),
+      updatedAt: ts(now),
+    });
+
+    await pullChanges(UID, now - 10_000);
+
+    expect(await getAllScheduled(UID)).toHaveLength(0);
+    const queue = await getQueue(UID);
+    expect(queue).toHaveLength(1);
+    expect(queue[0].operation).toBe("delete");
+  });
+
+  it("swallows a scheduledEntries permission error — entries sync still works (best-effort)", async () => {
+    // The scheduled pull is wrapped in its own try/catch; simulate the
+    // pre-rules-deploy permission error only for that collection's query so
+    // the entries/categories pulls keep running.
+    seedCloudEntry("e-remote", cloudEntry("e-remote", now));
+    const originalImpl = (Fs.getDocs as jest.Mock).getMockImplementation()!;
+    (Fs.getDocs as jest.Mock).mockImplementationOnce((q: FsQuery) =>
+      q._coll === "scheduledEntries"
+        ? Promise.reject(new Error("permission-denied"))
+        : Promise.resolve(originalImpl(q)),
+    );
+
+    await pullChanges(UID, now - 10_000);
+
+    // Entries merge unaffected; scheduled pull failed silently.
+    const rows = await getAllEntries(UID);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("e-remote");
+    expect(await getAllScheduled(UID)).toHaveLength(0);
+  });
+});
+
 describe("fullSync", () => {
   it("pushes, pulls, and advances the lastSync watermark", async () => {
     // One pending local create + one remote doc to merge.
@@ -423,5 +651,44 @@ describe("fullSync", () => {
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
     expect(second as number).toBeGreaterThanOrEqual(first as number);
+  });
+
+  it("still pulls and advances the watermark when the push fails mid-drain (OFFL-10)", async () => {
+    const tempId = generateTempId();
+    await insertEntry(makeEntry(tempId));
+    await enqueue(UID, "entries", tempId, "create");
+    seedCloudEntry("remote-1", cloudEntry("remote-1", now));
+
+    (Fs.addDoc as jest.Mock).mockRejectedValueOnce(new Error("network down"));
+
+    await fullSync(UID);
+
+    // The create stays queued for the next sync...
+    const queue = await getQueue(UID);
+    expect(queue).toHaveLength(1);
+    expect(queue[0].operation).toBe("create");
+    // ...but the pull still merged the remote doc and the watermark advanced.
+    const rows = await getAllEntries(UID);
+    expect(rows.some((r) => r.id === "remote-1")).toBe(true);
+    expect(await getLastSync(UID)).not.toBeNull();
+  });
+
+  it("chains a different-uid fullSync after the in-flight run completes", async () => {
+    // Account switch mid-sync: the second uid's sync must wait for the first
+    // and then run its own push (IN-03) — never drop the queued changes.
+    const temp1 = generateTempId();
+    const temp2 = generateTempId();
+    await insertEntry(makeEntry(temp1, { uid: "u1" }));
+    await insertEntry(makeEntry(temp2, { uid: "u2" }));
+    await enqueue("u1", "entries", temp1, "create");
+    await enqueue("u2", "entries", temp2, "create");
+
+    await Promise.all([fullSync("u1"), fullSync("u2")]);
+
+    expect(Fs.addDoc as jest.Mock).toHaveBeenCalledTimes(2);
+    expect(await getQueue("u1")).toHaveLength(0);
+    expect(await getQueue("u2")).toHaveLength(0);
+    expect(await getLastSync("u1")).not.toBeNull();
+    expect(await getLastSync("u2")).not.toBeNull();
   });
 });
