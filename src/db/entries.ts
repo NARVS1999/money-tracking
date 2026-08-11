@@ -4,6 +4,7 @@
 // All timestamps are INTEGER ms epochs; dates are YYYY-MM-DD strings.
 // `synced` 0/1 marks local changes pending push (Phase 12 sync service).
 import { getDb } from "./database";
+import type { SQLiteBindValue } from "expo-sqlite";
 
 export type EntryType = "expense" | "income";
 
@@ -84,10 +85,11 @@ export async function updateEntry(
   if (columns.length === 0) return;
   const db = await getDb();
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
-  await db.runAsync(
-    `UPDATE entries SET ${setClause} WHERE id = ?`,
-    ...[...columns.map((col) => (changes as Record<string, unknown>)[col]), id],
+  const params: SQLiteBindValue[] = columns.map(
+    (col) => (changes as Record<string, SQLiteBindValue>)[col],
   );
+  params.push(id);
+  await db.runAsync(`UPDATE entries SET ${setClause} WHERE id = ?`, params);
 }
 
 export async function deleteEntry(id: string): Promise<void> {

@@ -4,6 +4,7 @@
 // into a `type` column ("expense" | "income") so a single table serves both.
 // All functions are uid-scoped at the SQL layer.
 import { getDb } from "./database";
+import type { SQLiteBindValue } from "expo-sqlite";
 
 export type CategoryType = "expense" | "income";
 
@@ -66,10 +67,11 @@ export async function updateCategory(
   if (columns.length === 0) return;
   const db = await getDb();
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
-  await db.runAsync(
-    `UPDATE categories SET ${setClause} WHERE id = ?`,
-    ...[...columns.map((col) => (changes as Record<string, unknown>)[col]), id],
+  const params: SQLiteBindValue[] = columns.map(
+    (col) => (changes as Record<string, SQLiteBindValue>)[col],
   );
+  params.push(id);
+  await db.runAsync(`UPDATE categories SET ${setClause} WHERE id = ?`, params);
 }
 
 export async function deleteCategory(id: string): Promise<void> {

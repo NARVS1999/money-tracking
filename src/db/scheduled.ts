@@ -5,6 +5,7 @@
 // isActive: 0/1 (1 = engine should process this template)
 // endDate / lastGenerated: YYYY-MM-DD or null (no end / not yet generated)
 import { getDb } from "./database";
+import type { SQLiteBindValue } from "expo-sqlite";
 import type { EntryType } from "./entries";
 
 export type DbScheduledEntry = {
@@ -90,9 +91,13 @@ export async function updateScheduled(
   if (columns.length === 0) return;
   const db = await getDb();
   const setClause = columns.map((col) => `${col} = ?`).join(", ");
+  const params: SQLiteBindValue[] = columns.map(
+    (col) => (changes as Record<string, SQLiteBindValue>)[col],
+  );
+  params.push(id);
   await db.runAsync(
     `UPDATE scheduledEntries SET ${setClause} WHERE id = ?`,
-    ...[...columns.map((col) => (changes as Record<string, unknown>)[col]), id],
+    params,
   );
 }
 
