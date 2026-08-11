@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: Offline-First + Recurring Entries
 status: planning_next
 stopped_at: v1.2 planning complete
-last_updated: "2026-08-11T20:07:22.465Z"
+last_updated: "2026-08-11T21:59:31.580Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 current_phase: 0
 current_phase_name: none — ready to start Phase 11
 last_activity: 2026-08-12
@@ -24,7 +24,7 @@ last_activity_desc: v1.2 milestone planned
 See: .planning/PROJECT.md (updated 2026-08-12)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Phase 12 — Offline-First Providers + Sync
+**Current focus:** Phase 13 — Recurring Entries Data Layer
 
 ## Current Position
 
@@ -72,6 +72,7 @@ None.
 |-------|-------|--------|
 | 11 | verification_deferred_human | /gsd-verify-work 11 |
 | 12 | verification_deferred_human | /gsd-verify-work 12 |
+| 13 | verification_deferred_human | /gsd-verify-work 13 |
 
 ## Session Continuity
 
