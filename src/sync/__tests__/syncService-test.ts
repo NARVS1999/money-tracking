@@ -327,6 +327,24 @@ describe("pullChanges — remote-delete reconciliation (SYNC-03)", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].id).toBe("pending");
   });
+
+  it("does not resurrect a cloud doc targeted by a queued offline delete (WR-02)", async () => {
+    // User deleted the entry offline (row gone, delete op queued) while the
+    // cloud copy was edited on another device (newer updatedAt). The pull
+    // must skip the doc and keep the delete op for the next push.
+    await insertEntry(makeEntry("e1", { synced: 1 }));
+    await enqueue(UID, "entries", "e1", "delete");
+    await deleteEntry(UID, "e1");
+    seedCloudEntry("e1", cloudEntry("e1", now, { description: "edited elsewhere" }));
+
+    await pullChanges(UID, now - 10_000);
+
+    expect(await getAllEntries(UID)).toHaveLength(0);
+    const queue = await getQueue(UID);
+    expect(queue).toHaveLength(1);
+    expect(queue[0].operation).toBe("delete");
+    expect(queue[0].docId).toBe("e1");
+  });
 });
 
 describe("pullChanges — categories", () => {

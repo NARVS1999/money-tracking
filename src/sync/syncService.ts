@@ -418,6 +418,24 @@ export async function pullChanges(
   uid: string,
   lastSyncTimestamp: number,
 ): Promise<void> {
+  // WR-02: docIds with a queued offline delete must never be resurrected by
+  // the pull merge. The user deleted the row locally; the cloud copy is only
+  // stale state awaiting the queued deleteDoc. Keep the delete op queued so
+  // the push confirms it (dropping it here would permanently discard the
+  // user's delete and resurrect the entry).
+  const pendingDeletes = new Map<string, Set<string>>();
+  for (const item of await getQueue(uid)) {
+    if (item.operation !== "delete") continue;
+    let set = pendingDeletes.get(item.collection);
+    if (!set) {
+      set = new Set();
+      pendingDeletes.set(item.collection, set);
+    }
+    set.add(item.docId);
+  }
+  const isPendingDelete = (collectionName: string, docId: string): boolean =>
+    pendingDeletes.get(collectionName)?.has(docId) ?? false;
+
   // --- Entries: incremental fetch of docs changed since the last sync ---
   // Requires the composite index entries: uid ASC, updatedAt ASC
   // (firestore.indexes.json — Task 9).
@@ -438,6 +456,7 @@ export async function pullChanges(
 
   // Merge with last-write-wins by updatedAt (SYNC-02).
   for (const [docId, data] of cloudEntries) {
+    if (isPendingDelete(ENTRY_COLLECTION, docId)) continue; // WR-02
     const cloudUpdatedAt = toMillis(data.updatedAt);
     const local = localEntries.get(docId);
     if (local && local.updatedAt >= cloudUpdatedAt) continue; // local wins
@@ -482,6 +501,7 @@ export async function pullChanges(
     );
     const kindType = categoryTypeOf(kind);
     for (const [docId, data] of cloudCategories) {
+      if (isPendingDelete(kind, docId)) continue; // WR-02
       const cloudUpdatedAt = toMillis(data.updatedAt);
       const local = localCategories.get(docId);
       // Only the matching type participates in LWW — a local row of the other
@@ -529,6 +549,7 @@ export async function pullChanges(
       (await getAllScheduled(uid)).map((r) => [r.id, r]),
     );
     for (const [docId, data] of cloudScheduled) {
+      if (isPendingDelete(SCHEDULED_COLLECTION, docId)) continue; // WR-02
       const cloudUpdatedAt = toMillis(data.updatedAt);
       const local = localScheduled.get(docId);
       if (local && local.updatedAt >= cloudUpdatedAt) continue;
