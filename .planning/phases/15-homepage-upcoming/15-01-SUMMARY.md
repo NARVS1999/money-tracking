@@ -176,3 +176,4 @@ None - no external service configuration required.
 ---
 *Phase: 15-homepage-upcoming*
 *Completed: 2026-08-12*
+## Self-Check: PASSED
