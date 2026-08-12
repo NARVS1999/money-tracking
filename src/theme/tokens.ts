@@ -5,6 +5,13 @@ export const colors = {
   textSecondary: '#94A3B8', border: '#F1F5F9', income: '#16A34A',
   expense: '#DC2626', accent: '#EF6D40', danger: '#DC2626', onAccent: '#FFFFFF',
   primary: '#EF6D40', primaryDark: '#DB281C', teal: '#45C0CF', yellow: '#F8C519',
+  // Upcoming home-screen sections (15-UI-SPEC §3): yellow-tinted card
+  // background + border. Distinct names despite identical values — the
+  // expense/income themes may diverge later without touching call sites.
+  upcomingExpenseBg: 'rgba(248, 197, 25, 0.08)',
+  upcomingExpenseBorder: 'rgba(248, 197, 25, 0.15)',
+  upcomingIncomeBg: 'rgba(248, 197, 25, 0.08)',
+  upcomingIncomeBorder: 'rgba(248, 197, 25, 0.15)',
 };
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, '2xl': 48, '3xl': 64 };
 // `as const` makes `weight` the literal '400'/'700' so styles can assign it
