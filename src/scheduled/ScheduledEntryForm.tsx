@@ -127,9 +127,12 @@ export default function ScheduledEntryForm() {
   const displayAmount = formatCents(cents);
 
   const startStr = toDateString(startDate);
-  // SCHD-UI-09: start date must not be in the past (picker blocks it too —
-  // this is the defensive check for pre-filled values).
-  const startInPast = startStr < today();
+  // SCHD-UI-09: a NEWLY PICKED start date must not be in the past (the picker
+  // blocks it too — this is the defensive check). The template's own
+  // pre-filled start date is exempt (WR-02): it may legitimately predate
+  // today, and forcing a change would shift the generation anchor and
+  // regenerate duplicates on the next startup.
+  const startInPast = startStr < today() && startStr !== existingEntry?.date;
   // End date must come strictly after the start date.
   const endDateInvalid =
     endDate !== null && toDateString(endDate) <= startStr;
@@ -384,13 +387,19 @@ export default function ScheduledEntryForm() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Start Date Picker — past dates blocked */}
+      {/* Start Date Picker — SCHD-UI-09 blocks past picks on CREATE (minimum
+          = today); edit mode floors at the template's own start date so the
+          pre-filled value is never out of range (WR-02). */}
       {showStartPicker && (
         <DateTimePicker
           value={dateToInput(startDate)}
           mode="date"
           display="default"
-          minimumDate={dateToInput(new Date())}
+          minimumDate={
+            mode === "add"
+              ? dateToInput(new Date())
+              : dateToInput(existingEntry?.date ?? today())
+          }
           onValueChange={(_event: unknown, selectedDate: Date) => {
             setShowStartPicker(false);
             setStartDate(selectedDate);

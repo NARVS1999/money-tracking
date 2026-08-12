@@ -96,6 +96,7 @@ jest.mock("../../categories/CategoriesProvider", () => ({
 // ── Subject under test ─────────────────────────────────────────────
 import ScheduledEntryForm from "../ScheduledEntryForm";
 import { Timestamp } from "firebase/firestore";
+import { addDays, today } from "../../lib/dates";
 
 const ts = new Timestamp(1_700_000_000, 0);
 
@@ -370,5 +371,56 @@ describe("ScheduledEntryForm edit mode", () => {
       description: "Rent (updated)",
     });
     expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows saving an edit of a template whose start date is in the past (WR-02)", async () => {
+    // SCHD-UI-09 blocks PAST picks for new entries; an existing template's
+    // own start date is exempt — a description-only edit must stay saveable
+    // without forcing the start date forward (which would shift the
+    // generation anchor and duplicate occurrences on the next startup).
+    const pastStart = addDays(today(), -5);
+    mockScheduledEntries = [{ ...expenseEntry, date: pastStart }];
+    const root = mount({ mode: "edit", id: "s1" });
+    act(() => {
+      root.root
+        .findAllByType(TextInput)
+        .find((t: any) => t.props.value === "Monthly rent")
+        .props.onChangeText("Rent (updated)");
+    });
+
+    await act(async () => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+
+    expect(mockUpdateScheduled).toHaveBeenCalledTimes(1);
+    expect(mockUpdateScheduled.mock.calls[0][1]).toEqual({
+      description: "Rent (updated)",
+    });
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("floors the start picker at the template's own date in edit mode (WR-02)", () => {
+    const pastStart = addDays(today(), -5);
+    mockScheduledEntries = [{ ...expenseEntry, date: pastStart }];
+    const root = mount({ mode: "edit", id: "s1" });
+
+    // The start row shows the existing (past) date — press it to open the
+    // picker, then assert the floor is that date, not today.
+    const [y, m, d] = pastStart.split("-").map(Number);
+    const rowLabel = new Date(y, m - 1, d).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    act(() => {
+      pressableWithText(root, rowLabel).props.onPress();
+    });
+
+    const pickerProps = root.root.findByType(
+      require("@react-native-community/datetimepicker").default,
+    ).props;
+    expect(pickerProps.minimumDate.getTime()).toBe(
+      new Date(y, m - 1, d).getTime(),
+    );
   });
 });
