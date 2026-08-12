@@ -388,7 +388,7 @@ export default function ExportScreen() {
         ) : scheduledError ? (
           <View style={styles.scheduledErrorBlock}>
             <Text style={styles.scheduledErrorText}>
-              Couldn't load scheduled entries.
+              {"Couldn't load scheduled entries."}
             </Text>
             <TouchableOpacity onPress={handleScheduledRetry}>
               <Text style={styles.retryText}>Retry</Text>

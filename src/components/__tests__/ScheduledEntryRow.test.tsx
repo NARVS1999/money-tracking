@@ -287,7 +287,6 @@ describe("ScheduledEntryRow interactions", () => {
     expect(alertSpy).toHaveBeenCalledTimes(1);
     expect(alertSpy.mock.calls[0][0]).toBe("Delete this scheduled entry?");
     // Confirm the destructive button — onDelete fires with the entry id.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const confirmBtn = (alertSpy.mock.calls[0][2] as any)?.[1];
     act(() => {
       confirmBtn?.onPress();

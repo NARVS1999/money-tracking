@@ -305,7 +305,6 @@ describe("ScheduledEntryForm edit mode", () => {
       "This scheduled entry may have been deleted.",
     );
     // The OK button navigates back.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const okBtn = (alertSpy.mock.calls[0][2] as any)?.[0];
     act(() => {
       okBtn?.onPress();
