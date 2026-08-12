@@ -47,11 +47,14 @@ export default function ScheduledEntryRow({
 
   // Next occurrence after the engine's lastGenerated anchor (or the start
   // date when never generated). "once" has no next occurrence — the row shows
-  // the start date without a "Next:" prefix.
+  // the start date without a "Next:" prefix. The template's endDate caps the
+  // pattern: when the next occurrence would land after it the engine will
+  // never generate it, so the row shows no "Next:" either (WR-01).
   const nextDate = getNextOccurrence(
     entry.date,
     entry.frequency,
     entry.lastGenerated,
+    entry.endDate,
   );
   const secondaryDate = nextDate ?? entry.date;
   const secondaryLine = nextDate

@@ -172,6 +172,29 @@ describe("ScheduledEntryRow content", () => {
     expect(texts(root)).toContain("Once · Aug 12");
   });
 
+  it("shows no 'Next:' when the next occurrence is beyond endDate (WR-01)", () => {
+    // Monthly template starting Jan 31 with end Mar 15 and lastGenerated
+    // Jan 31: the engine's next match is Mar 31 — past the end, so it will
+    // never be generated and the row must not promise it.
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <ScheduledEntryRow
+          entry={makeEntry({
+            date: "2026-01-31",
+            frequency: "monthly",
+            lastGenerated: "2026-01-31",
+            endDate: "2026-03-15",
+          })}
+          onEdit={jest.fn()}
+          onDelete={jest.fn()}
+          onTogglePause={jest.fn()}
+        />,
+      );
+    });
+    expect(texts(root).some((t) => t.includes("Next:"))).toBe(false);
+  });
+
   it("renders the amount with ₱ formatting", () => {
     let root: any;
     act(() => {

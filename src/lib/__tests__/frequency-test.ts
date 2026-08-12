@@ -159,18 +159,37 @@ describe("formatFrequency / isFrequency", () => {
 
 describe("getNextOccurrence", () => {
   it("anchors at lastGenerated when it is set", () => {
-    expect(getNextOccurrence("2026-08-01", "daily", "2026-08-10")).toBe("2026-08-11");
-    expect(getNextOccurrence("2026-08-01", "weekly", "2026-08-05")).toBe("2026-08-12");
+    expect(getNextOccurrence("2026-08-01", "daily", "2026-08-10", null)).toBe("2026-08-11");
+    expect(getNextOccurrence("2026-08-01", "weekly", "2026-08-05", null)).toBe("2026-08-12");
   });
 
   it("falls back to the start date when never generated", () => {
-    expect(getNextOccurrence("2026-08-12", "daily", null)).toBe("2026-08-13");
-    expect(getNextOccurrence("2026-08-12", "monthly", null)).toBe("2026-09-12");
+    expect(getNextOccurrence("2026-08-12", "daily", null, null)).toBe("2026-08-13");
+    expect(getNextOccurrence("2026-08-12", "monthly", null, null)).toBe("2026-09-12");
   });
 
   it("once never has a next occurrence", () => {
-    expect(getNextOccurrence("2026-08-12", "once", null)).toBeNull();
-    expect(getNextOccurrence("2026-08-12", "once", "2026-08-12")).toBeNull();
+    expect(getNextOccurrence("2026-08-12", "once", null, null)).toBeNull();
+    expect(getNextOccurrence("2026-08-12", "once", "2026-08-12", null)).toBeNull();
+  });
+
+  it("returns null when the next occurrence lands after endDate (WR-01)", () => {
+    // Monthly from Jan 31 with lastGenerated Jan 31: the next match is Mar 31
+    // (Feb has no 31st) — beyond the Mar 15 end, so the engine will never
+    // generate it; the UI must not promise it.
+    expect(
+      getNextOccurrence("2026-01-31", "monthly", "2026-01-31", "2026-03-15"),
+    ).toBeNull();
+    // The same template with the end ON the occurrence keeps it.
+    expect(
+      getNextOccurrence("2026-01-31", "monthly", "2026-01-31", "2026-03-31"),
+    ).toBe("2026-03-31");
+  });
+
+  it("caps the first occurrence too when never generated (WR-01)", () => {
+    // Daily starting 2026-08-12, end the same day: the next day is beyond.
+    expect(getNextOccurrence("2026-08-12", "daily", null, "2026-08-12")).toBeNull();
+    expect(getNextOccurrence("2026-08-12", "daily", null, "2026-08-13")).toBe("2026-08-13");
   });
 });
 

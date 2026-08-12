@@ -9,7 +9,7 @@
 //   - "yearly":  matches the start date's month + day (Feb 29 only in leap
 //                years — day-equality)
 // All dates are local "YYYY-MM-DD" strings (NFR-04).
-import { addDays, addMonths, addYears, daysBetween } from "./dates";
+import { addDays, addMonths, addYears, compare, daysBetween } from "./dates";
 
 export type Frequency = "once" | "daily" | "weekly" | "monthly" | "yearly";
 
@@ -43,12 +43,20 @@ export function formatFrequency(frequency: string): string {
 // advances lastGenerated after each generation, so the next occurrence is
 // derived from lastGenerated when set, else from the start date. "once" has
 // no next occurrence -> null (the UI shows the start date instead of "Next:").
+// endDate caps the pattern: when the next occurrence would land AFTER the end
+// date, the engine will never generate it (scheduler.ts:65) -> null (WR-01),
+// so the UI stops promising "Next:" for a finished template.
 export function getNextOccurrence(
   startDate: string,
   frequency: Frequency,
   lastGenerated: string | null,
+  endDate: string | null,
 ): string | null {
-  return getNextDate(lastGenerated ?? startDate, frequency);
+  const next = getNextDate(lastGenerated ?? startDate, frequency);
+  if (next === null || (endDate !== null && compare(next, endDate) > 0)) {
+    return null;
+  }
+  return next;
 }
 
 // Short "Mon D" label for a YYYY-MM-DD date ("Aug 15"), matching the
