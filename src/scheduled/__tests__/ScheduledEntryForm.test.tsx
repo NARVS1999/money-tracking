@@ -235,7 +235,134 @@ describe("ScheduledEntryForm add mode", () => {
     expect(input.categoryId).toBe("cat-1");
     expect(input.frequency).toBe("weekly");
     expect(input.endDate).toBeNull();
+    // The route param type drives the saved entry's type (add mode).
+    expect(input.type).toBe("expense");
     expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps Save disabled when only the amount is set (category still required)", () => {
+    const root = mount();
+    act(() => {
+      amountInput(root).props.onChangeText("100.00");
+    });
+    act(() => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+    expect(mockAddScheduled).not.toHaveBeenCalled();
+    expect(mockGoBack).not.toHaveBeenCalled();
+  });
+
+  it("Cancel goes back without saving", () => {
+    const root = mount();
+    act(() => {
+      pressableWithText(root, "Cancel").props.onPress();
+    });
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+    expect(mockAddScheduled).not.toHaveBeenCalled();
+  });
+
+  it("caps the description at 200 characters", () => {
+    const root = mount();
+    const desc = root.root
+      .findAllByType(TextInput)
+      .find((t: any) => t.props.placeholder === "What was this for?");
+    expect(desc.props.maxLength).toBe(200);
+  });
+
+  it("floors the add-mode start picker at today (SCHD-UI-09)", () => {
+    const root = mount();
+    const [y, m, d] = today().split("-").map(Number);
+    const rowLabel = new Date(y, m - 1, d).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    act(() => {
+      pressableWithText(root, rowLabel).props.onPress();
+    });
+    const pickerProps = root.root.findByType(
+      require("@react-native-community/datetimepicker").default,
+    ).props;
+    expect(pickerProps.minimumDate.getTime()).toBe(
+      new Date(y, m - 1, d).getTime(),
+    );
+  });
+
+  it("defensive check blocks a past start date in add mode (SCHD-UI-09)", () => {
+    const root = mount();
+    act(() => {
+      amountInput(root).props.onChangeText("100.00");
+    });
+    act(() => {
+      pressableWithText(root, "Select category").props.onPress();
+    });
+    act(() => {
+      pressableWithText(root, "Housing").props.onPress();
+    });
+    // Open the start picker via the currently displayed (today) row, then
+    // drive it with a past date — Save must stay disabled even though the
+    // picker's minimumDate would not normally offer it.
+    const [ty, tm, td] = today().split("-").map(Number);
+    const todayLabel = new Date(ty, tm - 1, td).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    act(() => {
+      pressableWithText(root, todayLabel).props.onPress();
+    });
+    const [py, pm, pd] = addDays(today(), -3).split("-").map(Number);
+    const past = new Date(py, pm - 1, pd);
+    act(() => {
+      root.root
+        .findByType(require("@react-native-community/datetimepicker").default)
+        .props.onValueChange(undefined, past);
+    });
+    act(() => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+    expect(mockAddScheduled).not.toHaveBeenCalled();
+    expect(mockGoBack).not.toHaveBeenCalled();
+  });
+
+  it("floors the end-date picker at start + 1 day", () => {
+    const root = mount();
+    act(() => {
+      pressableWithText(root, "No end date").props.onPress();
+    });
+    const pickerProps = root.root.findByType(
+      require("@react-native-community/datetimepicker").default,
+    ).props;
+    expect(pickerProps.minimumDate.getTime()).toBe(
+      new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).getTime(),
+    );
+  });
+
+  it("alerts and stays on the form when the save fails", async () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    mockAddScheduled = jest.fn(async () => {
+      throw new Error("boom");
+    });
+    const root = mount();
+    act(() => {
+      amountInput(root).props.onChangeText("250.00");
+    });
+    act(() => {
+      pressableWithText(root, "Select category").props.onPress();
+    });
+    act(() => {
+      pressableWithText(root, "Housing").props.onPress();
+    });
+
+    await act(async () => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Error",
+      "Save failed. Please try again.",
+    );
+    expect(mockGoBack).not.toHaveBeenCalled();
   });
 
   it("shows the inline end-date error when endDate is not after start", () => {
@@ -422,5 +549,43 @@ describe("ScheduledEntryForm edit mode", () => {
     expect(pickerProps.minimumDate.getTime()).toBe(
       new Date(y, m - 1, d).getTime(),
     );
+  });
+
+  it("clears the pre-filled end date via the Clear action", async () => {
+    // expenseEntry has endDate 2027-08-12 — the Clear action resets it.
+    const root = mount({ mode: "edit", id: "s1" });
+    expect(texts(root)).toContain("Clear");
+    act(() => {
+      pressableWithText(root, "Clear").props.onPress();
+    });
+    expect(texts(root)).toContain("No end date");
+    // Save a description-only edit → the payload carries endDate: null.
+    act(() => {
+      root.root
+        .findAllByType(TextInput)
+        .find((t: any) => t.props.value === "Monthly rent")
+        .props.onChangeText("Rent (updated)");
+    });
+
+    await act(async () => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+
+    expect(mockUpdateScheduled).toHaveBeenCalledTimes(1);
+    expect(mockUpdateScheduled.mock.calls[0][1].endDate).toBeNull();
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips updateScheduled entirely on a no-op edit", async () => {
+    // Nothing changed — a diff-patch save must not call the provider at all
+    // (no field updates, no anchor risk, just goBack).
+    const root = mount({ mode: "edit", id: "s1" });
+
+    await act(async () => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+
+    expect(mockUpdateScheduled).not.toHaveBeenCalled();
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 });

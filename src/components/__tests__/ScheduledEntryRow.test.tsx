@@ -209,6 +209,53 @@ describe("ScheduledEntryRow content", () => {
     });
     expect(texts(root)).toContain("₱ 123.45");
   });
+
+  it("colors the amount income-green for income and expense-red for expense", () => {
+    const colorOf = (entry: any) => {
+      let r: any;
+      act(() => {
+        r = renderer.create(
+          <ScheduledEntryRow
+            entry={entry}
+            onEdit={jest.fn()}
+            onDelete={jest.fn()}
+            onTogglePause={jest.fn()}
+          />,
+        );
+      });
+      const amountText = r.root
+        .findAllByType(Text)
+        .find((t: any) => t.props.children === "₱ 123.45");
+      const style = Array.isArray(amountText.props.style)
+        ? amountText.props.style
+        : [amountText.props.style];
+      return style.find((s: any) => s && typeof s === "object" && s.color);
+    };
+    // ── Colors imported from tokens (single source of truth, 14-UI-SPEC) ──
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { colors } = require("../../theme/tokens");
+    expect(colorOf(makeEntry({ type: "income", amount: 12345 }))?.color).toBe(
+      colors.income,
+    );
+    expect(colorOf(makeEntry({ type: "expense", amount: 12345 }))?.color).toBe(
+      colors.expense,
+    );
+  });
+
+  it("falls back to 'Unknown' when the category id has no match", () => {
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <ScheduledEntryRow
+          entry={makeEntry({ categoryId: "cat-404", description: "" })}
+          onEdit={jest.fn()}
+          onDelete={jest.fn()}
+          onTogglePause={jest.fn()}
+        />,
+      );
+    });
+    expect(texts(root)).toContain("Unknown");
+  });
 });
 
 describe("ScheduledEntryRow paused state", () => {
@@ -288,6 +335,52 @@ describe("ScheduledEntryRow interactions", () => {
     const labels = texts(root);
     expect(labels).toContain("Resume");
     expect(labels).not.toContain("Pause");
+  });
+
+  it("resumes immediately on the Resume swipe action (no confirm)", () => {
+    const onTogglePause = jest.fn();
+    const entry = makeEntry({ isActive: false });
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <ScheduledEntryRow
+          entry={entry}
+          onEdit={jest.fn()}
+          onDelete={jest.fn()}
+          onTogglePause={onTogglePause}
+        />,
+      );
+    });
+    act(() => {
+      pressableWithText(root, "Resume").props.onPress();
+    });
+    expect(onTogglePause).toHaveBeenCalledWith(entry);
+  });
+
+  it("does not delete when the Alert is cancelled", () => {
+    const alertSpy = jest.spyOn(Alert, "alert");
+    const onDelete = jest.fn();
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <ScheduledEntryRow
+          entry={makeEntry()}
+          onEdit={jest.fn()}
+          onDelete={onDelete}
+          onTogglePause={jest.fn()}
+        />,
+      );
+    });
+    act(() => {
+      pressableWithText(root, "Delete").props.onPress();
+    });
+    // Cancel (first button) carries no onPress — the OS dismisses the Alert;
+    // tapping it can never reach onDelete. Only the destructive Delete button
+    // wires up the callback.
+    const cancelBtn = (alertSpy.mock.calls[0][2] as any)?.[0];
+    expect(cancelBtn.text).toBe("Cancel");
+    expect(cancelBtn.onPress).toBeUndefined();
+    expect(onDelete).not.toHaveBeenCalled();
   });
 
   it("deletes only after the Alert confirmation", () => {
