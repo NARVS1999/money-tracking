@@ -151,8 +151,8 @@ A personal expense/income tracker for the phone (Expo Go workflow): sign in with
 | 8. Budget | v1.1 | 1/1 | Complete | 2026-08-09 |
 | 9. Category Icons | v1.1 | 1/1 | Complete | 2026-08-09 |
 | 10. Charts | v1.1 | 1/1 | Complete | 2026-08-09 |
-| 11. SQLite Local Database | v1.2 | 0/1 | Planned | — |
-| 12. Offline-First Providers + Sync | v1.2 | 0/1 | Planned | — |
-| 13. Recurring Entries Data Layer | v1.2 | 0/1 | Planned | — |
-| 14. Export Tab — Scheduled UI | v1.2 | 0/1 | Planned | — |
-| 15. Homepage — Upcoming Indicators | v1.2 | 0/1 | Planned | — |
+| 11. SQLite Local Database | v1.2 | 1/1 | In Progress|  |
+| 12. Offline-First Providers + Sync | v1.2 | 1/1 | In Progress|  |
+| 13. Recurring Entries Data Layer | v1.2 | 1/1 | In Progress|  |
+| 14. Export Tab — Scheduled UI | v1.2 | 1/1 | In Progress|  |
+| 15. Homepage — Upcoming Indicators | v1.2 | 1/1 | In Progress|  |
