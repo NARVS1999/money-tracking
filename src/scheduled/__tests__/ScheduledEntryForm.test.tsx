@@ -296,6 +296,20 @@ describe("ScheduledEntryForm edit mode", () => {
     expect(desc).toBeTruthy();
   });
 
+  it("renders the expense category list when the route omits the type (CR-02)", () => {
+    // The real edit caller (ExportScreen) navigates with { mode: "edit", id }
+    // only — the template's OWN type must drive the category list. Before the
+    // fix the form fell back to the income list, so the pre-filled expense
+    // category showed as "Select category" and picks would assign income
+    // categories to an expense template.
+    const root = mount({ mode: "edit", id: "s1" });
+    const labels = texts(root);
+    expect(labels).toContain("Housing");
+    expect(labels).not.toContain("Select category");
+    // Salary is an income category — must not leak into an expense edit.
+    expect(labels).not.toContain("Salary");
+  });
+
   it("alerts and goes back when the entry no longer exists", () => {
     const alertSpy = jest.spyOn(Alert, "alert");
     mount({ mode: "edit", type: "expense", id: "missing" });
@@ -313,7 +327,9 @@ describe("ScheduledEntryForm edit mode", () => {
   });
 
   it("saves through updateScheduled in edit mode", async () => {
-    const root = mount({ mode: "edit", type: "expense", id: "s1" });
+    // Real caller shape: ExportScreen navigates with { mode: "edit", id }
+    // (no type) — the form derives the type from the stored expense entry.
+    const root = mount({ mode: "edit", id: "s1" });
     act(() => {
       root.root
         .findAllByType(TextInput)

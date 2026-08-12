@@ -44,13 +44,20 @@ export default function ScheduledEntryForm() {
   const { expenseCategories, incomeCategories } = useCategories();
 
   const { mode, type, id } = params;
-  const categories = type === "expense" ? expenseCategories : incomeCategories;
 
   // Existing template for edit mode (read synchronously from provider state).
   const existingEntry = useMemo<ScheduledEntry | null>(() => {
     if (!id) return null;
     return scheduledEntries.find((s) => s.id === id) ?? null;
   }, [scheduledEntries, id]);
+
+  // CR-02: edit mode derives the type from the stored entry — the entry's own
+  // type is the source of truth (the row itself knows whether it is an
+  // expense or income template). Falls back to the route param for add mode.
+  const effectiveType: "expense" | "income" =
+    mode === "edit" && existingEntry ? existingEntry.type : type;
+  const categories =
+    effectiveType === "expense" ? expenseCategories : incomeCategories;
 
   // Guard: entry deleted while the form is open (or stale route) → alert and
   // go back (EntryForm guard pattern).
@@ -165,7 +172,7 @@ export default function ScheduledEntryForm() {
         }
       } else {
         const input = {
-          type,
+          type: effectiveType,
           amount: cents,
           categoryId: selectedCategoryId,
           date: startStr,
@@ -369,7 +376,7 @@ export default function ScheduledEntryForm() {
               )}
               ListEmptyComponent={
                 <Text style={styles.emptyCategories}>
-                  No {type} categories yet
+                  No {effectiveType} categories yet
                 </Text>
               }
             />

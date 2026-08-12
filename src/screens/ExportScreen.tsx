@@ -198,8 +198,12 @@ export default function ExportScreen() {
   }, [navigation, addType]);
 
   const openEdit = useCallback(
-    (id: string) => {
-      navigation.navigate("ScheduledEntryForm", { mode: "edit", id });
+    (id: string, type: "expense" | "income") => {
+      // CR-02: pass the row's type through — the EntryForm edit navigation
+      // pattern (ExpensesScreen/IncomeScreen pass entry.type). The form
+      // also derives the type from the stored entry, so both the category
+      // list and the save payload are correct regardless of the caller.
+      navigation.navigate("ScheduledEntryForm", { mode: "edit", id, type });
     },
     [navigation],
   );
@@ -414,7 +418,7 @@ export default function ExportScreen() {
                       key={s.id}
                       entry={s}
                       isLast={index === expenseScheduled.length - 1}
-                      onEdit={() => openEdit(s.id)}
+                      onEdit={() => openEdit(s.id, s.type)}
                       onDelete={handleDeleteScheduled}
                       onTogglePause={handleTogglePause}
                     />
@@ -431,7 +435,7 @@ export default function ExportScreen() {
                       key={s.id}
                       entry={s}
                       isLast={index === incomeScheduled.length - 1}
-                      onEdit={() => openEdit(s.id)}
+                      onEdit={() => openEdit(s.id, s.type)}
                       onDelete={handleDeleteScheduled}
                       onTogglePause={handleTogglePause}
                     />
