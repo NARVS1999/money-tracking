@@ -12,7 +12,7 @@ import { formatCents } from "../lib/money";
 import {
   formatFrequency,
   formatNextDate,
-  getNextOccurrence,
+  getUpcomingOccurrence,
 } from "../lib/frequency";
 import { useCategories } from "../categories/CategoriesProvider";
 import type { ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
@@ -45,12 +45,13 @@ export default function ScheduledEntryRow({
   const amountColor = entry.type === "income" ? colors.income : colors.expense;
   const frequencyLabel = formatFrequency(entry.frequency);
 
-  // Next occurrence after the engine's lastGenerated anchor (or the start
-  // date when never generated). "once" has no next occurrence — the row shows
+  // Next occurrence for display: the engine's getNextOccurrence clamped to
+  // today (getUpcomingOccurrence, WR-01) so a long-lived session never shows
+  // a past date as "Next:". "once" has no next occurrence — the row shows
   // the start date without a "Next:" prefix. The template's endDate caps the
   // pattern: when the next occurrence would land after it the engine will
   // never generate it, so the row shows no "Next:" either (WR-01).
-  const nextDate = getNextOccurrence(
+  const nextDate = getUpcomingOccurrence(
     entry.date,
     entry.frequency,
     entry.lastGenerated,

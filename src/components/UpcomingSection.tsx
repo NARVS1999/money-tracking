@@ -11,7 +11,7 @@ import { formatCents } from "../lib/money";
 import {
   formatFrequency,
   formatNextDate,
-  getNextOccurrence,
+  getUpcomingOccurrence,
 } from "../lib/frequency";
 import { useCategories } from "../categories/CategoriesProvider";
 import type { ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
@@ -89,12 +89,13 @@ function UpcomingRow({
 
   const frequencyLabel = formatFrequency(entry.frequency);
 
-  // Next occurrence after the engine's lastGenerated anchor (or the start
-  // date when never generated). "once" has no next occurrence, and an
-  // endDate-capped template whose next occurrence lands after endDate is
-  // finished — both show the start date without a "Next:" prefix
-  // (ScheduledEntryRow secondary-line logic verbatim, WR-01).
-  const nextDate = getNextOccurrence(
+  // Next occurrence for display: the engine's getNextOccurrence clamped to
+  // today (getUpcomingOccurrence, WR-01) so a session spanning a date
+  // boundary never shows a past date as "Next:". "once" has no next
+  // occurrence, and an endDate-capped template whose next occurrence lands
+  // after endDate is finished — both show the start date without a "Next:"
+  // prefix (shared with ScheduledEntryRow via the lib helper).
+  const nextDate = getUpcomingOccurrence(
     entry.date,
     entry.frequency,
     entry.lastGenerated,

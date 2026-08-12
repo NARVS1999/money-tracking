@@ -8,7 +8,7 @@ import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { useAuth } from "../auth/AuthProvider";
 import { useScheduledEntries, type ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
-import { getNextOccurrence } from "../lib/frequency";
+import { getUpcomingOccurrence } from "../lib/frequency";
 import { colors, spacing, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
 import BudgetCard from "../components/BudgetCard";
@@ -21,19 +21,21 @@ import EmptyState from "../components/EmptyState";
 import { CHART_COLORS } from "../components/chartColors";
 
 // Upcoming-row ordering (15-UI-SPEC §2, design decision): next occurrence
-// date ascending (soonest first, via the engine's getNextOccurrence — UI code
-// never re-implements date math); entries with no next occurrence (once /
-// past endDate) sort last, start date ascending. Stable for equal dates —
-// Array.prototype.sort is stable in Hermes (ES2019+).
+// date ascending (soonest first, via the engine's getNextOccurrence clamped
+// to today — getUpcomingOccurrence, WR-01 — so the sort key matches the
+// displayed "Next:" date; UI code never re-implements date math); entries
+// with no next occurrence (future once templates) sort last, start date
+// ascending. Stable for equal dates — Array.prototype.sort is stable in
+// Hermes (ES2019+).
 function sortUpcoming(entries: ScheduledEntry[]): ScheduledEntry[] {
   return [...entries].sort((a, b) => {
-    const nextA = getNextOccurrence(
+    const nextA = getUpcomingOccurrence(
       a.date,
       a.frequency,
       a.lastGenerated,
       a.endDate,
     );
-    const nextB = getNextOccurrence(
+    const nextB = getUpcomingOccurrence(
       b.date,
       b.frequency,
       b.lastGenerated,

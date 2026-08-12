@@ -9,7 +9,7 @@
 //   - "yearly":  matches the start date's month + day (Feb 29 only in leap
 //                years — day-equality)
 // All dates are local "YYYY-MM-DD" strings (NFR-04).
-import { addDays, addMonths, addYears, compare, daysBetween } from "./dates";
+import { addDays, addMonths, addYears, compare, daysBetween, today } from "./dates";
 
 export type Frequency = "once" | "daily" | "weekly" | "monthly" | "yearly";
 
@@ -57,6 +57,46 @@ export function getNextOccurrence(
     return null;
   }
   return next;
+}
+
+// Forward day-by-day scan for the first occurrence of a pattern at/after
+// `from`, anchored at the TRUE start date (matchesFrequency semantics — the
+// same day-equality anchoring the engine uses in scheduler.getDatesToGenerate).
+// Bounded like the engine's catch-up scan (scheduler MAX_SCAN_DAYS); a
+// personal ledger makes this trivially cheap, and the bound also protects
+// against pathological frequencies (e.g. an unknown value never matches).
+const MAX_FORWARD_SCAN_DAYS = 5000;
+
+// Display-only next occurrence for "upcoming" rows (Home sections WR-01,
+// ScheduledEntryRow): getNextOccurrence with the result clamped to today.
+// The engine runs only at startup, so a long-lived session can outrun
+// lastGenerated (app open across midnight) — the UI must never promise a
+// date already gone. When the engine-consistent next falls before todayStr,
+// scan forward from todayStr for the pattern's first real occurrence —
+// "show today or the next future occurrence" — still bounded by endDate.
+// Scanning from the start-date anchor (NOT re-anchoring at today) keeps the
+// pattern's day-of-month / month-day intact: a monthly template anchored on
+// the 31st must show Aug 31, not Sep 12. "once" and finished patterns → null.
+export function getUpcomingOccurrence(
+  startDate: string,
+  frequency: Frequency,
+  lastGenerated: string | null,
+  endDate: string | null,
+  todayStr: string = today(),
+): string | null {
+  const next = getNextOccurrence(startDate, frequency, lastGenerated, endDate);
+  if (next === null || compare(next, todayStr) >= 0) {
+    return next;
+  }
+  let d = todayStr;
+  for (let i = 0; i < MAX_FORWARD_SCAN_DAYS; i++) {
+    if (matchesFrequency(d, frequency, startDate)) {
+      if (endDate !== null && compare(d, endDate) > 0) return null;
+      return d;
+    }
+    d = addDays(d, 1);
+  }
+  return null;
 }
 
 // Short "Mon D" label for a YYYY-MM-DD date ("Aug 15"), matching the

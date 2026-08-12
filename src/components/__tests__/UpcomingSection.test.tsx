@@ -2,9 +2,11 @@
 // section contract: returns null at zero items (absence IS the empty state),
 // title rendering, the ScheduledEntryRow content contract (description ||
 // category name primary, "{Frequency} · Next: {date}" secondary, "once"
-// without a "Next:" prefix), the themed amount color (expense red #DC2626 /
-// income teal #45C0CF — NOT the Export tab's green), the tap-only row wiring
-// (tap -> onTapItem), and the last-row borderless card pattern.
+// without a "Next:" prefix), the WR-01 today-clamp on the "Next:" date (a
+// stale lastGenerated anchor never shows a past date), the themed amount
+// color (expense red #DC2626 / income teal #45C0CF — NOT the Export tab's
+// green), the tap-only row wiring (tap -> onTapItem), and the last-row
+// borderless card pattern.
 import React from "react";
 import { Text, TouchableOpacity } from "react-native";
 import renderer, { act } from "react-test-renderer";
@@ -118,6 +120,10 @@ function flattenStyle(style: any): Record<string, unknown> {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Fixed clock at 2026-08-12 — the WR-01 clamp anchors "Next:" to today,
+  // so every date expectation must be deterministic (repo pattern:
+  // syncQueue-test / seed-test useFakeTimers).
+  jest.useFakeTimers({ now: new Date(2026, 7, 12) });
   mockCategories = {
     expenseCategories: [
       { id: "cat-1", name: "Housing", createdAt: ts },
@@ -125,6 +131,10 @@ beforeEach(() => {
     ],
     incomeCategories: [{ id: "cat-3", name: "Salary", createdAt: ts }],
   };
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("UpcomingSection empty state", () => {
@@ -178,6 +188,26 @@ describe("UpcomingSection content", () => {
       makeEntry({ frequency: "weekly", endDate: "2026-08-18" }),
     ]);
     const expected = `Weekly · ${formatNextDate("2026-08-12")}`;
+    expect(texts(root)).toContain(expected);
+  });
+
+  it("never shows a past date as 'Next:' when the engine anchor is stale (WR-01)", () => {
+    // Daily template whose lastGenerated (Aug 10) predates today (Aug 12):
+    // the engine-consistent next (Aug 11) is gone — the row clamps to today.
+    const root = mount([
+      makeEntry({ date: "2026-01-01", lastGenerated: "2026-08-10", frequency: "daily" }),
+    ]);
+    const expected = `Daily · Next: ${formatNextDate("2026-08-12")}`;
+    expect(texts(root)).toContain(expected);
+  });
+
+  it("clamps a stale weekly anchor to the next future occurrence (WR-01)", () => {
+    // Weekly from Mon 2026-08-03, lastGenerated Mon 2026-08-03, today Wed
+    // 2026-08-12: the engine next (Mon Aug 10) is past → next Monday Aug 17.
+    const root = mount([
+      makeEntry({ date: "2026-08-03", lastGenerated: "2026-08-03", frequency: "weekly" }),
+    ]);
+    const expected = `Weekly · Next: ${formatNextDate("2026-08-17")}`;
     expect(texts(root)).toContain(expected);
   });
 

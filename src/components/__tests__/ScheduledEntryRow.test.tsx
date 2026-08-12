@@ -87,6 +87,10 @@ function textsFromInstance(instance: any): string[] {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Fixed clock at 2026-08-12 — the WR-01 clamp anchors "Next:" to today,
+  // so every date expectation must be deterministic (repo pattern:
+  // syncQueue-test / seed-test useFakeTimers).
+  jest.useFakeTimers({ now: new Date(2026, 7, 12) });
   mockCategories = {
     expenseCategories: [
       { id: "cat-1", name: "Housing", createdAt: ts },
@@ -94,6 +98,10 @@ beforeEach(() => {
     ],
     incomeCategories: [],
   };
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("ScheduledEntryRow content", () => {
@@ -155,6 +163,27 @@ describe("ScheduledEntryRow content", () => {
       );
     });
     expect(texts(root)).toContain("Weekly · Next: Aug 26");
+  });
+
+  it("never shows a past date as 'Next:' when the engine anchor is stale (WR-01)", () => {
+    // Daily template whose lastGenerated (Aug 10) predates today (Aug 12):
+    // the engine-consistent next (Aug 11) is gone — the row clamps to today.
+    let root: any;
+    act(() => {
+      root = renderer.create(
+        <ScheduledEntryRow
+          entry={makeEntry({
+            date: "2026-01-01",
+            lastGenerated: "2026-08-10",
+            frequency: "daily",
+          })}
+          onEdit={jest.fn()}
+          onDelete={jest.fn()}
+          onTogglePause={jest.fn()}
+        />,
+      );
+    });
+    expect(texts(root)).toContain("Daily · Next: Aug 12");
   });
 
   it("shows the start date without a 'Next:' prefix for once templates", () => {

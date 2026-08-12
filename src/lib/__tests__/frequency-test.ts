@@ -9,6 +9,7 @@ import {
   isFrequency,
   FREQUENCIES,
   getNextOccurrence,
+  getUpcomingOccurrence,
   formatNextDate,
 } from "../frequency";
 
@@ -190,6 +191,75 @@ describe("getNextOccurrence", () => {
     // Daily starting 2026-08-12, end the same day: the next day is beyond.
     expect(getNextOccurrence("2026-08-12", "daily", null, "2026-08-12")).toBeNull();
     expect(getNextOccurrence("2026-08-12", "daily", null, "2026-08-13")).toBe("2026-08-13");
+  });
+});
+
+describe("getUpcomingOccurrence", () => {
+  it("passes through a next occurrence that is not in the past", () => {
+    // Weekly from Aug 12 with lastGenerated Aug 12 → next Aug 19 (future).
+    expect(
+      getUpcomingOccurrence("2026-08-12", "weekly", "2026-08-12", null, "2026-08-12"),
+    ).toBe("2026-08-19");
+    // A future start date (never generated) passes through unchanged.
+    expect(
+      getUpcomingOccurrence("2026-09-01", "weekly", null, null, "2026-08-12"),
+    ).toBe("2026-09-08");
+  });
+
+  it("clamps a stale daily next to today (WR-01)", () => {
+    // lastGenerated Aug 10 → engine next Aug 11, already past → today.
+    expect(
+      getUpcomingOccurrence("2026-08-01", "daily", "2026-08-10", null, "2026-08-12"),
+    ).toBe("2026-08-12");
+  });
+
+  it("clamps a stale weekly next forward to the next future occurrence (WR-01)", () => {
+    // Weekly anchored Mon 2026-08-03, lastGenerated Mon 2026-08-03, today
+    // Wed 2026-08-12 → engine next (Mon Aug 10) is past → next Monday Aug 17.
+    expect(
+      getUpcomingOccurrence("2026-08-03", "weekly", "2026-08-03", null, "2026-08-12"),
+    ).toBe("2026-08-17");
+  });
+
+  it("keeps the pattern's anchor day when clamping a stale monthly next (WR-01)", () => {
+    // Monthly anchored on the 31st (Jan 31), lastGenerated Jan 31, session
+    // spanning to Aug 12: the engine's next (Mar 31) is past, but the next
+    // real occurrence is Aug 31 — NOT Sep 12 (a re-anchor at today would
+    // break the day-of-month).
+    expect(
+      getUpcomingOccurrence("2026-01-31", "monthly", "2026-01-31", null, "2026-08-12"),
+    ).toBe("2026-08-31");
+  });
+
+  it("clamps a stale yearly next to the next pattern year (WR-01)", () => {
+    // Yearly on Aug 5, lastGenerated 2025-08-05, today 2026-08-12 → engine
+    // next (2026-08-05) is past → 2027-08-05.
+    expect(
+      getUpcomingOccurrence("2025-08-05", "yearly", "2025-08-05", null, "2026-08-12"),
+    ).toBe("2027-08-05");
+  });
+
+  it("keeps the clamped occurrence when it still lands within endDate (WR-01)", () => {
+    expect(
+      getUpcomingOccurrence("2026-08-01", "daily", "2026-08-10", "2026-08-12", "2026-08-12"),
+    ).toBe("2026-08-12");
+  });
+
+  it("returns null when the clamped scan runs past endDate (WR-01)", () => {
+    // Daily ending Aug 11: the stale engine next (Aug 11) is past and the
+    // clamped scan from Aug 12 is beyond the end — finished.
+    expect(
+      getUpcomingOccurrence("2026-08-01", "daily", "2026-08-10", "2026-08-11", "2026-08-12"),
+    ).toBeNull();
+  });
+
+  it("once never has a next occurrence", () => {
+    expect(
+      getUpcomingOccurrence("2026-08-12", "once", null, null, "2026-08-12"),
+    ).toBeNull();
+    expect(
+      getUpcomingOccurrence("2026-08-12", "once", "2026-08-12", null, "2026-08-12"),
+    ).toBeNull();
   });
 });
 
