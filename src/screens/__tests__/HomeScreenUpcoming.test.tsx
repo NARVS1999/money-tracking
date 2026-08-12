@@ -190,6 +190,32 @@ describe("HomeScreen upcoming sections", () => {
     expect(found).not.toContain("Upcoming Income");
   });
 
+  it("leaves Home exactly as v1.1 when both upcoming types are empty (both-zero)", () => {
+    const root = mount(); // no scheduled entries at all
+    const found = texts(root);
+    // Quick-action buttons still render…
+    expect(found).toContain("- Expense");
+    expect(found).toContain("+ Income");
+    // …and the chart sections still render (the upcoming sections add no
+    // placeholder or copy at zero — absence IS the empty state, HOME-UP-05).
+    expect(found).toContain("Expenses by Category");
+  });
+
+  it("supersedes the upcoming sections entirely on an empty ledger (E4)", () => {
+    // The shipped entries.length === 0 → EmptyState early-return is unchanged:
+    // with a completely empty ledger the home screen shows "Nothing logged
+    // this month" and the upcoming sections do not appear — even if scheduled
+    // templates exist (scheduled templates are a later-state surface).
+    mockUseEntries.mockReturnValue({ entries: [], isLoading: false });
+    mockScheduled = { scheduledEntries: [makeScheduled()] };
+    const root = mount();
+    const found = texts(root);
+    expect(found).toContain("Nothing logged this month");
+    expect(found).not.toContain("Upcoming Expenses");
+    expect(found).not.toContain("Upcoming Income");
+    expect(found).not.toContain("- Expense");
+  });
+
   it("excludes paused templates from both sections", () => {
     mockScheduled = {
       scheduledEntries: [
@@ -242,6 +268,20 @@ describe("HomeScreen upcoming sections", () => {
     expect(found).toContain("Once · Aug 20");
   });
 
+  it("excludes exhausted income templates from the income section (WR-02)", () => {
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "s1", type: "income", categoryId: "cat-3", description: "Exhausted salary once", frequency: "once", date: "2026-08-01" }),
+        makeScheduled({ id: "s2", type: "income", categoryId: "cat-3", description: "Active salary" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    expect(found).toContain("Upcoming Income");
+    expect(found).toContain("Active salary");
+    expect(found).not.toContain("Exhausted salary once");
+  });
+
   it("hides the section entirely when every template of the type is exhausted (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
@@ -277,6 +317,24 @@ describe("HomeScreen upcoming sections", () => {
     expect(c).toBeGreaterThan(a);
   });
 
+  it("keeps insertion order when next occurrence dates are equal (stable sort)", () => {
+    // Two daily templates anchored at the same date → identical next dates
+    // (Aug 13). Array.prototype.sort is stable, so the input order (A, B)
+    // must survive into the render order.
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "a", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "A-first" }),
+        makeScheduled({ id: "b", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-second" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    const a = found.indexOf("A-first");
+    const b = found.indexOf("B-second");
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(b).toBeGreaterThan(a);
+  });
+
   it("places the upcoming sections between the quick-action buttons and the chart sections", () => {
     mockScheduled = { scheduledEntries: [makeScheduled()] };
     const root = mount();
@@ -303,6 +361,25 @@ describe("HomeScreen upcoming sections", () => {
       mode: "edit",
       id: "s1",
       type: "expense",
+    });
+  });
+
+  it("passes the income type through when an income row is tapped", () => {
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "s2", type: "income", categoryId: "cat-3", description: "Salary" }),
+      ],
+    };
+    const root = mount();
+    const tappable = pressableWithText(root, "Salary");
+    expect(tappable).toBeTruthy();
+    act(() => {
+      tappable.props.onPress();
+    });
+    expect(mockNavigate).toHaveBeenCalledWith("ScheduledEntryForm", {
+      mode: "edit",
+      id: "s2",
+      type: "income",
     });
   });
 });

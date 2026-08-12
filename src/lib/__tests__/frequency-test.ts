@@ -213,6 +213,14 @@ describe("getUpcomingOccurrence", () => {
     ).toBe("2026-08-12");
   });
 
+  it("clamps a never-generated daily template whose start date is in the past to today (WR-01)", () => {
+    // No lastGenerated: the engine next (start + 1 = Aug 2) is long past —
+    // the display scan still finds the first real occurrence at/after today.
+    expect(
+      getUpcomingOccurrence("2026-08-01", "daily", null, null, "2026-08-12"),
+    ).toBe("2026-08-12");
+  });
+
   it("clamps a stale weekly next forward to the next future occurrence (WR-01)", () => {
     // Weekly anchored Mon 2026-08-03, lastGenerated Mon 2026-08-03, today
     // Wed 2026-08-12 → engine next (Mon Aug 10) is past → next Monday Aug 17.
@@ -259,6 +267,14 @@ describe("getUpcomingOccurrence", () => {
     ).toBeNull();
     expect(
       getUpcomingOccurrence("2026-08-12", "once", "2026-08-12", null, "2026-08-12"),
+    ).toBeNull();
+  });
+
+  it("returns null for an unknown frequency value", () => {
+    // getNextOccurrence → getNextDate degrades to null for an unparseable
+    // pattern — the upcoming row must never invent a date for it.
+    expect(
+      getUpcomingOccurrence("2026-08-12", "fortnightly" as never, null, null, "2026-08-12"),
     ).toBeNull();
   });
 });

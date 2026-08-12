@@ -8,7 +8,7 @@
 // green), the tap-only row wiring (tap -> onTapItem), and the last-row
 // borderless card pattern.
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import renderer, { act } from "react-test-renderer";
 
 // ── Mock: @expo/vector-icons (CategoryIcon renders through it) ────────────
@@ -222,6 +222,26 @@ describe("UpcomingSection content", () => {
       incomeTheme,
     );
     expect(colorOfText(root, formatCents(12345))).toBe("#45C0CF");
+  });
+
+  it("applies the theme bg/border to the card with the 24px radius (yellow-tinted card)", () => {
+    // The card must be driven by the theme prop, not hardcoded tokens — a
+    // custom theme proves the bg/border come from props (15-UI-SPEC §1 card
+    // contract: theme.bg background, theme.border 1px edge, radius.lg 24).
+    const customTheme: UpcomingSectionTheme = {
+      bg: "#111111",
+      border: "#222222",
+      accent: "#333333",
+    };
+    const root = mount([makeEntry()], customTheme);
+    const card = root.root
+      .findAllByType(View)
+      .map((v: any) => ({ node: v, style: flattenStyle(v.props.style) }))
+      .find(({ style }: any) => style.borderRadius === 24);
+    expect(card).toBeTruthy();
+    expect(card.style.backgroundColor).toBe("#111111");
+    expect(card.style.borderColor).toBe("#222222");
+    expect(card.style.borderRadius).toBe(24);
   });
 });
 
