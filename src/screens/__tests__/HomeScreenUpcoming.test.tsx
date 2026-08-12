@@ -1,9 +1,11 @@
 // HomeScreen upcoming-sections integration tests (phase 15, HOME-UP-01/02/03/
 // 05/06/07). Covers: both sections render with active templates, per-type
-// hiding at zero (partial + both-zero), paused-template exclusion, upcoming
-// row ordering (next occurrence ascending, null-next last by start date),
-// section placement between the quick-action buttons and the chart sections,
-// and row tap → ScheduledEntryForm edit-mode navigation (id + type).
+// hiding at zero (partial + both-zero), paused-template exclusion, exhausted
+// template exclusion (WR-02: passed once / ended repeating templates drop out
+// of the lists, sections still hide at zero), upcoming row ordering (next
+// occurrence ascending, null-next last by start date), section placement
+// between the quick-action buttons and the chart sections, and row tap →
+// ScheduledEntryForm edit-mode navigation (id + type).
 // All providers are plain mocks — requireActual would pull the firebase init
 // chain that throws auth/invalid-api-key under plain jest (phase-14 pattern).
 import React from "react";
@@ -103,6 +105,11 @@ function makeScheduled(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Fixed clock at 2026-08-12 — the WR-01 clamp anchors "Next:" to today and
+  // the WR-02 exhaustion filter compares start/end dates to today, so every
+  // expectation must be deterministic (repo pattern: syncQueue-test /
+  // seed-test useFakeTimers).
+  jest.useFakeTimers({ now: new Date(2026, 7, 12) });
   mockNavigate = jest.fn();
   mockUseEntries = jest.fn().mockReturnValue({
     entries: [entry],
@@ -114,6 +121,10 @@ beforeEach(() => {
   };
   mockAuth = { userProfile: null };
   mockScheduled = { scheduledEntries: [] };
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 function mount() {
@@ -192,14 +203,68 @@ describe("HomeScreen upcoming sections", () => {
     expect(found).not.toContain("Paused rent");
   });
 
-  it("orders rows by next occurrence ascending, null-next entries last by start date", () => {
-    // B: weekly from 08-05 → next 08-12 (soonest). A: weekly from 08-12 →
-    // next 08-19. C: once (no next) with the earliest start → last.
+  it("excludes an exhausted once template whose start date has passed (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "a", date: "2026-08-12", description: "A-late" }),
-        makeScheduled({ id: "b", date: "2026-08-05", description: "B-soon" }),
-        makeScheduled({ id: "c", date: "2026-08-01", frequency: "once", description: "C-once" }),
+        makeScheduled({ id: "s1", description: "Active rent" }),
+        makeScheduled({ id: "s2", description: "Exhausted once", frequency: "once", date: "2026-08-01" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    expect(found).toContain("Upcoming Expenses");
+    expect(found).toContain("Active rent");
+    expect(found).not.toContain("Exhausted once");
+  });
+
+  it("excludes a repeating template whose pattern has ended (endDate passed) (WR-02)", () => {
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "s1", description: "Ended rent", endDate: "2026-08-05" }),
+        makeScheduled({ id: "s2", description: "Ongoing rent" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    expect(found).toContain("Ongoing rent");
+    expect(found).not.toContain("Ended rent");
+  });
+
+  it("keeps a once template whose start date is still ahead (WR-02)", () => {
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "s1", description: "Future once", frequency: "once", date: "2026-08-20" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    expect(found).toContain("Future once");
+    expect(found).toContain("Once · Aug 20");
+  });
+
+  it("hides the section entirely when every template of the type is exhausted (WR-02)", () => {
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "s1", description: "Exhausted once", frequency: "once", date: "2026-08-01" }),
+        makeScheduled({ id: "s2", description: "Ended rent", endDate: "2026-08-05" }),
+      ],
+    };
+    const root = mount();
+    const found = texts(root);
+    expect(found).not.toContain("Upcoming Expenses");
+    expect(found).not.toContain("Exhausted once");
+    expect(found).not.toContain("Ended rent");
+  });
+
+  it("orders rows by next occurrence ascending, null-next entries last by start date", () => {
+    // B: daily from 08-01 anchored at 08-12 → next 08-13 (soonest). A:
+    // weekly from 08-01 anchored at 08-12 → next 08-19. C: future once
+    // (08-20, no next) → last.
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled({ id: "a", date: "2026-08-01", lastGenerated: "2026-08-12", description: "A-late" }),
+        makeScheduled({ id: "b", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-soon" }),
+        makeScheduled({ id: "c", date: "2026-08-20", frequency: "once", description: "C-once" }),
       ],
     };
     const root = mount();

@@ -9,6 +9,7 @@ import { useCategories } from "../categories/CategoriesProvider";
 import { useAuth } from "../auth/AuthProvider";
 import { useScheduledEntries, type ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
 import { getUpcomingOccurrence } from "../lib/frequency";
+import { compare, today } from "../lib/dates";
 import { colors, spacing, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
 import BudgetCard from "../components/BudgetCard";
@@ -49,6 +50,27 @@ function sortUpcoming(entries: ScheduledEntry[]): ScheduledEntry[] {
     if (nextB !== null) return 1;
     return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
   });
+}
+
+// Exhausted templates do not belong in an "Upcoming" list (WR-02): a once
+// template whose start date has passed is finished (already generated, or
+// impossible to generate anymore), and a repeating template with no future
+// occurrence (clamped next beyond endDate) can never generate again. A once
+// template whose start date is today or ahead stays — its occurrence is
+// genuinely upcoming. Applied alongside the isActive filter so both sections
+// share it; a section with only exhausted templates hides (HOME-UP-05).
+function hasUpcomingOccurrence(entry: ScheduledEntry): boolean {
+  if (entry.frequency === "once") {
+    return compare(entry.date, today()) >= 0;
+  }
+  return (
+    getUpcomingOccurrence(
+      entry.date,
+      entry.frequency,
+      entry.lastGenerated,
+      entry.endDate,
+    ) !== null
+  );
 }
 
 export default function HomeScreen() {
@@ -145,13 +167,25 @@ export default function HomeScreen() {
   }, [incomeBreakdown]);
 
   // Upcoming sections (HOME-UP-01..03): ALL active templates of each type —
-  // no 7-day horizon — ordered next-occurrence ascending, null-next last.
+  // no 7-day horizon — filtered to those still having a future occurrence
+  // (WR-02: exhausted once/ended templates are clutter, not "upcoming"),
+  // ordered next-occurrence ascending, null-next last.
   const upcomingExpenses = useMemo(
-    () => sortUpcoming(scheduledEntries.filter((s) => s.isActive && s.type === "expense")),
+    () =>
+      sortUpcoming(
+        scheduledEntries.filter(
+          (s) => s.isActive && s.type === "expense" && hasUpcomingOccurrence(s),
+        ),
+      ),
     [scheduledEntries],
   );
   const upcomingIncome = useMemo(
-    () => sortUpcoming(scheduledEntries.filter((s) => s.isActive && s.type === "income")),
+    () =>
+      sortUpcoming(
+        scheduledEntries.filter(
+          (s) => s.isActive && s.type === "income" && hasUpcomingOccurrence(s),
+        ),
+      ),
     [scheduledEntries],
   );
 
