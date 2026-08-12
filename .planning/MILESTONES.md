@@ -1,5 +1,24 @@
 # Milestones: Money Tracking
 
+## v1.2 — Offline-First + Recurring Entries
+
+**Status:** Planning
+**Phases:** 11-15 (5 phases)
+**Started:** 2026-08-12
+
+### Planned
+
+- Offline-first storage via expo-sqlite — fully usable without internet
+- Firestore cloud sync — push/pull changes when online
+- Recurring/scheduled entries — auto-generate real entries by frequency
+- Homepage upcoming indicators — yellow-red expenses, yellow-blue income
+
+### Requirements
+
+- 43 requirements defined (OFFL-01–10, SYNC-01–08, SCHD-01–10, SCHD-UI-01–09, HOME-UP-01–07, NFR-11–16)
+
+---
+
 ## v1.1 — Theme, Budget, Icons, Charts
 
 **Shipped:** 2026-08-09

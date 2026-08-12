@@ -36,9 +36,12 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 - ✓ 50+ preset category icons (optional, backward-compatible) — v1.1
 - ✓ Custom SVG donut charts for expense/income breakdowns — v1.1
 
-### Active
+### Active (v1.2)
 
-To be defined via `/gsd-new-milestone`
+- **Offline-first storage** — expo-sqlite as local source of truth; fully usable without internet
+- **Firestore cloud sync** — push/pull changes when online; multi-device data portability
+- **Recurring/scheduled entries** — templates that auto-generate real entries by frequency (once, daily, weekly, monthly, yearly)
+- **Homepage upcoming indicators** — yellow-red for incoming expenses, yellow-blue for incoming income
 
 ### Out of Scope
 
@@ -52,7 +55,7 @@ To be defined via `/gsd-new-milestone`
 | Dark mode, themes, custom fonts | Explicitly rejected in design brief |
 | Receipt photos, tags, widgets | Anti-features — widgets impossible in Expo Go |
 | Push notifications | No recurring automation to notify about |
-| Durable offline via expo-sqlite | Deferred to v2 — adds sync engine complexity |
+| ~~Durable offline via expo-sqlite~~ | ~~Deferred to v2~~ — Now in scope for v1.2 |
 | Search/filter over entries | Deferred to v2 |
 
 ## Context
@@ -95,7 +98,9 @@ To be defined via `/gsd-new-milestone`
 | 50+ Ionicons for categories | Backward-compatible optional icon field, no emoji inconsistencies | ✓ Good, v1.1 |
 | Custom SVG donut charts via react-native-svg | No external charting lib, Expo Go compatible | ✓ Good, v1.1 |
 | Chart data from cached entries via memo | No Firestore aggregation queries, UI not blocked | ✓ Good, v1.1 |
+| expo-sqlite as local source of truth | Fully offline-first; Firestore becomes cloud sync backend | Planned v1.2 |
+| Scheduled entries auto-generate from templates | Frequency-based; works offline via SQLite | Planned v1.2 |
 
 ---
 
-*Last updated: 2026-08-09 after v1.1 milestone completion*
+*Last updated: 2026-08-12 — v1.2 milestone planning started*

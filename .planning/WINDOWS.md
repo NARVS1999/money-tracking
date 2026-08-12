@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 4
+open_count: 6
 waived_count: 0
 fixed_count: 0
-total_count: 4
-last_updated: 2026-08-11T22:23:15.495Z
+total_count: 6
+last_updated: 2026-08-12T01:00:39.489Z
 ---
 
 # Broken Windows Ledger
@@ -19,6 +19,8 @@ last_updated: 2026-08-11T22:23:15.495Z
 | 2 | 12 | unrun-verify | src/sync/syncService.ts |  | Task 11 manual on-device verification (offline CRUD, kill-and-reopen persistence, sync push on wifi) requires the user's phone via Expo Go QR — not executable in this environment | open |  | 2026-08-11T20:50:31.819Z |  |
 | 3 | 12 | unrun-verify | src/sync/syncService.ts |  | Task 12 manual two-device verification (new-device seed from Firestore, cross-device change propagation via sync) requires two phones via Expo Go QR — not executable in this environment | open |  | 2026-08-11T20:50:32.334Z |  |
 | 4 | 13 | unrun-verify | src/scheduled/scheduler.ts |  | Manual on-device verification (13-01 Task 8): daily template starting yesterday generates yesterday+today; monthly income starting 3 months ago generates one entry per month; generated entries appear in Expenses/Income tabs; offline generation from SQLite | open |  | 2026-08-11T22:23:15.495Z |  |
+| 5 | 14 | unrun-verify | src/screens/ExportScreen.tsx |  | Manual on-device verification (14-01 Task 8): Export tab shows Scheduled Entries section; Add Scheduled opens the form; create daily expense appears in Expenses sub-section; swipe edit pre-fills; swipe delete confirms; pause shows Paused badge; resume removes it; monthly income lands in Income sub-section | open |  | 2026-08-12T00:00:29.131Z |  |
+| 6 | 15 | unrun-verify | src/screens/HomeScreen.tsx |  | Manual on-device verification (15-01 Task 7): Home shows Upcoming Expenses (yellow-red #DC2626) and Upcoming Income (yellow-blue #45C0CF) between quick-action buttons and chart sections; sections hidden when a type has zero active templates; tapping a row opens ScheduledEntryForm edit mode; amount/frequency/next date display correctly | open |  | 2026-08-12T01:00:39.489Z |  |
 
 ````json
 [
@@ -68,6 +70,30 @@ last_updated: 2026-08-11T22:23:15.495Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-08-11T22:23:15.495Z",
+    "resolved_at": null
+  },
+  {
+    "id": 5,
+    "kind": "unrun-verify",
+    "phase": "14",
+    "file": "src/screens/ExportScreen.tsx",
+    "line": null,
+    "description": "Manual on-device verification (14-01 Task 8): Export tab shows Scheduled Entries section; Add Scheduled opens the form; create daily expense appears in Expenses sub-section; swipe edit pre-fills; swipe delete confirms; pause shows Paused badge; resume removes it; monthly income lands in Income sub-section",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-12T00:00:29.131Z",
+    "resolved_at": null
+  },
+  {
+    "id": 6,
+    "kind": "unrun-verify",
+    "phase": "15",
+    "file": "src/screens/HomeScreen.tsx",
+    "line": null,
+    "description": "Manual on-device verification (15-01 Task 7): Home shows Upcoming Expenses (yellow-red #DC2626) and Upcoming Income (yellow-blue #45C0CF) between quick-action buttons and chart sections; sections hidden when a type has zero active templates; tapping a row opens ScheduledEntryForm edit mode; amount/frequency/next date display correctly",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-12T01:00:39.489Z",
     "resolved_at": null
   }
 ]
