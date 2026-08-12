@@ -1,26 +1,60 @@
 // HomeScreen — derived summary screen. Shows gradient summary card, quick-action
-// buttons, and per-category breakdown sections. Data derived from all cached entries.
-import { useMemo } from "react";
+// buttons, upcoming scheduled-entry sections, and per-category breakdown
+// sections. Data derived from all cached entries + the scheduled templates.
+import { useCallback, useMemo } from "react";
 import { ScrollView, Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { useEntries } from "../entries/EntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 import { useAuth } from "../auth/AuthProvider";
+import { useScheduledEntries, type ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
+import { getNextOccurrence } from "../lib/frequency";
 import { colors, spacing, radius } from "../theme/tokens";
 import SummaryCard from "../components/SummaryCard";
 import BudgetCard from "../components/BudgetCard";
 import DonutChart from "../components/DonutChart";
 import ChartLegend from "../components/ChartLegend";
 import CategorySection from "../components/CategorySection";
+import UpcomingSection from "../components/UpcomingSection";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import EmptyState from "../components/EmptyState";
 import { CHART_COLORS } from "../components/chartColors";
+
+// Upcoming-row ordering (15-UI-SPEC §2, design decision): next occurrence
+// date ascending (soonest first, via the engine's getNextOccurrence — UI code
+// never re-implements date math); entries with no next occurrence (once /
+// past endDate) sort last, start date ascending. Stable for equal dates —
+// Array.prototype.sort is stable in Hermes (ES2019+).
+function sortUpcoming(entries: ScheduledEntry[]): ScheduledEntry[] {
+  return [...entries].sort((a, b) => {
+    const nextA = getNextOccurrence(
+      a.date,
+      a.frequency,
+      a.lastGenerated,
+      a.endDate,
+    );
+    const nextB = getNextOccurrence(
+      b.date,
+      b.frequency,
+      b.lastGenerated,
+      b.endDate,
+    );
+    if (nextA !== null && nextB !== null) {
+      // YYYY-MM-DD strings compare chronologically.
+      return nextA < nextB ? -1 : nextA > nextB ? 1 : 0;
+    }
+    if (nextA !== null) return -1;
+    if (nextB !== null) return 1;
+    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+  });
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp<Record<string, object>>>();
   const { entries, isLoading } = useEntries();
   const { expenseCategories, incomeCategories } = useCategories();
   const { userProfile } = useAuth();
+  const { scheduledEntries } = useScheduledEntries();
 
   const expenseTotal = useMemo(
     () => entries.filter((e) => e.type === "expense").reduce((sum, e) => sum + e.amount, 0),
@@ -108,6 +142,30 @@ export default function HomeScreen() {
     return main;
   }, [incomeBreakdown]);
 
+  // Upcoming sections (HOME-UP-01..03): ALL active templates of each type —
+  // no 7-day horizon — ordered next-occurrence ascending, null-next last.
+  const upcomingExpenses = useMemo(
+    () => sortUpcoming(scheduledEntries.filter((s) => s.isActive && s.type === "expense")),
+    [scheduledEntries],
+  );
+  const upcomingIncome = useMemo(
+    () => sortUpcoming(scheduledEntries.filter((s) => s.isActive && s.type === "income")),
+    [scheduledEntries],
+  );
+
+  // Row tap → ScheduledEntryForm edit mode (HOME-UP-06). CR-02 (phase 14):
+  // pass the type through so the form's category filter is correct.
+  const openScheduledEdit = useCallback(
+    (entry: ScheduledEntry) => {
+      navigation.navigate("ScheduledEntryForm", {
+        mode: "edit",
+        id: entry.id,
+        type: entry.type,
+      });
+    },
+    [navigation],
+  );
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -163,6 +221,30 @@ export default function HomeScreen() {
           <Text style={styles.quickBtnIncomeText}>+ Income</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Upcoming scheduled-entry indicators (HOME-UP-07): between the
+          quick-action buttons and the chart sections, expenses first —
+          yellow-red then yellow-blue. Hidden at zero entries of the type. */}
+      <UpcomingSection
+        title="Upcoming Expenses"
+        items={upcomingExpenses}
+        theme={{
+          bg: colors.upcomingExpenseBg,
+          border: colors.upcomingExpenseBorder,
+          accent: colors.expense,
+        }}
+        onTapItem={openScheduledEdit}
+      />
+      <UpcomingSection
+        title="Upcoming Income"
+        items={upcomingIncome}
+        theme={{
+          bg: colors.upcomingIncomeBg,
+          border: colors.upcomingIncomeBorder,
+          accent: colors.teal,
+        }}
+        onTapItem={openScheduledEdit}
+      />
 
       {expenseChartData.length > 0 && (
         <View style={styles.chartSection}>
