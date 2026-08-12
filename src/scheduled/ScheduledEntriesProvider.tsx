@@ -261,6 +261,7 @@ export function ScheduledEntriesProvider({
       if (input.frequency !== undefined && !isFrequency(input.frequency)) {
         throw new Error("Invalid frequency");
       }
+      const existing = scheduledEntries.find((s) => s.id === id);
       const changes: Partial<
         Pick<
           DbScheduledEntry,
@@ -282,13 +283,21 @@ export function ScheduledEntriesProvider({
       if (input.description !== undefined) changes.description = input.description;
       if (input.frequency !== undefined) changes.frequency = input.frequency;
       if (input.endDate !== undefined) changes.endDate = input.endDate ?? null;
-      // WR-03: a new start date or frequency changes the generation pattern.
+      // WR-03: a NEW start date or frequency changes the generation pattern.
       // Keeping the old lastGenerated anchor would make the engine match the
       // new pattern only after the old anchor (skipping the occurrences
       // between the new start and the old anchor — or, worse, never matching
       // again after a daily→weekly switch). Reset the anchor so the engine
-      // re-derives occurrences from the new start date.
-      if (input.date !== undefined || input.frequency !== undefined) {
+      // re-derives occurrences from the new start date. CR-01: the reset must
+      // fire only when the value ACTUALLY changed — an unchanged-but-present
+      // value (the edit form echoes the full field set) must keep the anchor,
+      // or a description-only edit would regenerate every occurrence since
+      // the start date as duplicate ledger entries on the next startup.
+      const patternChanged =
+        (input.date !== undefined && input.date !== existing?.date) ||
+        (input.frequency !== undefined &&
+          input.frequency !== existing?.frequency);
+      if (patternChanged) {
         changes.lastGenerated = null;
       }
       if (Object.keys(changes).length === 0) return;
@@ -298,7 +307,8 @@ export function ScheduledEntriesProvider({
       try {
         await updateScheduledDb(user.uid, id, changes);
         await enqueue(user.uid, "scheduledEntries", id, "update");
-        // Mirror the update into local state.
+        // Mirror the update into local state (lastGenerated reset only on a
+        // real pattern change — per-row compare, same rule as the db update).
         setScheduledEntries((prev) =>
           prev.map((s) =>
             s.id === id
@@ -306,7 +316,9 @@ export function ScheduledEntriesProvider({
                   ...s,
                   ...input,
                   lastGenerated:
-                    input.date !== undefined || input.frequency !== undefined
+                    (input.date !== undefined && input.date !== s.date) ||
+                    (input.frequency !== undefined &&
+                      input.frequency !== s.frequency)
                       ? null
                       : s.lastGenerated,
                 }
@@ -319,7 +331,7 @@ export function ScheduledEntriesProvider({
         throw e;
       }
     },
-    [user],
+    [user, scheduledEntries],
   );
 
   const deleteScheduled = useCallback(

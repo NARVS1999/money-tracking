@@ -25,7 +25,7 @@ import { formatCents, parsePesoInput } from "../lib/money";
 import { addDays, toDateString, today } from "../lib/dates";
 import { FREQUENCIES, formatFrequency, type Frequency } from "../lib/frequency";
 import CategoryIcon from "../components/CategoryIcon";
-import { useScheduledEntries, type ScheduledEntry } from "./ScheduledEntriesProvider";
+import { useScheduledEntries, type ScheduledEntry, type ScheduledInput } from "./ScheduledEntriesProvider";
 import { useCategories } from "../categories/CategoriesProvider";
 
 type RouteParams = {
@@ -141,19 +141,38 @@ export default function ScheduledEntryForm() {
     setIsSaving(true);
 
     try {
-      const input = {
-        type,
-        amount: cents,
-        categoryId: selectedCategoryId,
-        date: startStr,
-        description: description.trim(),
-        frequency,
-        endDate: endDate ? toDateString(endDate) : null,
-      };
-
-      if (mode === "edit" && id) {
-        await updateScheduled(id, input);
+      if (mode === "edit" && id && existingEntry) {
+        // CR-01: send only the fields that actually changed. The provider
+        // resets the generation anchor when date/frequency change, so a
+        // description-only edit must NOT carry the (unchanged) date and
+        // frequency — or the next startup would regenerate every occurrence
+        // since the start date as duplicate entries in the ledger.
+        const patch: Partial<ScheduledInput> = {};
+        if (cents !== existingEntry.amount) patch.amount = cents;
+        if (selectedCategoryId !== existingEntry.categoryId) {
+          patch.categoryId = selectedCategoryId;
+        }
+        if (startStr !== existingEntry.date) patch.date = startStr;
+        if (frequency !== existingEntry.frequency) patch.frequency = frequency;
+        const end = endDate ? toDateString(endDate) : null;
+        if (end !== existingEntry.endDate) patch.endDate = end;
+        const trimmedDescription = description.trim();
+        if (trimmedDescription !== existingEntry.description) {
+          patch.description = trimmedDescription;
+        }
+        if (Object.keys(patch).length > 0) {
+          await updateScheduled(id, patch);
+        }
       } else {
+        const input = {
+          type,
+          amount: cents,
+          categoryId: selectedCategoryId,
+          date: startStr,
+          description: description.trim(),
+          frequency,
+          endDate: endDate ? toDateString(endDate) : null,
+        };
         await addScheduled(input);
       }
 

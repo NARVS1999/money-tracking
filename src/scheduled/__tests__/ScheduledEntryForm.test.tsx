@@ -332,4 +332,27 @@ describe("ScheduledEntryForm edit mode", () => {
     );
     expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
+
+  it("omits date/frequency from the update payload on a description-only edit (CR-01)", async () => {
+    // Only the description changed — the payload must carry just that field.
+    // Sending the (unchanged) date/frequency would reset lastGenerated in the
+    // provider and regenerate every occurrence as duplicates on startup.
+    const root = mount({ mode: "edit", type: "expense", id: "s1" });
+    act(() => {
+      root.root
+        .findAllByType(TextInput)
+        .find((t: any) => t.props.value === "Monthly rent")
+        .props.onChangeText("Rent (updated)");
+    });
+
+    await act(async () => {
+      pressableWithText(root, "Save").props.onPress();
+    });
+
+    expect(mockUpdateScheduled).toHaveBeenCalledTimes(1);
+    expect(mockUpdateScheduled.mock.calls[0][1]).toEqual({
+      description: "Rent (updated)",
+    });
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
 });

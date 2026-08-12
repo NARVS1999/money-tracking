@@ -374,6 +374,42 @@ describe("ScheduledEntriesProvider write contract", () => {
     expect(ctx().scheduledEntries[0].lastGenerated).toBeNull();
   });
 
+  it("keeps lastGenerated when date/frequency are present but unchanged (CR-01)", async () => {
+    // Weekly template with its anchor already advanced to today: the startup
+    // scheduler has nothing due, so the anchor stays put while mounted.
+    const t = today();
+    await insertScheduled(
+      dbRow("t1", {
+        frequency: "weekly",
+        lastGenerated: t,
+        updatedAt: 1000,
+        synced: 1,
+      }),
+    );
+    mountSync();
+    await flushAll();
+    (enqueue as jest.Mock).mockClear();
+
+    // The edit form echoes the full field set — a description-only edit sends
+    // the same date/frequency values. The generation pattern did not change,
+    // so the anchor must survive in the db AND in state; resetting it would
+    // regenerate every occurrence since the start date as duplicates.
+    await ctx().updateScheduled("t1", {
+      date: "2026-08-11",
+      frequency: "weekly",
+      description: "Renamed",
+    });
+    await flushAll();
+
+    const [row] = await getAllScheduled("user-1");
+    expect(row.date).toBe("2026-08-11");
+    expect(row.frequency).toBe("weekly");
+    expect(row.description).toBe("Renamed");
+    expect(row.lastGenerated).toBe(t);
+    expect(ctx().scheduledEntries[0].lastGenerated).toBe(t);
+    expect((enqueue as jest.Mock).mock.calls[0][3]).toBe("update");
+  });
+
   it("deletes a template and queues a delete", async () => {
     await insertScheduled(dbRow("t1"));
     mountSync();
