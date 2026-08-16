@@ -90,5 +90,12 @@ blocked: 0
   reason: "User reported: categories was only all expenses"
   severity: major
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "AddType in ExportScreen.tsx defaults to 'expense' when any expense entries exist; ScheduledEntryForm has no type picker to switch between expense/income"
+  artifacts:
+    - path: "src/screens/ExportScreen.tsx"
+      issue: "addType logic defaults to expense"
+    - path: "src/scheduled/ScheduledEntryForm.tsx"
+      issue: "No type picker - type fixed by route param"
+  missing:
+    - "Add expense/income type picker to ScheduledEntryForm"
+    - "Update ExportScreen to pass type dynamically or let user choose"
