@@ -1,19 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 11-sqlite-local-db
 source: 11-01-SUMMARY.md
 started: 2026-08-16T07:45:00Z
-updated: 2026-08-16T07:45:00Z
+updated: 2026-08-16T07:50:00Z
 ---
 
 ## Current Test
 
-number: 4
-name: Categories Load from SQLite
-expected: |
-  Open the Categories screen. Your expense and income categories appear.
-  Adding a new category works and persists after kill.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -32,23 +27,24 @@ reason: Cannot test on Expo Go
 
 ### 4. Categories Load from SQLite
 expected: Open the Categories screen. Your expense and income categories appear. Adding a new category works and persists after kill.
-result: [pending]
+result: pass
 
 ### 5. Sync Queue Tracks Offline Changes
 expected: Turn off WiFi/mobile data. Add an entry. Turn WiFi back on. Tap the Sync button. The entry syncs to Firestore (check Firebase Console to confirm).
-result: [pending]
+result: skipped
+reason: Cannot test on Expo Go
 
 ### 6. Idempotent Seed — No Duplicates
 expected: Sign out. Sign back in. Data does not duplicate — same entries and categories as before.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 6
-passed: 2
+passed: 4
 issues: 0
-pending: 3
-skipped: 1
+pending: 0
+skipped: 2
 
 ## Gaps
 
