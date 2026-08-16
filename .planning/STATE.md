@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Offline-First + Recurring Entries
-status: planning_next
-stopped_at: v1.2 planning complete
-last_updated: "2026-08-12T00:48:44.903Z"
+status: complete
+stopped_at: v1.2 UAT complete
+last_updated: "2026-08-16T09:20:00Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 current_phase: 0
-current_phase_name: none — ready to start Phase 11
-last_activity: 2026-08-12
-last_activity_desc: v1.2 milestone planned
+current_phase_name: none — v1.2 complete
+last_activity: 2026-08-16
+last_activity_desc: v1.2 UAT complete
 ---
 
 # Project State
@@ -24,22 +24,22 @@ last_activity_desc: v1.2 milestone planned
 See: .planning/PROJECT.md (updated 2026-08-12)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Phase 15 — Homepage — Upcoming Indicators
+**Current focus:** v1.2 complete — ready for v1.3 planning
 
 ## Current Position
 
-Milestone: v1.2 — PLANNING COMPLETE ✓
-Next: Phase 11 — SQLite Local Database (ready to execute)
+Milestone: v1.2 — COMPLETE ✓
+All phases tested and verified.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total milestones completed: 2 (v1.0, v1.1)
+- Total milestones completed: 3 (v1.0, v1.1, v1.2)
 - v1.0 phases: 6
 - v1.1 phases: 4
-- v1.2 phases: 5 (planned)
-- Total LOC: ~8,700 TypeScript
+- v1.2 phases: 5
+- Total LOC: ~10,500 TypeScript
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ Next: Phase 11 — SQLite Local Database (ready to execute)
 - [v1.2]: Last-write-wins conflict resolution by updatedAt timestamp
 - [v1.2]: Auto-generation engine runs on app startup against SQLite
 - [v1.2]: Scheduled entries UI in ExportScreen (not a new tab)
+- [v1.2]: Expense/income type picker in ScheduledEntryForm (UAT fix)
 
 ### Deferred Items
 
@@ -64,20 +65,29 @@ Next: Phase 11 — SQLite Local Database (ready to execute)
 
 ### Blockers/Concerns
 
-None.
+- Firestore rules/indexes deploy required for sync (Phase 12) — app degrades gracefully, sync retries
 
-## Deferred Verification
+## UAT Results
 
-| Phase | State | Resume |
-|-------|-------|--------|
-| 11 | verification_deferred_human | /gsd-verify-work 11 |
-| 12 | verification_deferred_human | /gsd-verify-work 12 |
-| 13 | verification_deferred_human | /gsd-verify-work 13 |
-| 14 | verification_deferred_human | /gsd-verify-work 14 |
-| 15 | verification_deferred_human | /gsd-verify-work 15 |
+| Phase | Passed | Issues | Skipped | Status |
+|-------|--------|--------|---------|--------|
+| 11 - SQLite Local DB | 4 | 0 | 2 | Complete |
+| 12 - Offline Providers | 11 | 0 | 0 | Complete |
+| 13 - Recurring Entries | 10 | 0 | 1 | Complete |
+| 14 - Export Tab UI | 8 | 1 (fixed) | 0 | Complete |
+| 15 - Homepage Upcoming | 6 | 0 | 0 | Complete |
+| **Total** | **39** | **1 (fixed)** | **3** | **Complete** |
+
+### Skipped Tests (Expo Go Constraints)
+
+| Phase | Test | Reason |
+|-------|------|--------|
+| 11 | Data Persists After Kill | Cannot test on Expo Go |
+| 11 | Sync Queue Tracks Offline Changes | Cannot test on Expo Go |
+| 13 | End Date Stops Generation | Cannot test on Expo Go |
 
 ## Session Continuity
 
-Last session: 2026-08-12
-Stopped at: v1.2 planning complete
+Last session: 2026-08-16
+Stopped at: v1.2 UAT complete
 Resume file: None
