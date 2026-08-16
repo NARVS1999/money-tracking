@@ -319,8 +319,11 @@ export async function pushChanges(uid: string): Promise<number> {
         }
         await dequeue(uid, item.id);
       } else if (item.operation === "delete") {
-        // deleteDoc on a doc that was never created is a no-op success.
-        await deleteDoc(doc(db, item.collection, docId));
+        // Temp IDs were never pushed to Firestore — skip the remote delete
+        // (the doc doesn't exist there) and just drain the queue item.
+        if (!isTempId(docId)) {
+          await deleteDoc(doc(db, item.collection, docId));
+        }
         pushed += 1;
         await dequeue(uid, item.id);
       } else {
