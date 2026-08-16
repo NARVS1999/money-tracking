@@ -1,0 +1,51 @@
+# Sign In — Successful Flow
+# Tests that a user can sign in with valid credentials and reach the home screen
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Should land on Sign In screen
+- assertVisible:
+    text: "Money"
+    optional: false
+
+- assertVisible:
+    text: "Email"
+    optional: false
+
+- assertVisible:
+    text: "Password"
+    optional: false
+
+# Enter credentials
+- tapOn:
+    text: "Email"
+
+- inputText: ${TEST_EMAIL}
+
+- tapOn:
+    text: "Password"
+
+- inputText: ${TEST_PASSWORD}
+
+# Submit
+- tapOn:
+    text: "Sign in"
+
+# Wait for navigation to Home screen
+- waitForAnimationToEnd
+
+# Verify we reached the main app (Home tab)
+- assertVisible:
+    text: "All Time"
+    optional: false
+
+- assertVisible:
+    text: "- Expense"
+    optional: false
+
+- assertVisible:
+    text: "+ Income"
+    optional: false

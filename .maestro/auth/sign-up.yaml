@@ -1,0 +1,67 @@
+# Sign Up — Successful Flow
+# Tests that a new user can create an account
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Should land on Sign In screen
+- assertVisible:
+    text: "Money"
+    optional: false
+
+# Navigate to Sign Up
+- tapOn:
+    text: "Create account"
+
+- waitForAnimationToEnd
+
+# Should see Sign Up screen
+- assertVisible:
+    text: "Display Name"
+    optional: false
+
+- assertVisible:
+    text: "Email"
+    optional: false
+
+- assertVisible:
+    text: "Password"
+    optional: false
+
+- assertVisible:
+    text: "Create account"
+    optional: false
+
+# Fill in fields
+- tapOn:
+    text: "Display Name"
+
+- inputText: ${TEST_NEW_NAME}
+
+- tapOn:
+    text: "Email"
+
+- inputText: ${TEST_NEW_EMAIL}
+
+- tapOn:
+    text: "Password"
+
+- inputText: ${TEST_NEW_PASSWORD}
+
+# Submit
+- tapOn:
+    text: "Create account"
+
+# Wait for account creation and navigation
+- waitForAnimationToEnd
+
+# Verify we reached the main app (Home tab)
+- assertVisible:
+    text: "All Time"
+    optional: false
+
+- assertVisible:
+    text: "- Expense"
+    optional: false

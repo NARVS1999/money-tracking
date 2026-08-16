@@ -59,7 +59,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "maestro:auth": "maestro test .maestro/auth/",
+    "maestro:all": "maestro test .maestro/",
+    "maestro:build": "eas build -p android --profile preview"
   },
   "private": true
 }

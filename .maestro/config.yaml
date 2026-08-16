@@ -1,0 +1,18 @@
+# Maestro configuration for Money Tracking app
+# https://maestro.mobile.dev/
+
+appId: com.ampolnarvs.mtscaffold
+
+# Expo Go config — launch the dev server URL
+# For local testing: `npx expo start` then scan QR
+# For CI: use `expo start --tunnel` for remote access
+
+env:
+  # Test credentials — use a dedicated Firebase test account
+  TEST_EMAIL: "test@example.com"
+  TEST_PASSWORD: "testpass123"
+  TEST_NAME: "Test User"
+  # New account for sign-up tests
+  TEST_NEW_EMAIL: "newtest@example.com"
+  TEST_NEW_PASSWORD: "newpass123"
+  TEST_NEW_NAME: "New Test User"

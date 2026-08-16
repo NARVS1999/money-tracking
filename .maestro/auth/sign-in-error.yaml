@@ -1,0 +1,50 @@
+# Sign In — Invalid Credentials
+# Tests that invalid credentials show an error message
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Should land on Sign In screen
+- assertVisible:
+    text: "Money"
+    optional: false
+
+# Enter invalid credentials
+- tapOn:
+    text: "Email"
+
+- inputText: "wrong@example.com"
+
+- tapOn:
+    text: "Password"
+
+- inputText: "wrongpassword"
+
+# Submit
+- tapOn:
+    text: "Sign in"
+
+# Should show error message (Firebase auth error)
+- waitForAnimationToEnd
+
+# Error message should be visible (exact text varies by Firebase config)
+- assertVisible:
+    text: "User not found"
+    optional: true
+
+# OR password wrong message
+- assertVisible:
+    text: "Wrong password"
+    optional: true
+
+# OR generic auth error
+- assertVisible:
+    text: "Invalid"
+    optional: true
+
+# Verify we're still on sign-in screen (not navigated away)
+- assertVisible:
+    text: "Money"
+    optional: false

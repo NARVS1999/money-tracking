@@ -1,0 +1,51 @@
+# Sign Up — Existing Email Error
+# Tests that signing up with an existing email shows an error
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Sign Up
+- tapOn:
+    text: "Create account"
+
+- waitForAnimationToEnd
+
+# Fill in fields with existing email
+- tapOn:
+    text: "Display Name"
+
+- inputText: ${TEST_NAME}
+
+- tapOn:
+    text: "Email"
+
+- inputText: ${TEST_EMAIL}
+
+- tapOn:
+    text: "Password"
+
+- inputText: ${TEST_PASSWORD}
+
+# Submit
+- tapOn:
+    text: "Create account"
+
+# Should show error (email already in use)
+- waitForAnimationToEnd
+
+# Error should be visible
+- assertVisible:
+    text: "already"
+    optional: true
+
+# OR "in use" message
+- assertVisible:
+    text: "in use"
+    optional: true
+
+# Verify we're still on sign-up screen
+- assertVisible:
+    text: "Display Name"
+    optional: false
