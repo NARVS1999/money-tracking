@@ -1,6 +1,14 @@
 // seedFromFirestore — one-time bootstrap of the local SQLite ledger from
 // Firestore (OFFL-01). Runs on first sign-in on a device (wired in App.tsx).
 //
+// Offline behavior: the cloud fetch is best-effort. When Firestore reads
+// fail (no network), the function returns an empty result instead of
+// throwing, so providers fall through to the local SQLite ledger — an
+// offline launch must never hide local data behind a failed seed (OFFL-03).
+// Explicit user actions (reseedFromCloud / "Reset Local Data") pass
+// throwOnOffline so a failed reset surfaces as an error instead of wiping
+// data into silence.
+//
 // Idempotency: each table is seeded independently, so a uid that has rows in
 // one table but not the other still gets the missing table populated (a
 // partial ledger never blocks seeding the rest). The count checks and the
@@ -79,7 +87,17 @@ async function fetchCategoriesForType(
   });
 }
 
-export async function seedFromFirestore(uid: string): Promise<SeedResult> {
+export type SeedOptions = {
+  // When true, a failed cloud fetch rethrows instead of returning an empty
+  // result — used by reseedFromCloud, where silently clearing local data on
+  // an offline reset would leave the user worse off than an error.
+  throwOnOffline?: boolean;
+};
+
+export async function seedFromFirestore(
+  uid: string,
+  opts: SeedOptions = {},
+): Promise<SeedResult> {
   // WR-03: a uid with pending queue ops is not in a seedable state — the
   // local ledger holds authoritative offline changes (e.g. the user deleted
   // every row) that the cloud copies have not caught up with yet. Seeding
@@ -100,11 +118,21 @@ export async function seedFromFirestore(uid: string): Promise<SeedResult> {
   }
 
   // Fetch the cloud ledger (entries + both category kinds) in parallel.
-  const [entriesSnap, expenseCats, incomeCats] = await Promise.all([
-    getDocs(query(collection(db, "entries"), where("uid", "==", uid))),
-    fetchCategoriesForType(uid, "expense"),
-    fetchCategoriesForType(uid, "income"),
-  ]);
+  // Offline: fail soft — local rows stay the source of truth for the UI.
+  let entriesSnap;
+  let expenseCats;
+  let incomeCats;
+  try {
+    [entriesSnap, expenseCats, incomeCats] = await Promise.all([
+      getDocs(query(collection(db, "entries"), where("uid", "==", uid))),
+      fetchCategoriesForType(uid, "expense"),
+      fetchCategoriesForType(uid, "income"),
+    ]);
+  } catch (e) {
+    if (opts.throwOnOffline) throw e;
+    console.warn("[seed] cloud fetch failed — keeping local ledger", e);
+    return { seeded: false, entries: 0, categories: 0 };
+  }
 
   const entries: DbEntry[] = entriesSnap.docs.map((d) => {
     const data = d.data();
@@ -171,8 +199,10 @@ export async function seedFromFirestore(uid: string): Promise<SeedResult> {
 }
 
 // Force-clear local SQLite and re-seed from Firestore. Used by the "Reset
-// Local Data" button when local data is stale or out of sync.
+// Local Data" button when local data is stale or out of sync. Throws when
+// offline — a reset that clears data without refilling it is worse than an
+// explicit error.
 export async function reseedFromCloud(uid: string): Promise<SeedResult> {
   await clearUserData(uid);
-  return seedFromFirestore(uid);
+  return seedFromFirestore(uid, { throwOnOffline: true });
 }

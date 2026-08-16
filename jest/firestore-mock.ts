@@ -141,4 +141,10 @@ export const getDocs = jest.fn(async (q: FsQuery) => {
   return { docs: rows };
 });
 
+// syncService's pull-side reads use getDocsFromServer (server-authoritative
+// reads — an offline client must never get an empty local snapshot that the
+// remote-delete reconciliation would treat as "deleted elsewhere"). The mock
+// aliases it to the same in-memory store; in tests the "server" is the store.
+export const getDocsFromServer = getDocs;
+
 export const initializeFirestore = jest.fn(() => ({ _tag: "db" }));

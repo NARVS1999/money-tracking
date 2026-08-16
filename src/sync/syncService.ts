@@ -24,7 +24,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  getDocs,
+  getDocsFromServer,
   query,
   setDoc,
   Timestamp,
@@ -442,8 +442,16 @@ export async function pullChanges(
   // --- Entries: incremental fetch of docs changed since the last sync ---
   // Requires the composite index entries: uid ASC, updatedAt ASC
   // (firestore.indexes.json — Task 9).
+  //
+  // CRITICAL: every cloud read here uses getDocsFromServer (never getDocs).
+  // getDocs can resolve with an EMPTY result set when the client is offline
+  // (empty memory cache answers the query locally), and the remote-delete
+  // reconciliation below would then interpret "no cloud docs" as "deleted on
+  // another device" — wiping the whole local ledger on an offline sync.
+  // getDocsFromServer rejects when the server is unreachable, so an offline
+  // pull fails fast and the local ledger is untouched (OFFL-03).
   const since = toTimestamp(lastSyncTimestamp);
-  const changedSnap = await getDocs(
+  const changedSnap = await getDocsFromServer(
     query(
       collection(db, ENTRY_COLLECTION),
       where("uid", "==", uid),
@@ -481,8 +489,12 @@ export async function pullChanges(
   // --- Entries: remote-delete reconciliation (SYNC-03) ---
   // A clean local row (synced = 1) that is absent from the cloud was deleted
   // on another device. Rows still pending push (synced = 0) are never touched.
+  // The cloud set comes from getDocsFromServer so the deletion verdict is
+  // only ever based on an authoritative server view — never on an offline
+  // empty snapshot (an offline pull already rejected above, but defense in
+  // depth for any future path that reaches this point).
   const allCloudIds = new Set(
-    (await getDocs(entriesBase(uid))).docs.map((d) => d.id),
+    (await getDocsFromServer(entriesBase(uid))).docs.map((d) => d.id),
   );
   for (const row of localEntries.values()) {
     if (row.synced === 1 && !allCloudIds.has(row.id)) {
@@ -495,7 +507,7 @@ export async function pullChanges(
     EXPENSE_CATEGORY_COLLECTION,
     INCOME_CATEGORY_COLLECTION,
   ] as const) {
-    const snap = await getDocs(categoriesOf(uid, kind));
+    const snap = await getDocsFromServer(categoriesOf(uid, kind));
     const cloudCategories = new Map(
       snap.docs.map((d) => [d.id, d.data()] as [string, Record<string, unknown>]),
     );
@@ -542,7 +554,7 @@ export async function pullChanges(
   // The collection only exists once the Phase 12 rules (Task 8) are deployed;
   // a pre-deploy permission error must not block entries/categories sync.
   try {
-    const snap = await getDocs(
+    const snap = await getDocsFromServer(
       query(collection(db, SCHEDULED_COLLECTION), where("uid", "==", uid)),
     );
     const cloudScheduled = new Map(
@@ -589,6 +601,33 @@ export async function pullChanges(
 
 // ---- Full sync --------------------------------------------------------------
 
+// Offline writes never settle in the JS SDK (memory cache queues them until
+// the network returns), so pushChanges would hang forever on a dead link —
+// the Sync button would spin and the in-flight lock would never release.
+// Race the whole push+pull cycle against a timeout so an offline sync fails
+// fast with a user-visible error and the lock frees (OFFL-10: queued ops
+// survive in SQLite and retry on the next sync).
+const SYNC_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("Sync timed out — check your connection")),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 let inFlight: { uid: string; promise: Promise<void> } | null = null;
 
 // Full push+pull cycle with an in-flight lock. Same-uid concurrent callers
@@ -602,9 +641,14 @@ export function fullSync(uid: string): Promise<void> {
   }
   const promise = (async () => {
     try {
-      await pushChanges(uid);
-      const lastSync = await getLastSync(uid);
-      await pullChanges(uid, lastSync ?? 0);
+      await withTimeout(
+        (async () => {
+          await pushChanges(uid);
+          const lastSync = await getLastSync(uid);
+          await pullChanges(uid, lastSync ?? 0);
+        })(),
+        SYNC_TIMEOUT_MS,
+      );
       await setLastSync(uid, Date.now());
     } finally {
       inFlight = null;
