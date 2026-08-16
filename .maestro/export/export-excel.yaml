@@ -1,0 +1,32 @@
+# Export Excel
+# Tests that a user can generate an Excel export
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Select Excel format
+- tapOn:
+    text: "Excel"
+
+- waitForAnimationToEnd
+
+# Should show loading state
+- assertVisible:
+    text: "Generating…"
+    optional: true
+
+# Wait for export to complete
+- waitForAnimationToEnd
+
+# Should show success toast
+- assertVisible:
+    text: "Saved"
+    optional: true

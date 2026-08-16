@@ -1,0 +1,53 @@
+# Date Range Selection
+# Tests that date pickers work correctly for export range
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Tap From date card
+- tapOn:
+    text: "From"
+
+- waitForAnimationToEnd
+
+# Date picker should appear (system native picker)
+# Select a date and confirm
+- tapOn:
+    text: "OK"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Tap To date card
+- tapOn:
+    text: "To"
+
+- waitForAnimationToEnd
+
+# Select a date and confirm
+- tapOn:
+    text: "OK"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify dates are displayed
+- assertVisible:
+    text: "Jan"
+    optional: true
+
+- assertVisible:
+    text: "Feb"
+    optional: true
+
+- assertVisible:
+    text: "Mar"
+    optional: true

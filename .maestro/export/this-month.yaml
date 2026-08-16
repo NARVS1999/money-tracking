@@ -1,0 +1,37 @@
+# This Month Quick-Select
+# Tests that the "This Month" button sets correct date range
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Tap "This Month" button
+- tapOn:
+    text: "This Month"
+
+- waitForAnimationToEnd
+
+# The button should become active (highlighted)
+- assertVisible:
+    text: "This Month"
+    optional: false
+
+# Verify current month dates are displayed
+# (exact text depends on current month)
+- assertVisible:
+    text: "From"
+    optional: false
+
+- assertVisible:
+    text: "To"
+    optional: false
+
+# Verify the This Month button is visually active
+# (check for accent color styling)

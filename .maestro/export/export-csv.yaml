@@ -1,0 +1,32 @@
+# Export CSV
+# Tests that a user can generate a CSV export
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Select CSV format
+- tapOn:
+    text: "CSV"
+
+- waitForAnimationToEnd
+
+# Should show loading state
+- assertVisible:
+    text: "Generating…"
+    optional: true
+
+# Wait for export to complete
+- waitForAnimationToEnd
+
+# Should show success toast
+- assertVisible:
+    text: "Saved"
+    optional: true

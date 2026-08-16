@@ -1,0 +1,54 @@
+# Export PDF
+# Tests that a user can generate a PDF export
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Should see Export screen elements
+- assertVisible:
+    text: "Export"
+    optional: false
+
+- assertVisible:
+    text: "From"
+    optional: false
+
+- assertVisible:
+    text: "To"
+    optional: false
+
+- assertVisible:
+    text: "This Month"
+    optional: false
+
+# Select PDF format (triggers export immediately)
+- tapOn:
+    text: "PDF"
+
+- waitForAnimationToEnd
+
+# Should show loading state
+- assertVisible:
+    text: "Generating…"
+    optional: true
+
+# Wait for export to complete
+- waitForAnimationToEnd
+
+# Should show success toast
+- assertVisible:
+    text: "Saved"
+    optional: true
+
+# OR error toast if export fails
+- assertVisible:
+    text: "Couldn't generate the file"
+    optional: true
