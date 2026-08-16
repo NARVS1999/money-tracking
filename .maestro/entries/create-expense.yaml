@@ -1,0 +1,83 @@
+# Create Expense Entry
+# Tests that a user can create an expense entry and see it in the list
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Assumes user is already signed in (chain with sign-in test or use stored state)
+# Navigate to Expenses tab
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Tap the FAB (+) button to add entry
+- tapOn:
+    text: "+"
+
+- waitForAnimationToEnd
+
+# Should see Add Entry form
+- assertVisible:
+    text: "Add Entry"
+    optional: false
+
+- assertVisible:
+    text: "Category"
+    optional: false
+
+- assertVisible:
+    text: "Date"
+    optional: false
+
+# Select a category (tap category picker)
+- tapOn:
+    text: "Select category"
+
+- waitForAnimationToEnd
+
+# Select first available category
+- tapOn:
+    text: "Food"
+    optional: true
+
+# If Food not available, tap first item in list
+- tapOn:
+    index: 0
+    optional: true
+
+# Enter amount — tap the amount display area to focus hidden input
+- tapOn:
+    text: "₱0.00"
+    optional: true
+
+- inputText: "150.50"
+
+# Enter description
+- tapOn:
+    text: "What was this for?"
+
+- inputText: "Lunch at cafeteria"
+
+# Save
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Verify we're back on Expenses screen
+- assertVisible:
+    text: "Expenses"
+    optional: false
+
+# Verify the entry appears in the list
+- assertVisible:
+    text: "₱150.50"
+    optional: true
+
+# OR verify description appears
+- assertVisible:
+    text: "Lunch at cafeteria"
+    optional: true

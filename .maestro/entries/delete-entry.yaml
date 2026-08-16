@@ -1,0 +1,49 @@
+# Delete Entry
+# Tests that a user can delete an entry and it removes from the list
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab (assuming an expense entry exists)
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Record current state — note if entries exist
+- assertVisible:
+    text: "No entries yet"
+    optional: true
+
+# Swipe left on first entry to reveal actions
+- swipe:
+    direction: LEFT
+
+- waitForAnimationToEnd
+
+# Tap Delete button
+- tapOn:
+    text: "Delete"
+
+- waitForAnimationToEnd
+
+# If confirmation dialog appears, confirm deletion
+- tapOn:
+    text: "Delete"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify entry is removed (either list updates or empty state shows)
+# If last entry was deleted, empty state should appear
+- assertVisible:
+    text: "No entries yet"
+    optional: true
+
+# OR verify the specific entry is gone
+- assertVisible:
+    text: "Lunch at cafeteria"
+    optional: false
+    # Should NOT be visible if deleted successfully

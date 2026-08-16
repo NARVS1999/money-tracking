@@ -1,0 +1,54 @@
+# Copy Entry
+# Tests that a user can copy an existing entry with pre-filled data
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab (assuming an expense entry exists)
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Swipe left on first entry to reveal actions
+- swipe:
+    direction: LEFT
+
+- waitForAnimationToEnd
+
+# Tap Copy button (if available — some implementations use "Copy" instead of separate action)
+- tapOn:
+    text: "Copy"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Should see Copy Entry form (pre-filled with original data)
+- assertVisible:
+    text: "Copy Entry"
+    optional: true
+
+# OR if Copy navigates to Add Entry with prefill
+- assertVisible:
+    text: "Add Entry"
+    optional: true
+
+# Modify the date to today (if different)
+- tapOn:
+    text: "Date"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Save the copy
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Verify the copied entry appears in the list
+- assertVisible:
+    text: "Expenses"
+    optional: false

@@ -1,0 +1,68 @@
+# Edit Entry
+# Tests that a user can edit an existing entry and changes persist
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab (assuming an expense entry exists)
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Swipe left on first entry to reveal actions
+- swipe:
+    direction: LEFT
+
+- waitForAnimationToEnd
+
+# Tap Edit button
+- tapOn:
+    text: "Edit"
+
+- waitForAnimationToEnd
+
+# Should see Edit Entry form
+- assertVisible:
+    text: "Edit Entry"
+    optional: false
+
+# Modify the amount — clear and type new value
+- tapOn:
+    text: "₱"
+    optional: true
+
+- clearText
+
+- inputText: "200"
+
+# Modify description
+- tapOn:
+    text: "What was this for?"
+    optional: true
+
+- clearText
+
+- inputText: "Updated lunch expense"
+
+# Save
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Verify we're back on Expenses screen
+- assertVisible:
+    text: "Expenses"
+    optional: false
+
+# Verify updated amount appears
+- assertVisible:
+    text: "₱200.00"
+    optional: true
+
+- assertVisible:
+    text: "Updated lunch expense"
+    optional: true

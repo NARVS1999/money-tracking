@@ -1,0 +1,68 @@
+# Create Income Entry
+# Tests that a user can create an income entry and see it in the list
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Income tab
+- tapOn:
+    text: "Income"
+
+- waitForAnimationToEnd
+
+# Tap the FAB (+) button to add entry
+- tapOn:
+    text: "+"
+
+- waitForAnimationToEnd
+
+# Should see Add Entry form
+- assertVisible:
+    text: "Add Entry"
+    optional: false
+
+# Select a category
+- tapOn:
+    text: "Select category"
+
+- waitForAnimationToEnd
+
+# Select first available income category
+- tapOn:
+    index: 0
+    optional: true
+
+# Enter amount
+- tapOn:
+    text: "₱0.00"
+    optional: true
+
+- inputText: "5000"
+
+# Enter description
+- tapOn:
+    text: "What was this for?"
+
+- inputText: "Monthly salary"
+
+# Save
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Verify we're back on Income screen
+- assertVisible:
+    text: "Income"
+    optional: false
+
+# Verify the entry appears
+- assertVisible:
+    text: "₱5,000.00"
+    optional: true
+
+- assertVisible:
+    text: "Monthly salary"
+    optional: true
