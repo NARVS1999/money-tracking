@@ -39,13 +39,13 @@ A personal expense/income tracker for the phone (Expo Go workflow): sign in with
 
 </details>
 
-### 📋 v1.2 Offline-First + Recurring Entries (Planned)
+### ✅ v1.2 Offline-First + Recurring Entries — SHIPPED 2026-08-16
 
-- [ ] **Phase 11: SQLite Local Database** — expo-sqlite setup, schema, seed from Firestore
-- [ ] **Phase 12: Offline-First Providers + Sync** — Refactor providers to SQLite; sync service with push/pull
-- [ ] **Phase 13: Recurring Entries Data Layer** — scheduledEntries table, provider, auto-generation engine
-- [ ] **Phase 14: Export Tab — Scheduled UI** — Management list + create/edit form in ExportScreen
-- [ ] **Phase 15: Homepage — Upcoming Indicators** — Yellow-red expenses, yellow-blue income sections
+- [x] **Phase 11: SQLite Local Database** — expo-sqlite setup, schema, seed from Firestore
+- [x] **Phase 12: Offline-First Providers + Sync** — Refactor providers to SQLite; sync service with push/pull
+- [x] **Phase 13: Recurring Entries Data Layer** — scheduledEntries table, provider, auto-generation engine
+- [x] **Phase 14: Export Tab — Scheduled UI** — Management list + create/edit form in ExportScreen
+- [x] **Phase 15: Homepage — Upcoming Indicators** — Yellow-red expenses, yellow-blue income sections
 
 ## Phase Details
 
@@ -151,8 +151,8 @@ A personal expense/income tracker for the phone (Expo Go workflow): sign in with
 | 8. Budget | v1.1 | 1/1 | Complete | 2026-08-09 |
 | 9. Category Icons | v1.1 | 1/1 | Complete | 2026-08-09 |
 | 10. Charts | v1.1 | 1/1 | Complete | 2026-08-09 |
-| 11. SQLite Local Database | v1.2 | 1/1 | In Progress|  |
-| 12. Offline-First Providers + Sync | v1.2 | 1/1 | In Progress|  |
-| 13. Recurring Entries Data Layer | v1.2 | 1/1 | In Progress|  |
-| 14. Export Tab — Scheduled UI | v1.2 | 1/1 | In Progress|  |
-| 15. Homepage — Upcoming Indicators | v1.2 | 1/1 | In Progress|  |
+| 11. SQLite Local Database | v1.2 | 1/1 | Complete | 2026-08-16 |
+| 12. Offline-First Providers + Sync | v1.2 | 1/1 | Complete | 2026-08-16 |
+| 13. Recurring Entries Data Layer | v1.2 | 1/1 | Complete | 2026-08-16 |
+| 14. Export Tab — Scheduled UI | v1.2 | 1/1 | Complete | 2026-08-16 |
+| 15. Homepage — Upcoming Indicators | v1.2 | 1/1 | Complete | 2026-08-16 |
