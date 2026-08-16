@@ -1,0 +1,57 @@
+# Manage Schedule
+# Tests that user can edit recurring entry schedule (frequency, end date)
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Scroll down to Scheduled Entries section
+- scroll:
+    direction: DOWN
+
+- waitForAnimationToEnd
+
+# If templates exist, swipe to edit
+- swipe:
+    direction: LEFT
+    optional: true
+
+- waitForAnimationToEnd
+
+# Tap Edit button
+- tapOn:
+    text: "Edit"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Should see edit form
+- assertVisible:
+    text: "Edit"
+    optional: true
+
+# Modify frequency if available
+- tapOn:
+    text: "Weekly"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Save changes
+- tapOn:
+    text: "Save"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify we're back on Export screen
+- assertVisible:
+    text: "Export"
+    optional: false

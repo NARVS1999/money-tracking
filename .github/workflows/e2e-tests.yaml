@@ -1,0 +1,79 @@
+# E2E Tests with Maestro
+# Runs Maestro E2E tests against the Expo Go app
+
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Start Expo dev server
+        run: |
+          npx expo start --tunnel &
+          sleep 30
+
+      - name: Wait for Expo server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -s http://localhost:8081 > /dev/null 2>&1; then
+              echo "Expo server is ready"
+              break
+            fi
+            echo "Waiting for Expo server... ($i/60)"
+            sleep 5
+          done
+
+      - name: Run Maestro tests
+        run: |
+          maestro test .maestro/auth/
+          maestro test .maestro/entries/
+          maestro test .maestro/categories/
+          maestro test .maestro/export/
+          maestro test .maestro/navigation/
+          maestro test .maestro/offline/
+          maestro test .maestro/scheduled/
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-test-results
+          path: |
+            ~/.maestro/tests/
+            ~/maestro-tests/
+          retention-days: 7

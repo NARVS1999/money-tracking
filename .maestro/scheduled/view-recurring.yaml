@@ -1,0 +1,42 @@
+# View Recurring Templates
+# Tests that user can view list of recurring entry templates
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Scroll down to Scheduled Entries section
+- scroll:
+    direction: DOWN
+
+- waitForAnimationToEnd
+
+# Should see Scheduled Entries header
+- assertVisible:
+    text: "Scheduled Entries"
+    optional: false
+
+- assertVisible:
+    text: "Add Scheduled"
+    optional: false
+
+# If templates exist, should see Expenses/Income sub-sections
+- assertVisible:
+    text: "Expenses"
+    optional: true
+
+- assertVisible:
+    text: "Income"
+    optional: true
+
+# OR if no templates, should see empty state
+- assertVisible:
+    text: "No scheduled entries yet"
+    optional: true

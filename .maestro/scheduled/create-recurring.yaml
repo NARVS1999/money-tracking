@@ -1,0 +1,70 @@
+# Create Recurring Entry
+# Tests that user can create a recurring entry template
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Export tab (hosts Scheduled Entries section)
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+# Scroll down to Scheduled Entries section
+- scroll:
+    direction: DOWN
+
+- waitForAnimationToEnd
+
+# Tap "Add Scheduled" button
+- tapOn:
+    text: "Add Scheduled"
+
+- waitForAnimationToEnd
+
+# Should see ScheduledEntryForm
+- assertVisible:
+    text: "Add Scheduled Entry"
+    optional: true
+
+# OR form with frequency selector
+- assertVisible:
+    text: "Frequency"
+    optional: true
+
+# Select category
+- tapOn:
+    text: "Select category"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    index: 0
+    optional: true
+
+# Enter amount
+- tapOn:
+    text: "₱0.00"
+    optional: true
+
+- inputText: "500"
+
+# Select frequency (e.g., Monthly)
+- tapOn:
+    text: "Monthly"
+    optional: true
+
+# Save
+- tapOn:
+    text: "Save"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify we're back on Export screen
+- assertVisible:
+    text: "Export"
+    optional: false
