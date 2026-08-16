@@ -46,7 +46,7 @@ export default function UpcomingSection({
       <View
         style={[
           styles.card,
-          { backgroundColor: #000, borderColor: theme.border },
+          { backgroundColor: "#000", borderColor: theme.border },
         ]}
       >
         {items.map((entry, index) => (
