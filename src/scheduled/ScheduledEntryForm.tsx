@@ -54,8 +54,11 @@ export default function ScheduledEntryForm() {
   // CR-02: edit mode derives the type from the stored entry — the entry's own
   // type is the source of truth (the row itself knows whether it is an
   // expense or income template). Falls back to the route param for add mode.
+  const [selectedType, setSelectedType] = useState<"expense" | "income">(
+    () => (mode === "edit" && existingEntry ? existingEntry.type : type),
+  );
   const effectiveType: "expense" | "income" =
-    mode === "edit" && existingEntry ? existingEntry.type : type;
+    mode === "edit" && existingEntry ? existingEntry.type : selectedType;
   const categories =
     effectiveType === "expense" ? expenseCategories : incomeCategories;
 
@@ -232,6 +235,41 @@ export default function ScheduledEntryForm() {
           placeholder="0.00"
           placeholderTextColor={colors.textSecondary}
         />
+
+        {/* Type Picker — Expense/Income toggle (only in add mode) */}
+        {mode === "add" && (
+          <>
+            <Text style={styles.label}>Type</Text>
+            <View style={styles.typeRow}>
+              {(["expense", "income"] as const).map((t) => {
+                const isSelected = t === selectedType;
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    style={[
+                      styles.typeSegment,
+                      isSelected && styles.typeSegmentActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedType(t);
+                      setSelectedCategoryId("");
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.typeSegmentText,
+                        isSelected && styles.typeSegmentTextActive,
+                      ]}
+                    >
+                      {t === "expense" ? "Expense" : "Income"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {/* Category Picker */}
         <Text style={styles.label}>Category</Text>
@@ -543,6 +581,35 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   frequencySegmentTextActive: {
+    color: colors.onAccent,
+  },
+  // Type picker — 2 segments, one horizontal row
+  typeRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  typeSegment: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.xs,
+  },
+  typeSegmentActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  typeSegmentText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    textAlign: "center",
+  },
+  typeSegmentTextActive: {
     color: colors.onAccent,
   },
   validationError: {
