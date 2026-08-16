@@ -2,17 +2,18 @@
 
 **Milestone:** v1.3 — End-to-End Testing
 **Created:** 2026-08-16
+**Completed:** 2026-08-16
 **Granularity:** Standard
 
 ## Phases
 
-- [ ] **Phase 16: Test Infrastructure & Auth** - Maestro setup and authentication flow tests
-- [ ] **Phase 17: Entry Management Tests** - Expense and income CRUD test coverage
-- [ ] **Phase 18: Category Tests** - Category management test coverage
-- [ ] **Phase 19: Export Tests** - PDF, Excel, CSV export test coverage
-- [ ] **Phase 20: Navigation Tests** - Tab and screen navigation test coverage
-- [ ] **Phase 21: Offline & Sync Tests** - Data persistence and sync test coverage
-- [ ] **Phase 22: Recurring Entries Tests** - Scheduled entries test coverage
+- [x] **Phase 16: Test Infrastructure & Auth** - Maestro setup and authentication flow tests
+- [x] **Phase 17: Entry Management Tests** - Expense and income CRUD test coverage
+- [x] **Phase 18: Category Tests** - Category management test coverage
+- [x] **Phase 19: Export Tests** - PDF, Excel, CSV export test coverage
+- [x] **Phase 20: Navigation Tests** - Tab and screen navigation test coverage
+- [x] **Phase 21: Offline & Sync Tests** - Data persistence and sync test coverage
+- [x] **Phase 22: Recurring Entries Tests** - Scheduled entries test coverage
 
 ## Phase Details
 
@@ -25,7 +26,7 @@
   2. Test data seeding utilities work consistently
   3. User can sign in with valid credentials via E2E test
   4. User can sign up with new account via E2E test
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 17: Entry Management Tests
 **Goal**: All entry CRUD operations are validated through E2E tests
@@ -36,7 +37,7 @@
   2. User can create income entry and see it in list
   3. User can edit existing entry and changes persist
   4. User can delete entry and it removes from list
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 18: Category Tests
 **Goal**: Category management operations are validated through E2E tests
@@ -47,7 +48,7 @@
   2. User can view all categories in category management screen
   3. User can edit category name and changes persist
   4. User can delete category when it has no entries
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 19: Export Tests
 **Goal**: All export formats are validated through E2E tests
@@ -58,7 +59,7 @@
   2. User can generate Excel export and file is created
   3. User can generate CSV export and file is created
   4. User can share exported file via system share dialog
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 20: Navigation Tests
 **Goal**: App navigation flows are validated through E2E tests
@@ -68,7 +69,7 @@
   1. User can switch between all tabs and correct screen appears
   2. User can navigate between screens via buttons and links
   3. User can use back navigation to return to previous screen
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 21: Offline & Sync Tests
 **Goal**: Offline behavior and data sync are validated through E2E tests
@@ -77,7 +78,7 @@
 **Success Criteria** (what must be TRUE):
   1. Data persists when app is killed and restarted
   2. Data syncs to cloud when app comes back online
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ### Phase 22: Recurring Entries Tests
 **Goal**: Recurring entry functionality is validated through E2E tests
@@ -88,19 +89,20 @@
   2. User can view list of recurring templates
   3. User can manage recurring schedule (frequency, end date)
   4. CI/CD pipeline runs E2E tests automatically
-**Plans**: TBD
+**Plans**: ✓ Complete
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 16. Test Infrastructure & Auth | 0/2 | Not started | - |
-| 17. Entry Management Tests | 0/1 | Not started | - |
-| 18. Category Tests | 0/1 | Not started | - |
-| 19. Export Tests | 0/1 | Not started | - |
-| 20. Navigation Tests | 0/1 | Not started | - |
-| 21. Offline & Sync Tests | 0/1 | Not started | - |
-| 22. Recurring Entries Tests | 0/1 | Not started | - |
+| 16. Test Infrastructure & Auth | 2/2 | ✓ Complete | 2026-08-16 |
+| 17. Entry Management Tests | 1/1 | ✓ Complete | 2026-08-16 |
+| 18. Category Tests | 1/1 | ✓ Complete | 2026-08-16 |
+| 19. Export Tests | 1/1 | ✓ Complete | 2026-08-16 |
+| 20. Navigation Tests | 1/1 | ✓ Complete | 2026-08-16 |
+| 21. Offline & Sync Tests | 1/1 | ✓ Complete | 2026-08-16 |
+| 22. Recurring Entries Tests | 1/1 | ✓ Complete | 2026-08-16 |
 
 ---
 *Roadmap created: 2026-08-16*
+*Roadmap completed: 2026-08-16*
