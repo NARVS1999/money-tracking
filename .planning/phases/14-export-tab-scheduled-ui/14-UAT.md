@@ -86,7 +86,7 @@ blocked: 0
 ## Gaps
 
 - truth: "Add Scheduled form shows all categories (expense and income)"
-  status: failed
+  status: fixed
   reason: "User reported: categories was only all expenses"
   severity: major
   test: 2
@@ -99,3 +99,4 @@ blocked: 0
   missing:
     - "Add expense/income type picker to ScheduledEntryForm"
     - "Update ExportScreen to pass type dynamically or let user choose"
+  fix_commit: "e324b60"
