@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body.size,
     fontWeight: "600",
     lineHeight: typography.body.lineHeight,
-    color: colors.yellow,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   secondary: {
