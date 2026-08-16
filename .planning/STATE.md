@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: Awaiting next milestone
-status: idle
-stopped_at: v1.2 milestone archived
-last_updated: "2026-08-16T11:00:00Z"
+milestone: v1.3
+milestone_name: End-to-End Testing
+status: planning
+stopped_at: v1.3 milestone started
+last_updated: "2026-08-16T12:00:00Z"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -14,7 +14,7 @@ progress:
 current_phase: 0
 current_phase_name: none
 last_activity: 2026-08-16
-last_activity_desc: v1.2 milestone archived
+last_activity_desc: v1.3 milestone started
 ---
 
 # Project State
@@ -24,13 +24,14 @@ last_activity_desc: v1.2 milestone archived
 See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** Planning next milestone
+**Current focus:** Defining requirements for v1.3
 
 ## Current Position
 
-Milestone: v1.2 — ARCHIVED ✓
-All 5 phases shipped (43/43 requirements, 548 tests passing).
-Ready for v1.3 planning.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-08-16 — Milestone v1.3 started
 
 ## Performance Metrics
 
@@ -66,29 +67,10 @@ Ready for v1.3 planning.
 
 ### Blockers/Concerns
 
-- Firestore rules/indexes deploy required for sync (Phase 12) — app degrades gracefully, sync retries
-
-## UAT Results
-
-| Phase | Passed | Issues | Skipped | Status |
-|-------|--------|--------|---------|--------|
-| 11 - SQLite Local DB | 4 | 0 | 2 | Complete |
-| 12 - Offline Providers | 11 | 0 | 0 | Complete |
-| 13 - Recurring Entries | 10 | 0 | 1 | Complete |
-| 14 - Export Tab UI | 8 | 1 (fixed) | 0 | Complete |
-| 15 - Homepage Upcoming | 6 | 0 | 0 | Complete |
-| **Total** | **39** | **1 (fixed)** | **3** | **Complete** |
-
-### Skipped Tests (Expo Go Constraints)
-
-| Phase | Test | Reason |
-|-------|------|--------|
-| 11 | Data Persists After Kill | Cannot test on Expo Go |
-| 11 | Sync Queue Tracks Offline Changes | Cannot test on Expo Go |
-| 13 | End Date Stops Generation | Cannot test on Expo Go |
+- None currently
 
 ## Session Continuity
 
 Last session: 2026-08-16
-Stopped at: v1.2 UAT complete
+Stopped at: v1.3 milestone started
 Resume file: None

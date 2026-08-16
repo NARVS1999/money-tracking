@@ -2,9 +2,9 @@
 
 ## Current State
 
-**v1.1 shipped 2026-08-09.** Full personal expense/income tracker: email/password auth, category management, entry logging (<10s), current-month summary, PDF/Excel/CSV export, account creation/deletion with cascade, session-scoped offline persistence. Modern UI theme with orange/red gradient, global budget tracking, 50+ preset category icons, and custom SVG donut charts.
+**v1.2 shipped 2026-08-16.** Full personal expense/income tracker: email/password auth, category management, entry logging (<10s), current-month summary, PDF/Excel/CSV export, account creation/deletion with cascade, offline-first SQLite storage, Firestore cloud sync, recurring/scheduled entries, homepage upcoming indicators. Modern UI theme with orange/red gradient, global budget tracking, 50+ preset category icons, and custom SVG donut charts.
 
-**Built with:** Expo SDK 57, Firebase JS SDK 12, React Native 0.86, React Context state, Expo Go QR workflow, react-native-svg for charts.
+**Built with:** Expo SDK 57, Firebase JS SDK 12, React Native 0.86, React Context state, Expo Go QR workflow, react-native-svg for charts, expo-sqlite for local storage, Maestro for E2E testing.
 
 ## What This Is
 
@@ -36,12 +36,14 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 - ✓ 50+ preset category icons (optional, backward-compatible) — v1.1
 - ✓ Custom SVG donut charts for expense/income breakdowns — v1.1
 
-### Active (v1.2)
+### Active (v1.3)
 
-- **Offline-first storage** — expo-sqlite as local source of truth; fully usable without internet
-- **Firestore cloud sync** — push/pull changes when online; multi-device data portability
-- **Recurring/scheduled entries** — templates that auto-generate real entries by frequency (once, daily, weekly, monthly, yearly)
-- **Homepage upcoming indicators** — yellow-red for incoming expenses, yellow-blue for incoming income
+- **E2E test infrastructure** — Maestro setup for Android emulator testing
+- **Auth flow tests** — sign in, sign up, password reset, session persistence
+- **Entry management tests** — create, edit, delete expenses and income
+- **Category tests** — CRUD operations, icon selection, deletion blocking
+- **Export tests** — PDF, Excel, CSV generation and sharing
+- **Navigation tests** — tab switching, screen transitions, back navigation
 
 ### Out of Scope
 
@@ -98,9 +100,10 @@ Logging a money entry must take under 10 seconds — from opening the app to sav
 | 50+ Ionicons for categories | Backward-compatible optional icon field, no emoji inconsistencies | ✓ Good, v1.1 |
 | Custom SVG donut charts via react-native-svg | No external charting lib, Expo Go compatible | ✓ Good, v1.1 |
 | Chart data from cached entries via memo | No Firestore aggregation queries, UI not blocked | ✓ Good, v1.1 |
-| expo-sqlite as local source of truth | Fully offline-first; Firestore becomes cloud sync backend | Planned v1.2 |
-| Scheduled entries auto-generate from templates | Frequency-based; works offline via SQLite | Planned v1.2 |
+| expo-sqlite as local source of truth | Fully offline-first; Firestore becomes cloud sync backend | ✓ Good, v1.2 |
+| Scheduled entries auto-generate from templates | Frequency-based; works offline via SQLite | ✓ Good, v1.2 |
+| Maestro for E2E testing | Simple YAML-based flows, no native compilation, works with emulator | ✓ Good, v1.3 |
 
 ---
 
-*Last updated: 2026-08-12 — v1.2 milestone planning started*
+*Last updated: 2026-08-16 — v1.3 milestone planning started*
