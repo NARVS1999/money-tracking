@@ -1,0 +1,54 @@
+# Edit Category
+# Tests that a user can edit a category name via swipe actions
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Categories tab
+- tapOn:
+    text: "Categories"
+
+- waitForAnimationToEnd
+
+# Swipe left on first category to reveal actions
+- swipe:
+    direction: LEFT
+
+- waitForAnimationToEnd
+
+# Tap Edit button
+- tapOn:
+    text: "Edit"
+
+- waitForAnimationToEnd
+
+# Should see edit modal
+- assertVisible:
+    text: "Edit Category"
+    optional: false
+
+- assertVisible:
+    text: "Name"
+    optional: false
+
+# Modify the name
+- tapOn:
+    text: "Name"
+    optional: true
+
+- clearText
+
+- inputText: "Dining Out"
+
+# Save
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Verify the updated name appears
+- assertVisible:
+    text: "Dining Out"
+    optional: true

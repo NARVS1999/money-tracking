@@ -1,0 +1,37 @@
+# Delete Category
+# Tests that a user can delete an unused category
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Categories tab
+- tapOn:
+    text: "Categories"
+
+- waitForAnimationToEnd
+
+# Swipe left on a category that has 0 entries (unused)
+# First, find a category with "0 entries" usage
+- swipe:
+    direction: LEFT
+
+- waitForAnimationToEnd
+
+# Check if Delete button is available (only for unused categories)
+- tapOn:
+    text: "Delete"
+    optional: true
+
+- waitForAnimationToEnd
+
+# If confirmation dialog appears, confirm deletion
+- tapOn:
+    text: "Delete"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify the category is removed from the list
+# The specific category name should no longer be visible

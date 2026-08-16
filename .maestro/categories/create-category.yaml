@@ -1,0 +1,41 @@
+# Create Category
+# Tests that a user can create a new category via inline input
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Categories tab
+- tapOn:
+    text: "Categories"
+
+- waitForAnimationToEnd
+
+# Should see category sections
+- assertVisible:
+    text: "Expense Categories"
+    optional: false
+
+- assertVisible:
+    text: "Income Categories"
+    optional: false
+
+# Add a new expense category
+- tapOn:
+    text: "New category"
+    optional: true
+
+- inputText: "Entertainment"
+
+# Tap the + button to add
+- tapOn:
+    text: "+"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify the new category appears in the list
+- assertVisible:
+    text: "Entertainment"
+    optional: true

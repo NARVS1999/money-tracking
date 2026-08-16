@@ -1,0 +1,37 @@
+# View Categories
+# Tests that all categories are displayed in the Categories screen
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Categories tab
+- tapOn:
+    text: "Categories"
+
+- waitForAnimationToEnd
+
+# Should see section headers
+- assertVisible:
+    text: "Expense Categories"
+    optional: false
+
+- assertVisible:
+    text: "Income Categories"
+    optional: false
+
+# Should see at least some default categories
+# (Food, Transport, etc. are seeded defaults)
+- assertVisible:
+    text: "Food"
+    optional: true
+
+- assertVisible:
+    text: "Transport"
+    optional: true
+
+# Should see usage counts
+- assertVisible:
+    text: "entries"
+    optional: true
