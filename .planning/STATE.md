@@ -1,35 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Offline-First + Recurring Entries
-status: complete
-stopped_at: v1.2 UAT complete
-last_updated: "2026-08-16T09:20:00Z"
+milestone: none
+milestone_name: Awaiting next milestone
+status: idle
+stopped_at: v1.2 milestone archived
+last_updated: "2026-08-16T11:00:00Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 current_phase: 0
-current_phase_name: none — v1.2 complete
+current_phase_name: none
 last_activity: 2026-08-16
-last_activity_desc: v1.2 UAT complete
+last_activity_desc: v1.2 milestone archived
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-12)
+See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** Logging a money entry must take under 10 seconds — from opening the app to saving — and the data must be there when the phone is offline.
-**Current focus:** v1.2 complete — ready for v1.3 planning
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Milestone: v1.2 — COMPLETE ✓
-All phases tested and verified.
+Milestone: v1.2 — ARCHIVED ✓
+All 5 phases shipped (43/43 requirements, 548 tests passing).
+Ready for v1.3 planning.
 
 ## Performance Metrics
 
