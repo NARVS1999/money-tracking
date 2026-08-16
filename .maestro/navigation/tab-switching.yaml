@@ -1,0 +1,72 @@
+# Tab Switching
+# Tests that user can switch between all tabs and correct screen appears
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Start on Home tab (default after sign-in)
+- assertVisible:
+    text: "All Time"
+    optional: true
+
+# Switch to Expenses tab
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Total:"
+    optional: true
+
+# Switch to Income tab
+- tapOn:
+    text: "Income"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Total:"
+    optional: true
+
+# Switch to Categories tab
+- tapOn:
+    text: "Categories"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Expense Categories"
+    optional: false
+
+# Switch to Export tab
+- tapOn:
+    text: "Export"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Export"
+    optional: false
+
+- assertVisible:
+    text: "This Month"
+    optional: false
+
+# Switch to Account tab
+- tapOn:
+    text: "Account"
+
+- waitForAnimationToEnd
+
+# Switch back to Home tab
+- tapOn:
+    text: "Home"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "All Time"
+    optional: true

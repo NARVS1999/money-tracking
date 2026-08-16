@@ -1,0 +1,43 @@
+# Screen Navigation
+# Tests that user can navigate to EntryForm via FAB button
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Tap the FAB (+) button
+- tapOn:
+    text: "+"
+
+- waitForAnimationToEnd
+
+# Should see EntryForm
+- assertVisible:
+    text: "Add Entry"
+    optional: false
+
+- assertVisible:
+    text: "Cancel"
+    optional: false
+
+- assertVisible:
+    text: "Save"
+    optional: false
+
+# Navigate back
+- tapOn:
+    text: "Cancel"
+
+- waitForAnimationToEnd
+
+# Should be back on Expenses screen
+- assertVisible:
+    text: "Expenses"
+    optional: false

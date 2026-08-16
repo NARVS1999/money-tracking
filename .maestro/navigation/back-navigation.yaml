@@ -1,0 +1,40 @@
+# Back Navigation
+# Tests that user can use back navigation to return to previous screen
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Open EntryForm via FAB
+- tapOn:
+    text: "+"
+
+- waitForAnimationToEnd
+
+# Should see EntryForm
+- assertVisible:
+    text: "Add Entry"
+    optional: false
+
+# Tap Cancel to go back
+- tapOn:
+    text: "Cancel"
+
+- waitForAnimationToEnd
+
+# Should be back on Expenses screen
+- assertVisible:
+    text: "Expenses"
+    optional: false
+
+# Verify FAB is still visible (we're on the list screen)
+- assertVisible:
+    text: "+"
+    optional: true
