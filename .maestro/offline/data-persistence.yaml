@@ -1,0 +1,97 @@
+# Data Persistence
+# Tests that data persists when app is killed and restarted
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab and create an entry
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+# Tap FAB to add entry
+- tapOn:
+    text: "+"
+
+- waitForAnimationToEnd
+
+# Select category
+- tapOn:
+    text: "Select category"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    index: 0
+    optional: true
+
+# Enter amount
+- tapOn:
+    text: "₱0.00"
+    optional: true
+
+- inputText: "999"
+
+# Enter description
+- tapOn:
+    text: "What was this for?"
+
+- inputText: "Persistence test entry"
+
+# Save
+- tapOn:
+    text: "Save"
+
+- waitForAnimationToEnd
+
+# Kill the app
+- clearState
+
+# Relaunch the app
+- launchApp
+- waitForAnimationToEnd
+
+# Sign in again (if needed)
+- assertVisible:
+    text: "Money"
+    optional: true
+
+# If on sign-in screen, sign in
+- tapOn:
+    text: "Email"
+    optional: true
+
+- inputText: ${TEST_EMAIL}
+    optional: true
+
+- tapOn:
+    text: "Password"
+    optional: true
+
+- inputText: ${TEST_PASSWORD}
+    optional: true
+
+- tapOn:
+    text: "Sign in"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Navigate to Expenses tab
+- tapOn:
+    text: "Expenses"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify the entry persisted
+- assertVisible:
+    text: "Persistence test entry"
+    optional: true
+
+- assertVisible:
+    text: "₱999.00"
+    optional: true

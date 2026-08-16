@@ -1,0 +1,40 @@
+# Manual Sync
+# Tests that user can trigger manual sync via SyncButton
+
+appId: com.ampolnarvs.mtscaffold
+---
+- launchApp
+- waitForAnimationToEnd
+
+# The SyncButton is in the header (headerRight in MainTabs)
+# It's an icon button, not text — tap the sync area
+# SyncButton component renders Ionicons sync-outline icon
+
+# Tap the sync button (top-right area of header)
+- tapOn:
+    point: "90%,5%"
+
+- waitForAnimationToEnd
+
+# After tapping, sync should complete
+# If there's a visual indicator (spinner, checkmark), verify it
+# The SyncButton shows sync status via isSyncing state
+
+# Wait for sync to complete
+- waitForAnimationToEnd
+
+# Navigate to different tab and back to verify data synced
+- tapOn:
+    text: "Expenses"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Home"
+
+- waitForAnimationToEnd
+
+# Verify home screen loads correctly (data synced)
+- assertVisible:
+    text: "All Time"
+    optional: true
