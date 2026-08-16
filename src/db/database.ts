@@ -53,6 +53,19 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
+// Wipes all rows for a uid across every ledger table. Used by the "Reset Local
+// Data" feature to force a clean re-seed from Firestore.
+export async function clearUserData(uid: string): Promise<void> {
+  const sqlite = await getDb();
+  await sqlite.withTransactionAsync(async () => {
+    await sqlite.runAsync("DELETE FROM entries WHERE uid = ?", uid);
+    await sqlite.runAsync("DELETE FROM categories WHERE uid = ?", uid);
+    await sqlite.runAsync("DELETE FROM scheduledEntries WHERE uid = ?", uid);
+    await sqlite.runAsync("DELETE FROM syncQueue WHERE uid = ?", uid);
+    await sqlite.runAsync("DELETE FROM syncMeta WHERE uid = ?", uid);
+  });
+}
+
 // Test/teardown helper: drops the cached connection. The next getDb() call
 // reopens the database and re-applies the schema.
 export function resetDbForTesting(): void {

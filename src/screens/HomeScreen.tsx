@@ -258,30 +258,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Upcoming scheduled-entry indicators (HOME-UP-07): between the
-          quick-action buttons and the chart sections, expenses first —
-          yellow-red then yellow-blue. Hidden at zero entries of the type. */}
-      <UpcomingSection
-        title="Upcoming Expenses"
-        items={upcomingExpenses}
-        theme={{
-          bg: colors.upcomingExpenseBg,
-          border: colors.upcomingExpenseBorder,
-          accent: colors.expense,
-        }}
-        onTapItem={openScheduledEdit}
-      />
-      <UpcomingSection
-        title="Upcoming Income"
-        items={upcomingIncome}
-        theme={{
-          bg: colors.upcomingIncomeBg,
-          border: colors.upcomingIncomeBorder,
-          accent: colors.teal,
-        }}
-        onTapItem={openScheduledEdit}
-      />
-
       {expenseChartData.length > 0 && (
         <View style={styles.chartSection}>
           <Text style={styles.chartTitle}>Expenses by Category</Text>
@@ -310,6 +286,17 @@ export default function HomeScreen() {
         </View>
       )}
 
+      <UpcomingSection
+        title="Upcoming Expenses"
+        items={upcomingExpenses}
+        theme={{
+          bg: colors.upcomingExpenseBg,
+          border: colors.upcomingExpenseBorder,
+          accent: colors.expense,
+        }}
+        onTapItem={openScheduledEdit}
+      />
+
       {expenseBreakdown.length > 0 && (
         <CategorySection
           title="Expenses"
@@ -318,6 +305,18 @@ export default function HomeScreen() {
           subtotalCents={expenseTotal}
         />
       )}
+
+      <UpcomingSection
+        title="Upcoming Income"
+        items={upcomingIncome}
+        theme={{
+          bg: colors.upcomingIncomeBg,
+          border: colors.upcomingIncomeBorder,
+          accent: colors.teal,
+        }}
+        onTapItem={openScheduledEdit}
+      />
+
       {incomeBreakdown.length > 0 && (
         <CategorySection
           title="Income"

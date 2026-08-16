@@ -42,6 +42,7 @@ export type CategoriesContextValue = {
   updateCategory: (kind: CategoryKind, categoryId: string, updates: { name?: string; icon?: string }) => Promise<void>;
   deleteCategory: (kind: CategoryKind, categoryId: string) => Promise<void>;
   sync: () => Promise<void>;
+  reload: () => Promise<void>;
   isSyncing: boolean;
   lastError: string | null;
 };
@@ -143,6 +144,19 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       throw e;
     } finally {
       setIsSyncing(false);
+    }
+  }, [user, load]);
+
+  // Reload categories straight from SQLite — no network.
+  const reload = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { expense, income } = await load(user.uid);
+      setExpenseCategories(expense);
+      setIncomeCategories(income);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to reload categories";
+      setLastError(msg);
     }
   }, [user, load]);
 
@@ -279,6 +293,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         updateCategory,
         deleteCategory,
         sync,
+        reload,
         isSyncing,
         lastError,
       }}

@@ -28,7 +28,7 @@ import {
   type DbCategory,
   type CategoryType,
 } from "./categories";
-import { getDb } from "./database";
+import { getDb, clearUserData } from "./database";
 import { getQueue } from "./syncQueue";
 
 export type SeedResult = {
@@ -168,4 +168,11 @@ export async function seedFromFirestore(uid: string): Promise<SeedResult> {
     entries: entriesSeeded,
     categories: categoriesSeeded,
   };
+}
+
+// Force-clear local SQLite and re-seed from Firestore. Used by the "Reset
+// Local Data" button when local data is stale or out of sync.
+export async function reseedFromCloud(uid: string): Promise<SeedResult> {
+  await clearUserData(uid);
+  return seedFromFirestore(uid);
 }

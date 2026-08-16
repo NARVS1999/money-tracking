@@ -18,11 +18,16 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthProvider";
+import { useEntries } from "../entries/EntriesProvider";
+import { useCategories } from "../categories/CategoriesProvider";
+import { reseedFromCloud } from "../db/seed";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 import { formatCents, parsePesoInput } from "../lib/money";
 
 export default function AccountScreen() {
-  const { userProfile, signOut, deleteAccount, isOnline, updateBudget, clearBudget } = useAuth();
+  const { userProfile, signOut, deleteAccount, isOnline, updateBudget, clearBudget, user } = useAuth();
+  const { reload: reloadEntries } = useEntries();
+  const { reload: reloadCategories } = useCategories();
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -39,6 +44,9 @@ export default function AccountScreen() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [budgetError, setBudgetError] = useState<string | null>(null);
+
+  // Reset local data state
+  const [isResetting, setIsResetting] = useState(false);
 
   // Loading state while userProfile fetches
   if (!userProfile) {
@@ -153,6 +161,33 @@ export default function AccountScreen() {
     );
   };
 
+  const handleResetLocalData = () => {
+    Alert.alert(
+      "Reset local data?",
+      "This will delete all local data and re-download everything from the cloud. Make sure you're connected to the internet.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            if (isResetting || !user) return;
+            setIsResetting(true);
+            try {
+              await reseedFromCloud(user.uid);
+              await Promise.all([reloadEntries(), reloadCategories()]);
+              Alert.alert("Done", "Local data has been reset and re-synced from the cloud.");
+            } catch {
+              Alert.alert("Error", "Reset failed. Check your connection and try again.");
+            } finally {
+              setIsResetting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const formatDateObj = (d: Date): string => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -201,6 +236,29 @@ export default function AccountScreen() {
         <Pressable style={styles.button} onPress={signOut} accessibilityRole="button">
           <Text style={styles.buttonLabel}>Sign out</Text>
         </Pressable>
+
+        {/* Reset local data */}
+        <View style={styles.resetSection}>
+          <Pressable
+            style={[styles.resetButton, (isResetting || !isOnline) && styles.buttonDisabled]}
+            onPress={handleResetLocalData}
+            disabled={isResetting || !isOnline}
+            accessibilityRole="button"
+          >
+            <Text style={styles.resetButtonText}>
+              {isResetting ? "Resetting..." : "Reset local data"}
+            </Text>
+          </Pressable>
+          {isOnline ? (
+            <Text style={styles.helperText}>
+              Re-download all data from the cloud
+            </Text>
+          ) : (
+            <Text style={styles.helperText}>
+              Reset unavailable offline
+            </Text>
+          )}
+        </View>
 
         {/* Budget section */}
         <View style={styles.budgetSection}>
@@ -476,6 +534,24 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: colors.danger,
+  },
+  resetSection: {
+    marginTop: spacing.md,
+  },
+  resetButton: {
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  resetButtonText: {
+    fontSize: typography.body.size,
+    lineHeight: typography.body.lineHeight,
+    fontWeight: typography.body.weight,
+    color: colors.textPrimary,
   },
   helperText: {
     fontSize: typography.label.size,

@@ -116,8 +116,16 @@ beforeEach(() => {
     isLoading: false,
   });
   mockCategories = {
-    expenseCategories: [{ id: "cat-1", name: "Housing", icon: "home", createdAt: ts }],
-    incomeCategories: [{ id: "cat-3", name: "Salary", icon: "cash", createdAt: ts }],
+    expenseCategories: [
+      { id: "cat-1", name: "Housing", icon: "home", createdAt: ts },
+      { id: "cat-2", name: "Food", icon: "fast-food", createdAt: ts },
+      { id: "cat-4", name: "Utilities", icon: "flash", createdAt: ts },
+      { id: "cat-6", name: "Transport", icon: "car", createdAt: ts },
+    ],
+    incomeCategories: [
+      { id: "cat-3", name: "Salary", icon: "cash", createdAt: ts },
+      { id: "cat-5", name: "Bonus", icon: "gift", createdAt: ts },
+    ],
   };
   mockAuth = { userProfile: null };
   mockScheduled = { scheduledEntries: [] };
@@ -171,7 +179,7 @@ describe("HomeScreen upcoming sections", () => {
     const found = texts(root);
     expect(found).toContain("Upcoming Expenses");
     expect(found).toContain("Upcoming Income");
-    expect(found).toContain("Rent");
+    expect(found).toContain("Housing");
     expect(found).toContain("Salary");
   });
 
@@ -219,67 +227,67 @@ describe("HomeScreen upcoming sections", () => {
   it("excludes paused templates from both sections", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "s1", description: "Active rent" }),
-        makeScheduled({ id: "s2", description: "Paused rent", isActive: false }),
+        makeScheduled({ id: "s1", categoryId: "cat-1", description: "Active rent" }),
+        makeScheduled({ id: "s2", categoryId: "cat-2", description: "Paused rent", isActive: false }),
       ],
     };
     const root = mount();
     const found = texts(root);
-    expect(found).toContain("Active rent");
-    expect(found).not.toContain("Paused rent");
+    expect(found).toContain("Housing");
+    expect(found).not.toContain("Food");
   });
 
   it("excludes an exhausted once template whose start date has passed (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "s1", description: "Active rent" }),
-        makeScheduled({ id: "s2", description: "Exhausted once", frequency: "once", date: "2026-08-01" }),
+        makeScheduled({ id: "s1", categoryId: "cat-1", description: "Active rent" }),
+        makeScheduled({ id: "s2", categoryId: "cat-2", description: "Exhausted once", frequency: "once", date: "2026-08-01" }),
       ],
     };
     const root = mount();
     const found = texts(root);
     expect(found).toContain("Upcoming Expenses");
-    expect(found).toContain("Active rent");
-    expect(found).not.toContain("Exhausted once");
+    expect(found).toContain("Housing");
+    expect(found).not.toContain("Food");
   });
 
   it("excludes a repeating template whose pattern has ended (endDate passed) (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "s1", description: "Ended rent", endDate: "2026-08-05" }),
-        makeScheduled({ id: "s2", description: "Ongoing rent" }),
+        makeScheduled({ id: "s1", categoryId: "cat-2", description: "Ended rent", endDate: "2026-08-05" }),
+        makeScheduled({ id: "s2", categoryId: "cat-1", description: "Ongoing rent" }),
       ],
     };
     const root = mount();
     const found = texts(root);
-    expect(found).toContain("Ongoing rent");
-    expect(found).not.toContain("Ended rent");
+    expect(found).toContain("Housing");
+    expect(found).not.toContain("Food");
   });
 
   it("keeps a once template whose start date is still ahead (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "s1", description: "Future once", frequency: "once", date: "2026-08-20" }),
+        makeScheduled({ id: "s1", categoryId: "cat-1", description: "Future once", frequency: "once", date: "2026-08-20" }),
       ],
     };
     const root = mount();
     const found = texts(root);
-    expect(found).toContain("Future once");
-    expect(found).toContain("Once · Aug 20");
+    expect(found).toContain("Housing");
+    expect(found).toContain("1 of 1");
   });
 
   it("excludes exhausted income templates from the income section (WR-02)", () => {
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "s1", type: "income", categoryId: "cat-3", description: "Exhausted salary once", frequency: "once", date: "2026-08-01" }),
+        makeScheduled({ id: "s1", type: "income", categoryId: "cat-5", description: "Exhausted bonus once", frequency: "once", date: "2026-08-01" }),
         makeScheduled({ id: "s2", type: "income", categoryId: "cat-3", description: "Active salary" }),
       ],
     };
     const root = mount();
     const found = texts(root);
     expect(found).toContain("Upcoming Income");
-    expect(found).toContain("Active salary");
-    expect(found).not.toContain("Exhausted salary once");
+    expect(found).toContain("Salary");
+    expect(found).not.toContain("Bonus");
   });
 
   it("hides the section entirely when every template of the type is exhausted (WR-02)", () => {
@@ -299,19 +307,22 @@ describe("HomeScreen upcoming sections", () => {
   it("orders rows by next occurrence ascending, null-next entries last by start date", () => {
     // B: daily from 08-01 anchored at 08-12 → next 08-13 (soonest). A:
     // weekly from 08-01 anchored at 08-12 → next 08-19. C: future once
-    // (08-20, no next) → last.
+    // (08-20, no next) → last. Each row is identified by its category name
+    // (the row contract shows the category, not the description). Categories
+    // avoid cat-1 "Housing" — the ledger fixture entry also renders that name
+    // in the chart legend and breakdown, which would collide in `texts`.
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "a", date: "2026-08-01", lastGenerated: "2026-08-12", description: "A-late" }),
-        makeScheduled({ id: "b", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-soon" }),
-        makeScheduled({ id: "c", date: "2026-08-20", frequency: "once", description: "C-once" }),
+        makeScheduled({ id: "a", categoryId: "cat-4", date: "2026-08-01", lastGenerated: "2026-08-12", description: "A-late" }),
+        makeScheduled({ id: "b", categoryId: "cat-2", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-soon" }),
+        makeScheduled({ id: "c", categoryId: "cat-6", date: "2026-08-20", frequency: "once", description: "C-once" }),
       ],
     };
     const root = mount();
     const found = texts(root);
-    const b = found.indexOf("B-soon");
-    const a = found.indexOf("A-late");
-    const c = found.indexOf("C-once");
+    const b = found.indexOf("Food");
+    const a = found.indexOf("Utilities");
+    const c = found.indexOf("Transport");
     expect(b).toBeGreaterThanOrEqual(0);
     expect(a).toBeGreaterThan(b);
     expect(c).toBeGreaterThan(a);
@@ -323,36 +334,58 @@ describe("HomeScreen upcoming sections", () => {
     // must survive into the render order.
     mockScheduled = {
       scheduledEntries: [
-        makeScheduled({ id: "a", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "A-first" }),
-        makeScheduled({ id: "b", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-second" }),
+        makeScheduled({ id: "a", categoryId: "cat-4", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "A-first" }),
+        makeScheduled({ id: "b", categoryId: "cat-6", date: "2026-08-01", lastGenerated: "2026-08-12", frequency: "daily", description: "B-second" }),
       ],
     };
     const root = mount();
     const found = texts(root);
-    const a = found.indexOf("A-first");
-    const b = found.indexOf("B-second");
+    const a = found.indexOf("Utilities");
+    const b = found.indexOf("Transport");
     expect(a).toBeGreaterThanOrEqual(0);
     expect(b).toBeGreaterThan(a);
   });
 
-  it("places the upcoming sections between the quick-action buttons and the chart sections", () => {
-    mockScheduled = { scheduledEntries: [makeScheduled()] };
+  it("places each upcoming section beside its category breakdown (after the charts)", () => {
+    // Upcoming Expenses sits between the chart sections and the Expenses
+    // breakdown; Upcoming Income likewise before the Income breakdown. The
+    // ledger fixture is widened to income so both breakdowns render.
+    mockUseEntries.mockReturnValue({
+      entries: [
+        entry,
+        { id: "e2", type: "income", amount: 2000, categoryId: "cat-3", date: "2026-08-01" },
+      ],
+      isLoading: false,
+    });
+    mockScheduled = {
+      scheduledEntries: [
+        makeScheduled(),
+        makeScheduled({ id: "s2", type: "income", categoryId: "cat-3", description: "Salary" }),
+      ],
+    };
     const root = mount();
     const found = texts(root);
     const quickExpense = found.indexOf("- Expense");
     const quickIncome = found.indexOf("+ Income");
+    const expenseChart = found.indexOf("Expenses by Category");
     const upcomingTitle = found.indexOf("Upcoming Expenses");
-    const chartTitle = found.indexOf("Expenses by Category");
+    const breakdownTitle = found.indexOf("Expenses");
+    const upcomingIncomeTitle = found.indexOf("Upcoming Income");
+    const incomeBreakdownTitle = found.indexOf("Income");
     expect(quickExpense).toBeGreaterThanOrEqual(0);
     expect(quickIncome).toBeGreaterThanOrEqual(0);
-    expect(upcomingTitle).toBeGreaterThan(Math.max(quickExpense, quickIncome));
-    expect(chartTitle).toBeGreaterThan(upcomingTitle);
+    expect(expenseChart).toBeGreaterThan(Math.max(quickExpense, quickIncome));
+    expect(upcomingTitle).toBeGreaterThan(expenseChart);
+    expect(breakdownTitle).toBeGreaterThan(upcomingTitle);
+    expect(incomeBreakdownTitle).toBeGreaterThan(upcomingIncomeTitle);
   });
 
   it("navigates to ScheduledEntryForm in edit mode with the row id and type on tap", () => {
-    mockScheduled = { scheduledEntries: [makeScheduled()] };
+    // cat-2 "Food" — cat-1 "Housing" also renders in the chart legend (the
+    // ledger fixture is cat-1), so the legend text would be found first.
+    mockScheduled = { scheduledEntries: [makeScheduled({ id: "s1", categoryId: "cat-2", description: "Rent" })] };
     const root = mount();
-    const tappable = pressableWithText(root, "Rent");
+    const tappable = pressableWithText(root, "Food");
     expect(tappable).toBeTruthy();
     act(() => {
       tappable.props.onPress();

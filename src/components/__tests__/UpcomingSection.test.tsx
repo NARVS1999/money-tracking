@@ -1,12 +1,10 @@
 // UpcomingSection component tests (phase 15, HOME-UP-01/02/05/06). Covers the
 // section contract: returns null at zero items (absence IS the empty state),
-// title rendering, the ScheduledEntryRow content contract (description ||
-// category name primary, "{Frequency} · Next: {date}" secondary, "once"
-// without a "Next:" prefix), the WR-01 today-clamp on the "Next:" date (a
-// stale lastGenerated anchor never shows a past date), the themed amount
-// color (expense red #DC2626 / income teal #45C0CF — NOT the Export tab's
-// green), the tap-only row wiring (tap -> onTapItem), and the last-row
-// borderless card pattern.
+// title rendering, the category-breakdown row contract (category name primary
+// + "{n} of {count}" count line — the same visual contract as CategorySection
+// rows on the Home screen), the themed amount color (expense red #DC2626 /
+// income teal #45C0CF — NOT the Export tab's green), the tap-only row wiring
+// (tap -> onTapItem), and the last-row borderless card pattern.
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import renderer, { act } from "react-test-renderer";
@@ -34,8 +32,7 @@ import UpcomingSection, {
   type UpcomingSectionTheme,
 } from "../UpcomingSection";
 import type { ScheduledEntry } from "../../scheduled/ScheduledEntriesProvider";
-import { formatCents, } from "../../lib/money";
-import { formatNextDate } from "../../lib/frequency";
+import { formatCents } from "../../lib/money";
 import { Timestamp } from "firebase/firestore";
 
 const ts = new Timestamp(1_700_000_000, 0);
@@ -120,8 +117,7 @@ function flattenStyle(style: any): Record<string, unknown> {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Fixed clock at 2026-08-12 — the WR-01 clamp anchors "Next:" to today,
-  // so every date expectation must be deterministic (repo pattern:
+  // Fixed clock at 2026-08-12 for deterministic date behavior (repo pattern:
   // syncQueue-test / seed-test useFakeTimers).
   jest.useFakeTimers({ now: new Date(2026, 7, 12) });
   mockCategories = {
@@ -161,54 +157,29 @@ describe("UpcomingSection content", () => {
     expect(texts(root)).toContain("Upcoming Expenses");
   });
 
-  it("shows the description as the primary line when present", () => {
-    const root = mount([makeEntry()]);
-    expect(texts(root)).toContain("Rent");
-  });
-
-  it("falls back to the category name when the description is empty", () => {
-    const root = mount([makeEntry({ description: "" })]);
+  it("shows the category name as the primary line (CategorySection row contract)", () => {
+    // The row matches the category-breakdown contract: category name, not
+    // the entry description — the description is no longer surfaced here.
+    const root = mount([makeEntry()]); // description "Rent", category cat-1 → "Housing"
     expect(texts(root)).toContain("Housing");
+    expect(texts(root)).not.toContain("Rent");
   });
 
-  it("shows '{Frequency} · Next: {date}' for a repeating entry", () => {
-    const root = mount([makeEntry()]); // weekly from 2026-08-12 → next 2026-08-19
-    const expected = `Weekly · Next: ${formatNextDate("2026-08-19")}`;
-    expect(texts(root)).toContain(expected);
+  it("shows '{n} of {count}' as the count line for a single item", () => {
+    const root = mount([makeEntry()]);
+    expect(texts(root)).toContain("1 of 1");
   });
 
-  it("shows the start date without a 'Next:' prefix for a once entry", () => {
-    const root = mount([makeEntry({ frequency: "once" })]);
-    const expected = `Once · ${formatNextDate("2026-08-12")}`;
-    expect(texts(root)).toContain(expected);
-  });
-
-  it("shows the start date without a 'Next:' prefix when the pattern has ended (endDate passed)", () => {
+  it("numbers rows with '{index+1} of {count}'", () => {
     const root = mount([
-      makeEntry({ frequency: "weekly", endDate: "2026-08-18" }),
+      makeEntry({ id: "s1" }),
+      makeEntry({ id: "s2" }),
+      makeEntry({ id: "s3" }),
     ]);
-    const expected = `Weekly · ${formatNextDate("2026-08-12")}`;
-    expect(texts(root)).toContain(expected);
-  });
-
-  it("never shows a past date as 'Next:' when the engine anchor is stale (WR-01)", () => {
-    // Daily template whose lastGenerated (Aug 10) predates today (Aug 12):
-    // the engine-consistent next (Aug 11) is gone — the row clamps to today.
-    const root = mount([
-      makeEntry({ date: "2026-01-01", lastGenerated: "2026-08-10", frequency: "daily" }),
-    ]);
-    const expected = `Daily · Next: ${formatNextDate("2026-08-12")}`;
-    expect(texts(root)).toContain(expected);
-  });
-
-  it("clamps a stale weekly anchor to the next future occurrence (WR-01)", () => {
-    // Weekly from Mon 2026-08-03, lastGenerated Mon 2026-08-03, today Wed
-    // 2026-08-12: the engine next (Mon Aug 10) is past → next Monday Aug 17.
-    const root = mount([
-      makeEntry({ date: "2026-08-03", lastGenerated: "2026-08-03", frequency: "weekly" }),
-    ]);
-    const expected = `Weekly · Next: ${formatNextDate("2026-08-17")}`;
-    expect(texts(root)).toContain(expected);
+    const found = texts(root);
+    expect(found).toContain("1 of 3");
+    expect(found).toContain("2 of 3");
+    expect(found).toContain("3 of 3");
   });
 
   it("colors the amount with the expense theme accent (#DC2626)", () => {
@@ -262,7 +233,7 @@ describe("UpcomingSection interactions", () => {
     });
     const label = root.root
       .findAllByType(Text)
-      .find((t: any) => t.props.children === "Rent");
+      .find((t: any) => t.props.children === "Housing");
     let node = label;
     while (node && typeof node.props?.onPress !== "function") {
       node = node.parent;

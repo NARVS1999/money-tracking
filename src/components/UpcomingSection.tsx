@@ -1,18 +1,16 @@
 // UpcomingSection — home-screen "Upcoming Expenses" / "Upcoming Income" card
-// (15-UI-SPEC §1). Lists active scheduled-entry templates of ONE type with
-// their next occurrence, tap-only (edit/pause/delete management stays in the
-// Export tab swipe actions). Yellow-tinted card (theme.bg/border tokens) with
-// a type accent on the amount — expense red #DC2626 / income teal #45C0CF
-// (HOME-UP-01/02). Returns null at zero items — absence IS the empty state
-// (HOME-UP-05). No CTA, no subtotal badge: informational indicator only.
+// (15-UI-SPEC §1). Lists active scheduled-entry templates of ONE type using
+// the category-breakdown row contract (CategorySection row): category name +
+// "{n} of {count}" count line + right-aligned themed amount. Tap-only
+// (edit/pause/delete management stays in the Export tab swipe actions).
+// Yellow-tinted card (theme.bg/border tokens) with a type accent on the
+// amount — expense red #DC2626 / income teal #45C0CF (HOME-UP-01/02). Returns
+// null at zero items — absence IS the empty state (HOME-UP-05). No CTA, no
+// subtotal badge: informational indicator only.
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { colors, spacing, typography, radius, shadow } from "../theme/tokens";
 import { formatCents } from "../lib/money";
-import {
-  formatFrequency,
-  formatNextDate,
-  getUpcomingOccurrence,
-} from "../lib/frequency";
+import { formatFrequency, getUpcomingOccurrence, formatNextDate } from "../lib/frequency";
 import { useCategories } from "../categories/CategoriesProvider";
 import type { ScheduledEntry } from "../scheduled/ScheduledEntriesProvider";
 import CategoryIcon from "./CategoryIcon";
@@ -48,7 +46,7 @@ export default function UpcomingSection({
       <View
         style={[
           styles.card,
-          { backgroundColor: theme.bg, borderColor: theme.border },
+          { backgroundColor: #000, borderColor: theme.border },
         ]}
       >
         {items.map((entry, index) => (
@@ -57,6 +55,8 @@ export default function UpcomingSection({
             entry={entry}
             accent={theme.accent}
             isLast={index === items.length - 1}
+            index={index}
+            count={items.length}
             onPress={() => onTapItem(entry)}
           />
         ))}
@@ -65,19 +65,24 @@ export default function UpcomingSection({
   );
 }
 
-// Themed row — ScheduledEntryRow visual contract (14-UI-SPEC §1) with two
-// locked deltas: amount color comes from the section theme (income is teal
-// #45C0CF on Home, NOT the Export tab's green #16A34A) and the row is a
-// plain tap target (no Swipeable — HOME-UP-06 promises only edit navigation).
+// Themed row — matches the category-breakdown row visual contract
+// (CategorySection row, same screen): category icon + category name +
+// "{n} of {count}" count line + right-aligned amount in the section accent.
+// The row is a plain tap target (no Swipeable — HOME-UP-06 promises only
+// edit navigation).
 function UpcomingRow({
   entry,
   accent,
   isLast,
+  index,
+  count,
   onPress,
 }: {
   entry: ScheduledEntry;
   accent: string;
   isLast: boolean;
+  index: number;
+  count: number;
   onPress: () => void;
 }) {
   const { expenseCategories, incomeCategories } = useCategories();
@@ -88,13 +93,6 @@ function UpcomingRow({
   const categoryName = category?.name ?? "Unknown";
 
   const frequencyLabel = formatFrequency(entry.frequency);
-
-  // Next occurrence for display: the engine's getNextOccurrence clamped to
-  // today (getUpcomingOccurrence, WR-01) so a session spanning a date
-  // boundary never shows a past date as "Next:". "once" has no next
-  // occurrence, and an endDate-capped template whose next occurrence lands
-  // after endDate is finished — both show the start date without a "Next:"
-  // prefix (shared with ScheduledEntryRow via the lib helper).
   const nextDate = getUpcomingOccurrence(
     entry.date,
     entry.frequency,
@@ -103,7 +101,7 @@ function UpcomingRow({
   );
   const secondaryDate = nextDate ?? entry.date;
   const secondaryLine = nextDate
-    ? `${frequencyLabel} · Next: ${formatNextDate(secondaryDate)}`
+    ? `${frequencyLabel} · ${formatNextDate(secondaryDate)}`
     : `${frequencyLabel} · ${formatNextDate(secondaryDate)}`;
 
   return (
@@ -129,10 +127,7 @@ function UpcomingRow({
 }
 
 const styles = StyleSheet.create({
-  // CategorySection container pattern: section padded, card list inside.
   container: { paddingHorizontal: spacing.md, marginBottom: spacing.lg },
-  // CategorySection header pattern — the upcoming sections read at the same
-  // hierarchy level as the Expenses/Income breakdown sections below them.
   header: {
     fontSize: 18,
     fontWeight: "700",
@@ -141,19 +136,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   card: {
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
     overflow: "hidden",
     ...shadow.surface,
   },
-  // ScheduledEntryRow container verbatim (minHeight 44 = touch-target floor).
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.md,
-    minHeight: 44,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.surface,
     gap: spacing.sm,
   },
   rowLast: {
@@ -165,16 +160,14 @@ const styles = StyleSheet.create({
   },
   primary: {
     fontSize: typography.body.size,
-    fontWeight: typography.body.weight as "400",
+    fontWeight: "600",
     lineHeight: typography.body.lineHeight,
     color: colors.textPrimary,
+    marginBottom: 2,
   },
   secondary: {
-    fontSize: typography.label.size,
-    fontWeight: typography.label.weight as "400",
-    lineHeight: typography.label.lineHeight,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
   },
   amount: {
     fontSize: 16,
