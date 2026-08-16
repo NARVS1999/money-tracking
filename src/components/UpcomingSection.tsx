@@ -119,7 +119,7 @@ function UpcomingRow({
           {secondaryLine}
         </Text>
       </View>
-      <Text style={[styles.amount, { color: accent }]}>
+      <Text style={[styles.amount, { color: colors.yellow }]}>
         {formatCents(entry.amount)}
       </Text>
     </TouchableOpacity>
